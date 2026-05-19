@@ -1,0 +1,21 @@
+{
+  "name": "thunderbird-mail-manager",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node --import=tsx build.ts",
+    "watch": "node --import=tsx build.ts --watch",
+    "dev": "npm run build && concurrently -k -n watch,ext -c blue,green \"npm run watch\" \"web-ext run --source-dir=dist --target=firefox-desktop --firefox=\\\"C:\\\\Program Files\\\\Mozilla Thunderbird\\\\thunderbird.exe\\\" --firefox-profile=\\\"C:\\\\Users\\\\Sandra\\\\AppData\\\\Roaming\\\\Thunderbird\\\\Profiles\\\\s31jrc0c.default-release\\\" --keep-profile-changes\"",
+    "package": "npm run build && web-ext build --source-dir=dist --artifacts-dir=. --filename=smart-mail-manager.xpi --overwrite-dest"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "concurrently": "^9.2.1",
+    "svelte": "^5.55.7",
+    "tsx": "^4.19.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.13",
+    "web-ext": "^10.1.0"
+  }
+}

@@ -1,0 +1,296 @@
+<script lang="ts">
+  import type { ActivityEntry } from '../../types/settings';
+  import { activity } from '../../lib/stores/activity';
+  import { settings } from '../../lib/stores/settings';
+  import { t } from '../../lib/i18n';
+  import type { Translations } from '../../lib/i18n/types';
+  import Button from '../../lib/components/Button.svelte';
+
+  interface Props {
+    initialSearch?: string;
+  }
+  let { initialSearch = '' }: Props = $props();
+
+  let currentActivity = $state<ActivityEntry[]>([]);
+  let filterType = $state<'all' | 'classification' | 'autoResponse' | 'error'>('all');
+  let searchQuery = $state('');
+  let page = $state(1);
+  const PAGE_SIZE = 50;
+
+  let retentionDays = $state(30);
+  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
+
+  t.subscribe((fn) => (T = fn));
+  activity.subscribe((v) => (currentActivity = v));
+  settings.subscribe((v) => (retentionDays = v.logRetentionDays || 30));
+
+  $effect(() => {
+    if (initialSearch) {
+      searchQuery = initialSearch;
+    }
+  });
+
+  let filtered = $derived(
+    currentActivity.filter((entry) => {
+      if (filterType !== 'all' && entry.type !== filterType) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (
+          entry.subject.toLowerCase().includes(q) ||
+          entry.from.toLowerCase().includes(q) ||
+          entry.ruleName.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    }),
+  );
+
+  let totalPages = $derived(Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
+  let paginated = $derived(filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+
+  // Reset page when filter changes
+  $effect(() => {
+    // Track filter deps
+    filterType; searchQuery;
+    page = 1;
+  });
+
+  function formatTime(ts: number): string {
+    return new Date(ts).toLocaleString();
+  }
+
+  function handleClear() {
+    if (!confirm(T('log_clear_confirm'))) return;
+    activity.clear();
+  }
+
+  function exportCSV() {
+    const headers = [T('log_col_date'), T('log_col_type'), T('log_col_rule'), T('log_col_subject'), T('log_col_from'), T('log_col_actions'), T('log_col_details')];
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = filtered.map(e => [
+      new Date(e.timestamp).toISOString(),
+      e.type,
+      e.ruleName,
+      e.subject,
+      e.from,
+      e.actions.join('; '),
+      e.details || '',
+    ].map(escape).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `smm-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  let typeLabels = $derived<Record<string, string>>({
+    classification: T('log_type_classification'),
+    autoResponse: T('log_type_response'),
+    error: T('log_type_error'),
+  });
+</script>
+
+<div class="log-page">
+  <div class="header">
+    <h3>{T('log_title')}</h3>
+    <div class="header-actions">
+      <span class="retention-badge">{T('log_retention', { n: retentionDays })}</span>
+      {#if filtered.length > 0}
+        <Button size="sm" onclick={exportCSV}>{T('log_export_csv')}</Button>
+      {/if}
+      <Button size="sm" variant="danger" onclick={handleClear}>{T('log_clear')}</Button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input
+      type="text"
+      placeholder={T('log_search_placeholder')}
+      bind:value={searchQuery}
+    />
+    <select bind:value={filterType}>
+      <option value="all">{T('log_filter_all')}</option>
+      <option value="classification">{T('log_filter_classifications')}</option>
+      <option value="autoResponse">{T('log_filter_responses')}</option>
+      <option value="error">{T('log_filter_errors')}</option>
+    </select>
+  </div>
+
+  {#if filtered.length === 0}
+    <p class="empty">{T('log_no_entries')}</p>
+  {:else}
+    <table>
+      <thead>
+        <tr>
+          <th>{T('log_col_date')}</th>
+          <th>{T('log_col_type')}</th>
+          <th>{T('log_col_rule')}</th>
+          <th>{T('log_col_subject')}</th>
+          <th>{T('log_col_from')}</th>
+          <th>{T('log_col_actions')}</th>
+          <th>{T('log_col_details')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each paginated as entry}
+          <tr>
+            <td>{formatTime(entry.timestamp)}</td>
+            <td>
+              <span class="badge badge-{entry.type}">
+                {typeLabels[entry.type] || entry.type}
+              </span>
+            </td>
+            <td>{entry.ruleName}</td>
+            <td class="truncate">{entry.subject}</td>
+            <td class="truncate">{entry.from}</td>
+            <td>{entry.actions.join(', ')}</td>
+            <td class="truncate">{entry.details || ''}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+    <div class="pagination-row">
+      <p class="count">{T('log_entries_count', { n: filtered.length, s: filtered.length !== 1 ? 's' : '' })}</p>
+      {#if totalPages > 1}
+        <div class="pagination">
+          <button class="page-btn" disabled={page <= 1} onclick={() => (page = page - 1)}>{T('log_page_prev')}</button>
+          <span class="page-info">{T('log_page_of', { current: page, total: totalPages })}</span>
+          <button class="page-btn" disabled={page >= totalPages} onclick={() => (page = page + 1)}>{T('log_page_next')}</button>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .log-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .retention-badge {
+    font-size: 11px;
+    color: var(--text-secondary, #666);
+    padding: 3px 8px;
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .filters {
+    display: flex;
+    gap: 8px;
+  }
+  .filters input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .filters select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary, #666);
+    font-size: 13px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 2px solid var(--border-color, #e0e0e6);
+    font-weight: 600;
+    color: var(--text-secondary, #555);
+  }
+  td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border-color, #f0f0f4);
+  }
+  .truncate {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-classification { background: #d4edda; color: #155724; }
+  .badge-autoResponse { background: #cce5ff; color: #004085; }
+  .badge-error { background: #f8d7da; color: #721c24; }
+
+  @media (prefers-color-scheme: dark) {
+    .badge-classification { background: #1b4332; color: #95d5b2; }
+    .badge-autoResponse { background: #1a3a5c; color: #90caf9; }
+    .badge-error { background: #4a1c1c; color: #ef9a9a; }
+    .filters input, .filters select { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
+  }
+
+  .pagination-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .count {
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    margin: 0;
+  }
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .page-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    background: var(--bg-secondary, #f0f0f4);
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-color, #15141a);
+  }
+  .page-btn:hover:not(:disabled) {
+    background: var(--bg-hover, #e0e0e6);
+  }
+  .page-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .page-info {
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+  }
+</style>

@@ -1,0 +1,210 @@
+<script lang="ts">
+  import Dashboard from './pages/Dashboard.svelte';
+  import Rules from './pages/Rules.svelte';
+  import Templates from './pages/Templates.svelte';
+  import AI from './pages/AI.svelte';
+  import Log from './pages/Log.svelte';
+  import GlobalSearch from './components/GlobalSearch.svelte';
+  import { unreadClassifications } from '../lib/stores/badges';
+  import { rules } from '../lib/stores/rules';
+  import { templates } from '../lib/stores/templates';
+  import { activity } from '../lib/stores/activity';
+  import { t } from '../lib/i18n';
+  import type { Translations } from '../lib/i18n/types';
+
+  let activeTab = $state('dashboard');
+  let unreadCount = $state(0);
+  let currentRules = $state<any[]>([]);
+  let currentTemplates = $state<any[]>([]);
+  let currentActivity = $state<any[]>([]);
+  let searchFilter = $state('');
+  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
+
+  t.subscribe((fn) => (T = fn));
+  unreadClassifications.subscribe(v => (unreadCount = v));
+  rules.subscribe(v => (currentRules = v));
+  templates.subscribe(v => (currentTemplates = v));
+  activity.subscribe(v => (currentActivity = v));
+
+  function handleSearchNavigate(tabId: string, searchQuery: string) {
+    activeTab = tabId;
+    searchFilter = searchQuery || '';
+    // Reset after a tick so the child component picks it up
+    setTimeout(() => (searchFilter = ''), 100);
+  }
+
+  let searchComponent: GlobalSearch | undefined = $state(undefined);
+
+  $effect(() => {
+    if (activeTab === 'dashboard') {
+      unreadClassifications.reset();
+    }
+  });
+
+  let tabs = $derived([
+    { id: 'dashboard', label: T('tab_dashboard') },
+    { id: 'rules', label: T('tab_rules') },
+    { id: 'templates', label: T('tab_templates') },
+    { id: 'ai', label: T('tab_ai') },
+    { id: 'log', label: T('tab_log') },
+  ]);
+</script>
+
+<svelte:window onkeydown={(e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    searchComponent?.focus();
+    return;
+  }
+  if (e.ctrlKey || e.metaKey) {
+    const tabKeys: Record<string, string> = { '1': 'dashboard', '2': 'rules', '3': 'templates', '4': 'ai', '5': 'log' };
+    if (tabKeys[e.key]) {
+      e.preventDefault();
+      activeTab = tabKeys[e.key];
+    }
+  }
+}} />
+
+<div class="app">
+  <nav class="tabs">
+    <div class="tab-title">Smart Mail Manager</div>
+    <GlobalSearch
+      bind:this={searchComponent}
+      rules={currentRules}
+      templates={currentTemplates}
+      activity={currentActivity}
+      onnavigate={handleSearchNavigate}
+    />
+    <div class="tab-buttons" role="tablist">
+      {#each tabs as tab}
+        <button
+          class="tab-btn"
+          class:active={activeTab === tab.id}
+          onclick={() => (activeTab = tab.id)}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          id="tab-{tab.id}"
+          aria-controls="panel-{tab.id}"
+        >
+          {tab.label}
+          {#if tab.id === 'dashboard' && unreadCount > 0}
+            <span class="badge-dot">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  </nav>
+
+  <div class="content" role="tabpanel" id="panel-{activeTab}" aria-labelledby="tab-{activeTab}">
+    {#if activeTab === 'dashboard'}
+      <Dashboard />
+    {:else if activeTab === 'rules'}
+      <Rules />
+    {:else if activeTab === 'templates'}
+      <Templates />
+    {:else if activeTab === 'ai'}
+      <AI />
+    {:else}
+      <Log initialSearch={searchFilter} />
+    {/if}
+  </div>
+</div>
+
+<style>
+  :global(body) {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    color: var(--text-color, #15141a);
+    background: var(--bg-primary, #ffffff);
+    --primary-color: #0060df;
+    --primary-hover: #003eaa;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9f9fb;
+    --bg-hover: #e0e0e6;
+    --border-color: #e0e0e6;
+    --text-color: #15141a;
+    --text-secondary: #5b5b66;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(body) {
+      --primary-color: #45a1ff;
+      --primary-hover: #73b6ff;
+      --bg-primary: #1c1b22;
+      --bg-secondary: #2b2a33;
+      --bg-hover: #3a3944;
+      --border-color: #4a4a5a;
+      --text-color: #fbfbfe;
+      --text-secondary: #b1b1bd;
+    }
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+  }
+  .tab-title {
+    font-weight: 700;
+    font-size: 15px;
+    padding: 12px 0;
+    color: var(--primary-color);
+    white-space: nowrap;
+  }
+  .tab-buttons {
+    display: flex;
+    gap: 0;
+  }
+  .tab-btn {
+    position: relative;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-secondary);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .badge-dot {
+    position: absolute;
+    top: 6px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #e22850;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .tab-btn:hover {
+    color: var(--text-color);
+  }
+  .tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+  }
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+</style>

@@ -1,0 +1,747 @@
+<script lang="ts">
+  import { rules } from '../../lib/stores/rules';
+  import { activity } from '../../lib/stores/activity';
+  import { settings } from '../../lib/stores/settings';
+  import { t } from '../../lib/i18n';
+  import type { Translations } from '../../lib/i18n/types';
+  import Button from '../../lib/components/Button.svelte';
+  import Modal from '../../lib/components/Modal.svelte';
+
+  declare const browser: any;
+
+  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
+  t.subscribe((fn) => (T = fn));
+
+  let currentRules = $state<any[]>([]);
+  let currentActivity = $state<any[]>([]);
+  let currentSettings = $state<any>({});
+
+  rules.subscribe((v) => (currentRules = v));
+  activity.subscribe((v) => (currentActivity = v));
+  settings.subscribe((v) => (currentSettings = v));
+
+  let activeRules = $derived(currentRules.filter((r) => r.enabled).length);
+  let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
+  let todayClassifications = $derived(
+    currentActivity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
+  );
+  let todayAutoResponses = $derived(
+    currentActivity.filter((a) => a.type === 'autoResponse' && a.timestamp >= todayStart).length,
+  );
+  let recentActivity = $derived(currentActivity.slice(0, 20));
+
+  // Stats time range
+  let statsRange = $state<'7d' | '30d' | 'all'>('30d');
+  let statsStart = $derived(
+    statsRange === '7d' ? Date.now() - 7 * 86400000
+    : statsRange === '30d' ? Date.now() - 30 * 86400000
+    : 0
+  );
+  let filteredForStats = $derived(
+    currentActivity.filter(a => a.type === 'classification' && a.timestamp >= statsStart)
+  );
+
+  // Per-rule stats
+  let ruleStats = $derived(() => {
+    const stats = new Map<string, { name: string; count: number }>();
+    for (const entry of filteredForStats) {
+      if (entry.ruleId) {
+        const existing = stats.get(entry.ruleId);
+        if (existing) {
+          existing.count++;
+        } else {
+          stats.set(entry.ruleId, { name: entry.ruleName, count: 1 });
+        }
+      }
+    }
+    return [...stats.entries()]
+      .map(([id, data]) => ({ id, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  });
+
+  // Process existing state
+  let processing = $state(false);
+  let processResult = $state<{
+    processed: number;
+    matched: number;
+    errors: number;
+    details: Array<{ subject: string; from: string; rules: string[] }>;
+  } | null>(null);
+
+  function toggleClassification() {
+    settings.update({ classificationEnabled: !currentSettings.classificationEnabled });
+  }
+
+  function toggleAutoResponse() {
+    settings.update({ autoResponseEnabled: !currentSettings.autoResponseEnabled });
+  }
+
+  function formatTime(ts: number): string {
+    return new Date(ts).toLocaleString();
+  }
+
+  async function processExisting() {
+    processing = true;
+    processResult = null;
+    try {
+      const result = await browser.runtime.sendMessage({
+        type: 'PROCESS_EXISTING',
+        limit: 100,
+      });
+      processResult = result;
+    } catch (err: any) {
+      processResult = { processed: 0, matched: 0, errors: 1, details: [] };
+    } finally {
+      processing = false;
+    }
+  }
+
+  // Folder management
+  let allFolders = $state<any[]>([]);
+  let showFolders = $state(false);
+  let folderError = $state('');
+  let folderSuccess = $state('');
+  let renamingId = $state<string | null>(null);
+  let renameValue = $state('');
+
+  async function loadFolders() {
+    try {
+      allFolders = await browser.runtime.sendMessage({ type: 'GET_FOLDERS' });
+    } catch { allFolders = []; }
+  }
+
+  function toggleFolders() {
+    showFolders = !showFolders;
+    if (showFolders) loadFolders();
+  }
+
+  function startRename(folder: any) {
+    renamingId = folder.id;
+    renameValue = folder.name;
+    folderError = '';
+  }
+
+  function cancelRename() {
+    renamingId = null;
+    renameValue = '';
+  }
+
+  async function confirmRename() {
+    if (!renamingId || !renameValue.trim()) return;
+    folderError = '';
+    try {
+      const result = await browser.runtime.sendMessage({
+        type: 'RENAME_FOLDER', folderId: renamingId, newName: renameValue.trim(),
+      });
+      if (result.success) {
+        folderSuccess = T('dashboard_folder_renamed', { name: renameValue.trim() });
+        setTimeout(() => (folderSuccess = ''), 3000);
+        renamingId = null;
+        renameValue = '';
+        await loadFolders();
+      } else {
+        folderError = result.error || T('dashboard_rename_error');
+      }
+    } catch (err: any) {
+      folderError = err.message || T('dashboard_rename_error');
+    }
+  }
+
+  async function deleteFolder(folder: any) {
+    if (!confirm(T('dashboard_confirm_delete_folder', { name: folder.name }))) return;
+    folderError = '';
+    try {
+      const result = await browser.runtime.sendMessage({
+        type: 'DELETE_FOLDER', folderId: folder.id,
+      });
+      if (result.success) {
+        folderSuccess = T('dashboard_folder_deleted', { name: folder.name });
+        setTimeout(() => (folderSuccess = ''), 3000);
+        await loadFolders();
+      } else {
+        folderError = result.error || T('dashboard_delete_error');
+      }
+    } catch (err: any) {
+      folderError = err.message || T('dashboard_delete_error');
+    }
+  }
+
+  function handleRenameKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') confirmRename();
+    else if (e.key === 'Escape') cancelRename();
+  }
+</script>
+
+<div class="dashboard">
+  <div class="cards">
+    <div class="card">
+      <div class="card-value">{currentRules.length}</div>
+      <div class="card-label">{T('dashboard_total_rules')}</div>
+    </div>
+    <div class="card">
+      <div class="card-value">{activeRules}</div>
+      <div class="card-label">{T('dashboard_active_rules')}</div>
+    </div>
+    <div class="card">
+      <div class="card-value">{todayClassifications}</div>
+      <div class="card-label">{T('dashboard_classified_today')}</div>
+    </div>
+    <div class="card">
+      <div class="card-value">{todayAutoResponses}</div>
+      <div class="card-label">{T('dashboard_responses_today')}</div>
+    </div>
+  </div>
+
+  <div class="toggles">
+    <Button
+      variant={currentSettings.classificationEnabled ? 'primary' : 'secondary'}
+      onclick={toggleClassification}
+    >
+      {T('dashboard_classification')}: {currentSettings.classificationEnabled ? T('common_on') : T('common_off')}
+    </Button>
+    <Button
+      variant={currentSettings.autoResponseEnabled ? 'primary' : 'secondary'}
+      onclick={toggleAutoResponse}
+    >
+      {T('dashboard_auto_response')}: {currentSettings.autoResponseEnabled ? T('common_on') : T('common_off')}
+    </Button>
+  </div>
+
+  <!-- Rule ranking stats -->
+  {#if ruleStats().length > 0}
+    <div class="stats-section">
+      <div class="stats-header">
+        <h3>{T('dashboard_rule_ranking')}</h3>
+        <select class="stats-range" bind:value={statsRange}>
+          <option value="7d">{T('dashboard_7days')}</option>
+          <option value="30d">{T('dashboard_30days')}</option>
+          <option value="all">{T('dashboard_all')}</option>
+        </select>
+      </div>
+      <div class="stats-list">
+        {#each ruleStats() as stat, i}
+          <div class="stat-row">
+            <span class="stat-rank">#{i + 1}</span>
+            <span class="stat-name" title={stat.name}>{stat.name}</span>
+            <div class="stat-bar-container">
+              <div
+                class="stat-bar"
+                style="width: {Math.round((stat.count / ruleStats()[0].count) * 100)}%"
+              ></div>
+            </div>
+            <span class="stat-count">{stat.count}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Process existing emails -->
+  <div class="process-section">
+    <div class="process-header">
+      <div>
+        <h3>{T('dashboard_process_existing')}</h3>
+        <p class="process-desc">{T('dashboard_process_existing_desc')}</p>
+      </div>
+      <Button variant="primary" onclick={processExisting} disabled={processing || activeRules === 0}>
+        {processing ? T('dashboard_processing') : T('dashboard_run_rules')}
+      </Button>
+    </div>
+
+    {#if processing}
+      <div class="process-loading">
+        <div class="spinner"></div>
+        <span>{T('dashboard_analyzing')}</span>
+      </div>
+    {/if}
+
+    {#if processResult}
+      <div class="process-result" class:has-matches={processResult.matched > 0}>
+        <div class="result-stats">
+          <div class="stat">
+            <span class="stat-value">{processResult.processed}</span>
+            <span class="stat-label">{T('dashboard_analyzed')}</span>
+          </div>
+          <div class="stat match">
+            <span class="stat-value">{processResult.matched}</span>
+            <span class="stat-label">{T('dashboard_matches')}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{processResult.processed - processResult.matched}</span>
+            <span class="stat-label">{T('dashboard_no_rule')}</span>
+          </div>
+          {#if processResult.errors > 0}
+            <div class="stat error">
+              <span class="stat-value">{processResult.errors}</span>
+              <span class="stat-label">{T('dashboard_errors')}</span>
+            </div>
+          {/if}
+        </div>
+
+        {#if processResult.details && processResult.details.length > 0}
+          <div class="result-details">
+            <h4>{T('dashboard_classified_emails')}</h4>
+            <table class="result-table">
+              <thead>
+                <tr>
+                  <th>{T('common_subject')}</th>
+                  <th>{T('common_from')}</th>
+                  <th>{T('dashboard_rules_applied')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each processResult.details as d}
+                  <tr>
+                    <td class="truncate">{d.subject}</td>
+                    <td class="truncate">{d.from}</td>
+                    <td>
+                      {#each d.rules as r}
+                        <span class="rule-badge">{r}</span>
+                      {/each}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {:else if processResult.matched === 0}
+          <p class="no-matches">{T('dashboard_no_matches_desc')}</p>
+        {/if}
+      </div>
+    {/if}
+  </div>
+
+  <!-- Folder management -->
+  <div class="folder-section">
+    <div class="folder-header">
+      <h3>{T('dashboard_manage_folders')}</h3>
+      <Button size="sm" onclick={toggleFolders}>{showFolders ? T('common_hide') : T('common_show')}</Button>
+    </div>
+
+    {#if showFolders}
+      {#if folderError}<div class="folder-msg error">{folderError}</div>{/if}
+      {#if folderSuccess}<div class="folder-msg success">{folderSuccess}</div>{/if}
+
+      {#if allFolders.length === 0}
+        <p class="empty">{T('dashboard_loading_folders')}</p>
+      {:else}
+        <div class="folder-list">
+          {#each allFolders as folder}
+            <div class="folder-item">
+              {#if renamingId === folder.id}
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                  class="rename-input"
+                  bind:value={renameValue}
+                  onkeydown={handleRenameKeydown}
+                  autofocus
+                />
+                <Button size="sm" variant="primary" onclick={confirmRename}>OK</Button>
+                <Button size="sm" onclick={cancelRename}>X</Button>
+              {:else}
+                <span class="folder-path" title={folder.path || folder.name}>
+                  {folder.path || folder.name}
+                </span>
+                <div class="folder-actions">
+                  <button class="folder-btn" onclick={() => startRename(folder)} title={T('common_edit')}>&#9998;</button>
+                  <button class="folder-btn danger" onclick={() => deleteFolder(folder)} title={T('common_delete')}>&#10005;</button>
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+  </div>
+
+  <div class="recent">
+    <h3>{T('dashboard_recent_activity')}</h3>
+    {#if recentActivity.length === 0}
+      <p class="empty">{T('dashboard_no_recent_activity')}</p>
+    {:else}
+      <table>
+        <thead>
+          <tr>
+            <th>{T('dashboard_date')}</th>
+            <th>{T('dashboard_type')}</th>
+            <th>{T('dashboard_rule')}</th>
+            <th>{T('common_subject')}</th>
+            <th>{T('common_from')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each recentActivity as entry}
+            <tr class="type-{entry.type}">
+              <td>{formatTime(entry.timestamp)}</td>
+              <td>
+                <span class="badge badge-{entry.type}">
+                  {entry.type === 'classification' ? T('log_type_classification') : entry.type === 'autoResponse' ? T('log_type_response') : T('log_type_error')}
+                </span>
+              </td>
+              <td>{entry.ruleName}</td>
+              <td class="truncate">{entry.subject}</td>
+              <td class="truncate">{entry.from}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--bg-secondary, #f9f9fb);
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-color, #0060df);
+  }
+  .card-label {
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    margin-top: 4px;
+  }
+  .toggles {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Folder management */
+  .folder-section {
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--bg-primary, white);
+  }
+  .folder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .folder-header h3 { margin: 0; font-size: 15px; }
+  .folder-msg {
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .folder-msg.error { background: #fce4ec; color: #c62828; }
+  .folder-msg.success { background: #e8f5e9; color: #2e7d32; }
+  .folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .folder-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .folder-item:hover { background: var(--bg-secondary, #f0f0f4); }
+  .folder-path {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .folder-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .folder-item:hover .folder-actions { opacity: 1; }
+  .folder-btn {
+    padding: 2px 6px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 3px;
+    background: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+  }
+  .folder-btn:hover { background: var(--bg-hover, #e0e0e6); }
+  .folder-btn.danger:hover { background: #fce4ec; color: #c62828; }
+  .rename-input {
+    flex: 1;
+    padding: 3px 6px;
+    border: 1px solid var(--primary-color, #0060df);
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--bg-primary, white);
+    color: inherit;
+  }
+
+  /* Process existing section */
+  .process-section {
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--bg-primary, white);
+  }
+  .process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  .process-header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .process-desc {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+  }
+  .process-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0 0 0;
+    color: var(--text-secondary, #666);
+    font-size: 13px;
+  }
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color, #e0e0e6);
+    border-top-color: var(--primary-color, #0060df);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .process-result {
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color, #e0e0e6);
+    padding-top: 16px;
+  }
+  .result-stats {
+    display: flex;
+    gap: 20px;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-value {
+    display: block;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-secondary, #666);
+  }
+  .stat.match .stat-value {
+    color: #2e7d32;
+  }
+  .stat.error .stat-value {
+    color: #c62828;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-secondary, #666);
+  }
+  .result-details {
+    margin-top: 14px;
+  }
+  .result-details h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .result-table th {
+    text-align: left;
+    padding: 5px 8px;
+    border-bottom: 2px solid var(--border-color, #e0e0e6);
+    font-weight: 600;
+    color: var(--text-secondary, #555);
+  }
+  .result-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border-color, #f0f0f4);
+  }
+  .rule-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #d4edda;
+    color: #155724;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 1px 2px;
+  }
+  .no-matches {
+    margin: 10px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    font-style: italic;
+  }
+
+  .recent h3 {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+  }
+  .empty {
+    color: var(--text-secondary, #666);
+    font-size: 13px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 2px solid var(--border-color, #e0e0e6);
+    font-weight: 600;
+    color: var(--text-secondary, #555);
+  }
+  td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color, #f0f0f4);
+  }
+  .truncate {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-classification {
+    background: #d4edda;
+    color: #155724;
+  }
+  .badge-autoResponse {
+    background: #cce5ff;
+    color: #004085;
+  }
+  .badge-error {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  /* Stats section */
+  .stats-section {
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--bg-primary, white);
+  }
+  .stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .stats-header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .stats-range {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--bg-secondary, #f0f0f4);
+    color: inherit;
+  }
+  .stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .stat-rank {
+    width: 24px;
+    font-weight: 700;
+    color: var(--text-secondary, #666);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .stat-name {
+    width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .stat-bar-container {
+    flex: 1;
+    height: 18px;
+    background: var(--bg-secondary, #f0f0f4);
+    border-radius: 9px;
+    overflow: hidden;
+  }
+  .stat-bar {
+    height: 100%;
+    background: var(--primary-color, #0060df);
+    border-radius: 9px;
+    min-width: 4px;
+    transition: width 0.3s ease;
+  }
+  .stat-count {
+    width: 36px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    flex-shrink: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .badge-classification { background: #1b4332; color: #95d5b2; }
+    .badge-autoResponse { background: #1a3a5c; color: #90caf9; }
+    .badge-error { background: #4a1c1c; color: #ef9a9a; }
+    .rule-badge { background: #1b4332; color: #95d5b2; }
+    .stat.match .stat-value { color: #66bb6a; }
+    .stat.error .stat-value { color: #ef5350; }
+    .stats-range { background: #1c1b22; border-color: #4a4a5a; }
+    .folder-msg.error { background: #4a1c1c; color: #ef9a9a; }
+    .folder-msg.success { background: #1b3320; color: #81c784; }
+    .folder-btn.danger:hover { background: #4a1c1c; color: #ef9a9a; }
+    .rename-input { background: #1c1b22; border-color: #45a1ff; }
+  }
+</style>
