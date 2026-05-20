@@ -253,6 +253,14 @@ export const en: Translations = {
   proposal_badge_saved: 'Saved',
   proposal_create: 'Create',
   proposal_in_path: 'in',
+  proposal_moves_title: 'Consolidate folders',
+  proposal_consolidate_all: 'Consolidate all',
+  proposal_consolidate: 'Consolidate',
+  proposal_badge_consolidated: 'Consolidated',
+  proposal_move_and_delete: '(delete source)',
+  ai_success_move_done: '{count} emails moved from "{source}" to "{dest}"',
+  ai_success_move_undo: 'Move undone',
+  ai_error_move: 'Error moving emails: {msg}',
 
   // Template variables
   tpl_var_sender_name: 'Sender name',

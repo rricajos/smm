@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FolderProposal, RuleProposal } from '../../lib/services/openai';
+  import type { FolderProposal, MoveProposal, RuleProposal } from '../../lib/services/openai';
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
@@ -8,19 +8,25 @@
   t.subscribe((fn) => (T = fn));
 
   interface Props {
-    type: 'folders' | 'rules';
+    type: 'folders' | 'moves' | 'rules';
     folderProposals?: FolderProposal[];
+    moveProposals?: MoveProposal[];
     ruleProposals?: RuleProposal[];
     acceptedSet: Set<number>;
     onacceptfolder?: (idx: number, proposal: FolderProposal) => void;
+    onacceptmove?: (idx: number, proposal: MoveProposal) => void;
     onacceptrule?: (idx: number, proposal: RuleProposal) => void;
     oneditrule?: (proposal: RuleProposal) => void;
     onacceptall?: () => void;
   }
 
-  let { type, folderProposals, ruleProposals, acceptedSet, onacceptfolder, onacceptrule, oneditrule, onacceptall }: Props = $props();
+  let { type, folderProposals, moveProposals, ruleProposals, acceptedSet, onacceptfolder, onacceptmove, onacceptrule, oneditrule, onacceptall }: Props = $props();
 
-  let items = $derived(type === 'folders' ? folderProposals || [] : ruleProposals || []);
+  let items = $derived(
+    type === 'folders' ? folderProposals || [] :
+    type === 'moves' ? moveProposals || [] :
+    ruleProposals || []
+  );
   let allAccepted = $derived(items.every((_, i) => acceptedSet.has(i)));
 </script>
 
@@ -28,11 +34,11 @@
   <div class="proposals-block">
     <div class="proposals-header">
       <span class="proposals-title">
-        {type === 'folders' ? T('proposal_folders_title') : T('proposal_rules_title')} ({items.length})
+        {type === 'folders' ? T('proposal_folders_title') : type === 'moves' ? T('proposal_moves_title') : T('proposal_rules_title')} ({items.length})
       </span>
       {#if !allAccepted && onacceptall}
         <button class="accept-all-btn" onclick={onacceptall}>
-          {type === 'folders' ? T('proposal_create_all') : T('proposal_accept_all')}
+          {type === 'folders' ? T('proposal_create_all') : type === 'moves' ? T('proposal_consolidate_all') : T('proposal_accept_all')}
         </button>
       {/if}
     </div>
@@ -51,6 +57,25 @@
             <span class="accepted-badge">{T('proposal_badge_created')}</span>
           {:else if onacceptfolder}
             <Button size="sm" variant="primary" onclick={() => onacceptfolder(idx, fp)}>{T('proposal_create')}</Button>
+          {/if}
+        </div>
+      {/each}
+    {/if}
+
+    {#if type === 'moves' && moveProposals}
+      {#each moveProposals as mp, idx}
+        <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
+          <div class="proposal-info">
+            <span class="proposal-icon">&#8618;</span>
+            <div>
+              <strong>{mp.sourceFolderPath} &rarr; {mp.destFolderPath}</strong>
+              <small>{mp.description}{mp.deleteSource ? ` ${T('proposal_move_and_delete')}` : ''}</small>
+            </div>
+          </div>
+          {#if acceptedSet.has(idx)}
+            <span class="accepted-badge">{T('proposal_badge_consolidated')}</span>
+          {:else if onacceptmove}
+            <Button size="sm" variant="primary" onclick={() => onacceptmove(idx, mp)}>{T('proposal_consolidate')}</Button>
           {/if}
         </div>
       {/each}

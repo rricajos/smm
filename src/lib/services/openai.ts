@@ -404,6 +404,15 @@ export interface FolderProposal {
   description: string;
 }
 
+export interface MoveProposal {
+  sourceFolderId: string;
+  sourceFolderPath: string;
+  destFolderId: string;
+  destFolderPath: string;
+  deleteSource: boolean;
+  description: string;
+}
+
 export interface RuleProposal {
   rule: Rule;
   description: string;
@@ -412,6 +421,7 @@ export interface RuleProposal {
 export interface AssistantResponse {
   message: string;
   folderProposals: FolderProposal[];
+  moveProposals: MoveProposal[];
   ruleProposals: RuleProposal[];
 }
 
@@ -446,6 +456,16 @@ RESPONDE SIEMPRE EN JSON con este schema:
       "description": "string - para qué sirve esta carpeta"
     }
   ],
+  "move_proposals": [
+    {
+      "sourceFolderId": "string - ID exacto de la carpeta origen (de la lista de CARPETAS EXISTENTES)",
+      "sourceFolderPath": "string - ruta legible de la carpeta origen",
+      "destFolderId": "string - ID exacto de la carpeta destino (de la lista de CARPETAS EXISTENTES)",
+      "destFolderPath": "string - ruta legible de la carpeta destino",
+      "deleteSource": true | false,
+      "description": "string - por qué consolidar estas carpetas"
+    }
+  ],
   "rule_proposals": [
     {
       "name": "string - nombre de la regla",
@@ -475,6 +495,15 @@ RESPONDE SIEMPRE EN JSON con este schema:
 IMPORTANTE sobre folder_proposals:
 - Si propones crear carpetas, en las reglas puedes referenciar esas carpetas nuevas usando un ID temporal con formato "NEW:NombreCarpeta" en el folderId
 - El sistema reemplazará ese ID por el real cuando el usuario acepte la propuesta
+
+CONSOLIDACIÓN DE CARPETAS (move_proposals):
+- Si detectas carpetas DUPLICADAS o muy similares (mismo nombre o propósito en distintas ubicaciones), propón CONSOLIDAR usando move_proposals en vez de crear carpetas nuevas
+- move_proposals mueve TODOS los correos de sourceFolderId a destFolderId
+- Si deleteSource es true, la carpeta origen se elimina después de mover los correos
+- Para move_proposals usa SOLO IDs de carpetas que existan en la lista de CARPETAS EXISTENTES — NUNCA inventes IDs
+- NUNCA propongas crear una carpeta nueva si ya existe una con el mismo propósito — propón consolidar las existentes
+- Prioriza SIEMPRE consolidar carpetas duplicadas antes que crear nuevas
+- Si hay 3 carpetas "Notificaciones" en distintos sitios, propón mover todo a una sola y eliminar las otras 2
 
 ESTADO ACTUAL DEL BUZÓN:
 
@@ -571,6 +600,14 @@ export async function chatWithAssistant(
       parentFolderId: fp.parentFolderId || '',
       parentPath: fp.parentPath || '',
       description: fp.description || '',
+    })),
+    moveProposals: (parsed.move_proposals || []).map((mp: any): MoveProposal => ({
+      sourceFolderId: mp.sourceFolderId || '',
+      sourceFolderPath: mp.sourceFolderPath || '',
+      destFolderId: mp.destFolderId || '',
+      destFolderPath: mp.destFolderPath || '',
+      deleteSource: mp.deleteSource ?? true,
+      description: mp.description || '',
     })),
     ruleProposals: (parsed.rule_proposals || []).map((rp: any): RuleProposal => ({
       rule: {

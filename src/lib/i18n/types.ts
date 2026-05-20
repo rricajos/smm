@@ -251,6 +251,14 @@ export interface Translations {
   proposal_badge_saved: string;
   proposal_create: string;
   proposal_in_path: string;
+  proposal_moves_title: string;
+  proposal_consolidate_all: string;
+  proposal_consolidate: string;
+  proposal_badge_consolidated: string;
+  proposal_move_and_delete: string;
+  ai_success_move_done: string;
+  ai_success_move_undo: string;
+  ai_error_move: string;
 
   // Template variables
   tpl_var_sender_name: string;

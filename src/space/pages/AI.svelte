@@ -17,6 +17,7 @@
     EmailSummary,
     ChatMessage,
     FolderProposal,
+    MoveProposal,
     RuleProposal,
   } from '../../lib/services/openai';
   import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS } from '../../lib/utils/constants';
@@ -269,6 +270,7 @@
         response.message,
         response.folderProposals,
         response.ruleProposals,
+        response.moveProposals,
       );
       scrollToBottom();
     } catch (err: any) {
@@ -385,6 +387,56 @@
       const msg = chatMessages[msgIdx];
       if (!msg.acceptedRules?.includes(i)) acceptRuleProposal(msgIdx, i, p);
     });
+  }
+
+  async function acceptMoveProposal(msgIdx: number, proposalIdx: number, proposal: MoveProposal) {
+    try {
+      const result = await browser.runtime.sendMessage({
+        type: 'MOVE_FOLDER_CONTENTS',
+        sourceFolderId: proposal.sourceFolderId,
+        destFolderId: proposal.destFolderId,
+        deleteSource: proposal.deleteSource,
+      });
+
+      if (result.success) {
+        chatStore.markMoveAccepted(msgIdx, proposalIdx);
+        await loadMetadata();
+        const movedCount = result.movedCount || 0;
+        const srcName = proposal.sourceFolderPath.split('/').pop() || proposal.sourceFolderPath;
+        const destName = proposal.destFolderPath.split('/').pop() || proposal.destFolderPath;
+        showUndoToast(
+          T('ai_success_move_done', { count: movedCount, source: srcName, dest: destName }),
+          async () => {
+            // Undo: move emails back (dest → source)
+            // If source was deleted, we can't easily undo — just unmark
+            if (!proposal.deleteSource) {
+              await browser.runtime.sendMessage({
+                type: 'MOVE_FOLDER_CONTENTS',
+                sourceFolderId: proposal.destFolderId,
+                destFolderId: proposal.sourceFolderId,
+                deleteSource: false,
+              });
+            }
+            chatStore.unmarkMoveAccepted(msgIdx, proposalIdx);
+            await loadMetadata();
+            showSuccess(T('ai_success_move_undo'));
+          },
+        );
+      } else {
+        error = T('ai_error_move', { msg: result.error || '' });
+      }
+    } catch (err: any) {
+      error = T('ai_error_move', { msg: err.message });
+    }
+  }
+
+  async function acceptAllMoves(msgIdx: number, proposals: MoveProposal[]) {
+    for (let i = 0; i < proposals.length; i++) {
+      const msg = chatMessages[msgIdx];
+      if (!msg.acceptedMoves?.includes(i)) {
+        await acceptMoveProposal(msgIdx, i, proposals[i]);
+      }
+    }
   }
 
   function clearChat() {
@@ -695,6 +747,16 @@
                     acceptedSet={new Set(msg.acceptedFolders || [])}
                     onacceptfolder={(idx, fp) => acceptFolderProposal(msgIdx, idx, fp)}
                     onacceptall={() => acceptAllFolders(msgIdx, msg.folderProposals || [])}
+                  />
+                {/if}
+
+                {#if msg.moveProposals && msg.moveProposals.length > 0}
+                  <ProposalBlock
+                    type="moves"
+                    moveProposals={msg.moveProposals}
+                    acceptedSet={new Set(msg.acceptedMoves || [])}
+                    onacceptmove={(idx, mp) => acceptMoveProposal(msgIdx, idx, mp)}
+                    onacceptall={() => acceptAllMoves(msgIdx, msg.moveProposals || [])}
                   />
                 {/if}
 

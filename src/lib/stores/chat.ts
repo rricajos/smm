@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import type { FolderProposal, RuleProposal, ChatMessage } from '../services/openai';
+import type { FolderProposal, MoveProposal, RuleProposal, ChatMessage } from '../services/openai';
 import { STORAGE_KEYS } from '../utils/constants';
 
 declare const browser: any;
@@ -8,8 +8,10 @@ export interface StoredDisplayMessage {
   role: 'user' | 'assistant';
   content: string;
   folderProposals?: FolderProposal[];
+  moveProposals?: MoveProposal[];
   ruleProposals?: RuleProposal[];
   acceptedFolders?: number[];
+  acceptedMoves?: number[];
   acceptedRules?: number[];
 }
 
@@ -161,6 +163,7 @@ function createChatStore() {
       content: string,
       folderProposals?: FolderProposal[],
       ruleProposals?: RuleProposal[],
+      moveProposals?: MoveProposal[],
     ) {
       update(state => {
         return updateActive(state, conv => {
@@ -168,8 +171,10 @@ function createChatStore() {
             role: 'assistant' as const,
             content,
             folderProposals,
+            moveProposals,
             ruleProposals,
             acceptedFolders: [],
+            acceptedMoves: [],
             acceptedRules: [],
           }];
           conv.apiHistory = [...conv.apiHistory, { role: 'assistant' as const, content }];
@@ -195,6 +200,30 @@ function createChatStore() {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedRules && !msg.acceptedRules.includes(proposalIdx)) {
             msg.acceptedRules = [...msg.acceptedRules, proposalIdx];
+            conv.displayMessages = [...conv.displayMessages];
+          }
+        });
+      });
+    },
+
+    markMoveAccepted(msgIdx: number, proposalIdx: number) {
+      update(state => {
+        return updateActive(state, conv => {
+          const msg = conv.displayMessages[msgIdx];
+          if (msg && msg.acceptedMoves && !msg.acceptedMoves.includes(proposalIdx)) {
+            msg.acceptedMoves = [...msg.acceptedMoves, proposalIdx];
+            conv.displayMessages = [...conv.displayMessages];
+          }
+        });
+      });
+    },
+
+    unmarkMoveAccepted(msgIdx: number, proposalIdx: number) {
+      update(state => {
+        return updateActive(state, conv => {
+          const msg = conv.displayMessages[msgIdx];
+          if (msg && msg.acceptedMoves) {
+            msg.acceptedMoves = msg.acceptedMoves.filter(i => i !== proposalIdx);
             conv.displayMessages = [...conv.displayMessages];
           }
         });

@@ -530,6 +530,49 @@ messenger.runtime.onMessage.addListener(
         }
       }
 
+      case 'MOVE_FOLDER_CONTENTS': {
+        try {
+          const { sourceFolderId, destFolderId, deleteSource } = message;
+          if (!sourceFolderId || !destFolderId) {
+            return { success: false, error: 'sourceFolderId and destFolderId required' };
+          }
+
+          // Collect all message IDs from source folder
+          const msgIds: number[] = [];
+          let page = await messenger.messages.list(sourceFolderId);
+          while (page) {
+            for (const msg of page.messages) {
+              msgIds.push(msg.id);
+            }
+            if (page.id) {
+              page = await messenger.messages.continueList(page.id);
+            } else {
+              break;
+            }
+          }
+
+          // Move all messages to destination
+          if (msgIds.length > 0) {
+            await messenger.messages.move(msgIds, destFolderId);
+          }
+
+          // Optionally delete the now-empty source folder
+          if (deleteSource) {
+            try {
+              await messenger.folders.delete(sourceFolderId);
+            } catch (delErr: any) {
+              // Folder might not be empty if move was partial — log but don't fail
+              console.error('[SMM] Could not delete source folder:', delErr);
+            }
+          }
+
+          return { success: true, movedCount: msgIds.length };
+        } catch (err: any) {
+          console.error('[SMM] Error moving folder contents:', err);
+          return { success: false, error: err?.message || 'Error moving emails' };
+        }
+      }
+
       default:
         return { error: 'Unknown message type' };
     }
