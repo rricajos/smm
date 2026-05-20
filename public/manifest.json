@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Smart Mail Manager",
-  "version": "1.5.49",
+  "version": "1.5.50",
   "description": "Clasificación automática de correos y respuestas automáticas para Thunderbird",
   "author": "Ricard Penin Honrubia <ricard.penin.honrubia@gmail.com>",
   "browser_specific_settings": {
@@ -11,9 +11,10 @@
     }
   },
   "icons": {
-    "16": "icons/icon-16.png",
-    "32": "icons/icon-32.png",
-    "64": "icons/icon-64.png"
+    "16": "icons/icon-16.svg",
+    "32": "icons/icon-32.svg",
+    "48": "icons/icon-64.svg",
+    "64": "icons/icon-64.svg"
   },
   "background": {
     "page": "background.html"
@@ -21,8 +22,8 @@
   "browser_action": {
     "default_title": "Smart Mail Manager",
     "default_icon": {
-      "16": "icons/icon-16.png",
-      "32": "icons/icon-32.png"
+      "16": "icons/icon-16.svg",
+      "32": "icons/icon-32.svg"
     },
     "default_popup": "popup.html"
   },

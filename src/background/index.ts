@@ -14,7 +14,10 @@ console.log('[SMM] Smart Mail Manager background script loaded');
 messenger.spacesToolbar.addButton('smartMailManager', {
   title: 'Smart Mail Manager',
   url: '/space.html',
-  defaultIcons: '/icons/icon-32.svg',
+  defaultIcons: {
+    16: '/icons/icon-16.svg',
+    32: '/icons/icon-32.svg',
+  },
 });
 
 // Startup initialization: cleanup old logs + ensure custom tag exists
