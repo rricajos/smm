@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
   "name": "Smart Mail Manager",
-  "version": "1.5.44",
+  "version": "1.5.48",
   "description": "Clasificación automática de correos y respuestas automáticas para Thunderbird",
-  "author": "Ricard Penin",
+  "author": "Ricard Penin Honrubia <ricard.penin.honrubia@gmail.com>",
   "browser_specific_settings": {
     "gecko": {
       "id": "smart-mail-manager@conexiatec.com",
@@ -11,9 +11,9 @@
     }
   },
   "icons": {
-    "16": "icons/icon-16.svg",
-    "32": "icons/icon-32.svg",
-    "64": "icons/icon-64.svg"
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "64": "icons/icon-64.png"
   },
   "background": {
     "page": "background.html"
@@ -21,8 +21,8 @@
   "browser_action": {
     "default_title": "Smart Mail Manager",
     "default_icon": {
-      "16": "icons/icon-16.svg",
-      "32": "icons/icon-32.svg"
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
     },
     "default_popup": "popup.html"
   },
@@ -42,6 +42,11 @@
     "compose.save",
     "storage",
     "notifications",
-    "https://openrouter.ai/*"
+    "https://openrouter.ai/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "http://*/*",
+    "https://*/*"
   ]
 }

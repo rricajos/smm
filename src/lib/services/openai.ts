@@ -127,44 +127,157 @@ REGLAS IMPORTANTES:
 - confidence: 0.9+ si es un patrón muy claro, 0.5-0.8 si es probable, <0.5 si es incierto`;
 }
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+import type { AiProvider } from '../../types/settings';
+import { AI_PROVIDERS } from '../utils/constants';
 
-async function callOpenAI(
+interface CallOptions {
+  apiKey: string;
+  model: string;
+  provider: AiProvider;
+  customBaseUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+function getBaseUrl(provider: AiProvider, customBaseUrl?: string): string {
+  if (provider === 'custom' && customBaseUrl) return customBaseUrl;
+  return AI_PROVIDERS[provider].baseUrl;
+}
+
+async function callAnthropicAPI(
+  baseUrl: string,
   apiKey: string,
   model: string,
   systemPrompt: string,
-  userPrompt: string,
+  messages: Array<{ role: string; content: string }>,
+  temperature: number,
+  maxTokens: number,
 ): Promise<any> {
-  const response = await fetch(OPENROUTER_URL, {
+  const response = await fetch(baseUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://conexiatec.com',
-      'X-Title': 'Smart Mail Manager',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.3,
-      max_tokens: 2000,
+      system: systemPrompt,
+      messages: messages.filter(m => m.role !== 'system'),
+      temperature,
+      max_tokens: maxTokens,
     }),
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `OpenRouter API error: ${response.status}`);
+    throw new Error(err?.error?.message || `Anthropic API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.content?.[0]?.text;
+  if (!content) throw new Error('Respuesta vacía de Anthropic');
+  return JSON.parse(content);
+}
+
+async function callOpenAICompatibleAPI(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  provider: AiProvider,
+  messages: Array<{ role: string; content: string }>,
+  temperature: number,
+  maxTokens: number,
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${apiKey}`,
+  };
+  if (provider === 'openrouter') {
+    headers['HTTP-Referer'] = 'https://conexiatec.com';
+    headers['X-Title'] = 'Smart Mail Manager';
+  }
+
+  const body: any = {
+    model,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+  };
+  // Google Gemini OpenAI-compatible endpoint doesn't support response_format
+  if (provider !== 'google') {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const providerName = AI_PROVIDERS[provider]?.name || provider;
+    throw new Error(err?.error?.message || `${providerName} API error: ${response.status}`);
   }
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Respuesta vacia de OpenRouter');
-
+  if (!content) throw new Error('Respuesta vacía del proveedor');
   return JSON.parse(content);
+}
+
+async function callAI(
+  opts: CallOptions,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<any> {
+  const baseUrl = getBaseUrl(opts.provider, opts.customBaseUrl);
+  const temperature = opts.temperature ?? 0.3;
+  const maxTokens = opts.maxTokens ?? 2000;
+  const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
+
+  if (format === 'anthropic') {
+    return callAnthropicAPI(
+      baseUrl, opts.apiKey, opts.model, systemPrompt,
+      [{ role: 'user', content: userPrompt }],
+      temperature, maxTokens,
+    );
+  }
+
+  return callOpenAICompatibleAPI(
+    baseUrl, opts.apiKey, opts.model, opts.provider,
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature, maxTokens,
+  );
+}
+
+async function callAIChat(
+  opts: CallOptions,
+  systemPrompt: string,
+  chatMessages: Array<{ role: string; content: string }>,
+): Promise<any> {
+  const baseUrl = getBaseUrl(opts.provider, opts.customBaseUrl);
+  const temperature = opts.temperature ?? 0.5;
+  const maxTokens = opts.maxTokens ?? 4000;
+  const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
+
+  if (format === 'anthropic') {
+    return callAnthropicAPI(
+      baseUrl, opts.apiKey, opts.model, systemPrompt,
+      chatMessages, temperature, maxTokens,
+    );
+  }
+
+  return callOpenAICompatibleAPI(
+    baseUrl, opts.apiKey, opts.model, opts.provider,
+    [{ role: 'system', content: systemPrompt }, ...chatMessages],
+    temperature, maxTokens,
+  );
 }
 
 function parseRuleSuggestions(data: any): RuleSuggestion[] {
@@ -207,6 +320,8 @@ export async function generateRulesFromEmails(
   existingRules: Rule[],
   apiKey: string,
   model: string,
+  provider: AiProvider = 'openrouter',
+  customBaseUrl?: string,
 ): Promise<RuleSuggestion[]> {
   const systemPrompt = buildSystemPrompt(folders, tags, existingRules);
 
@@ -221,7 +336,7 @@ ${emailList}
 
 Genera entre 1 y 5 reglas útiles. Prioriza patrones claros y frecuentes. No repitas reglas que ya existan.`;
 
-  const data = await callOpenAI(apiKey, model, systemPrompt, userPrompt);
+  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt);
   return parseRuleSuggestions(data);
 }
 
@@ -232,6 +347,8 @@ export async function generateRuleFromDescription(
   existingRules: Rule[],
   apiKey: string,
   model: string,
+  provider: AiProvider = 'openrouter',
+  customBaseUrl?: string,
 ): Promise<RuleSuggestion[]> {
   const systemPrompt = buildSystemPrompt(folders, tags, existingRules);
 
@@ -239,7 +356,7 @@ export async function generateRuleFromDescription(
 
 Genera 1 o 2 reglas que cumplan exactamente lo que el usuario pide. Si la descripción es ambigua, genera la interpretación más probable. Ten en cuenta las reglas existentes para no duplicar.`;
 
-  const data = await callOpenAI(apiKey, model, systemPrompt, userPrompt);
+  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt);
   return parseRuleSuggestions(data);
 }
 
@@ -405,41 +522,16 @@ export async function chatWithAssistant(
   emails: EmailSummary[],
   apiKey: string,
   model: string,
+  provider: AiProvider = 'openrouter',
+  customBaseUrl?: string,
 ): Promise<AssistantResponse> {
   const systemPrompt = buildConsultantSystemPrompt(folders, tags, existingRules, emails);
+  const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
-  const apiMessages = [
-    { role: 'system', content: systemPrompt },
-    ...messages.map(m => ({ role: m.role, content: m.content })),
-  ];
-
-  const response = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://conexiatec.com',
-      'X-Title': 'Smart Mail Manager',
-    },
-    body: JSON.stringify({
-      model,
-      messages: apiMessages,
-      response_format: { type: 'json_object' },
-      temperature: 0.5,
-      max_tokens: 4000,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `OpenRouter API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Respuesta vacia de OpenRouter');
-
-  const parsed = JSON.parse(content);
+  const parsed = await callAIChat(
+    { apiKey, model, provider, customBaseUrl, temperature: 0.5, maxTokens: 4000 },
+    systemPrompt, chatMessages,
+  );
   const now = Date.now();
 
   return {
@@ -479,15 +571,49 @@ export async function chatWithAssistant(
   };
 }
 
-export async function testConnection(apiKey: string, model: string): Promise<boolean> {
-  const response = await fetch(OPENROUTER_URL, {
+export async function testConnection(
+  apiKey: string,
+  model: string,
+  provider: AiProvider = 'openrouter',
+  customBaseUrl?: string,
+): Promise<boolean> {
+  const baseUrl = getBaseUrl(provider, customBaseUrl);
+  const format = AI_PROVIDERS[provider]?.format || 'openai';
+
+  if (format === 'anthropic') {
+    const response = await fetch(baseUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'Responde solo "ok"' }],
+        max_tokens: 5,
+      }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Error: ${response.status}`);
+    }
+    return true;
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${apiKey}`,
+  };
+  if (provider === 'openrouter') {
+    headers['HTTP-Referer'] = 'https://conexiatec.com';
+    headers['X-Title'] = 'Smart Mail Manager';
+  }
+
+  const response = await fetch(baseUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://conexiatec.com',
-      'X-Title': 'Smart Mail Manager',
-    },
+    headers,
     body: JSON.stringify({
       model,
       messages: [{ role: 'user', content: 'Responde solo "ok"' }],

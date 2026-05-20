@@ -62,7 +62,7 @@
     }
     apiHealth = 'checking';
     try {
-      const ok = await testConnection(currentSettings.openaiApiKey, currentSettings.openaiModel || 'openai/gpt-4o-mini');
+      const ok = await testConnection(currentSettings.openaiApiKey, currentSettings.openaiModel || 'openai/gpt-4o-mini', currentSettings.aiProvider || 'openrouter', currentSettings.customBaseUrl);
       apiHealth = ok ? 'ok' : 'error';
     } catch {
       apiHealth = 'error';
@@ -251,6 +251,8 @@
         currentConversation.apiHistory, folderInfos, tagInfos, currentRules, emails,
         currentSettings.openaiApiKey,
         currentSettings.openaiModel || 'openai/gpt-4o-mini',
+        currentSettings.aiProvider || 'openrouter',
+        currentSettings.customBaseUrl,
       );
 
       chatStore.addAssistantMessage(
@@ -416,7 +418,7 @@
     try {
       const emails = await browser.runtime.sendMessage({ type: 'GET_RECENT_EMAILS' });
       if (!emails || emails.length === 0) { error = T('ai_error_no_emails'); loading = false; return; }
-      suggestions = await generateRulesFromEmails(emails, folderInfos, tagInfos, currentRules, currentSettings.openaiApiKey, currentSettings.openaiModel || 'openai/gpt-4o-mini');
+      suggestions = await generateRulesFromEmails(emails, folderInfos, tagInfos, currentRules, currentSettings.openaiApiKey, currentSettings.openaiModel || 'openai/gpt-4o-mini', currentSettings.aiProvider || 'openrouter', currentSettings.customBaseUrl);
       if (suggestions.length === 0) error = T('ai_error_no_patterns');
     } catch (err: any) { error = T('ai_error_generic', { msg: err.message || T('ai_error_openrouter') }); }
     finally { loading = false; }
@@ -459,6 +461,8 @@
             batch, folderInfos, tagInfos, currentRules,
             currentSettings.openaiApiKey,
             currentSettings.openaiModel || 'openai/gpt-4o-mini',
+            currentSettings.aiProvider || 'openrouter',
+            currentSettings.customBaseUrl,
           );
           // Deduplicate: skip suggestions with same name as existing ones
           for (const s of batchSuggestions) {
@@ -527,7 +531,7 @@
     loading = true;
     suggestions = [];
     try {
-      suggestions = await generateRuleFromDescription(description.trim(), folderInfos, tagInfos, currentRules, currentSettings.openaiApiKey, currentSettings.openaiModel || 'openai/gpt-4o-mini');
+      suggestions = await generateRuleFromDescription(description.trim(), folderInfos, tagInfos, currentRules, currentSettings.openaiApiKey, currentSettings.openaiModel || 'openai/gpt-4o-mini', currentSettings.aiProvider || 'openrouter', currentSettings.customBaseUrl);
       if (suggestions.length === 0) error = T('ai_error_no_rule');
     } catch (err: any) { error = T('ai_error_generic', { msg: err.message || T('ai_error_openrouter') }); }
     finally { loading = false; }

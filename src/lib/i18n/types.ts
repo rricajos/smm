@@ -394,6 +394,10 @@ export interface Translations {
   options_notify_auto_response: string;
   options_openrouter: string;
   options_openrouter_desc: string;
+  options_ai_provider: string;
+  options_provider: string;
+  options_custom_url: string;
+  options_enter_url_first: string;
   options_api_key: string;
   options_model: string;
   options_test_connection: string;

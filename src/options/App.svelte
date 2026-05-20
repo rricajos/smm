@@ -3,10 +3,11 @@
   import { settings } from '../lib/stores/settings';
   import { rules } from '../lib/stores/rules';
   import { templates } from '../lib/stores/templates';
-  import { OPENAI_MODELS } from '../lib/utils/constants';
+  import type { AiProvider } from '../types/settings';
+  import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS, AI_PROVIDERS } from '../lib/utils/constants';
   import { t, locale, setLocale, type SupportedLocale } from '../lib/i18n';
   import type { Translations } from '../lib/i18n/types';
-  const providers = [...new Set(OPENAI_MODELS.map(m => m.provider))];
+  const openrouterProviders = [...new Set(OPENAI_MODELS.map(m => m.provider))];
   import { testConnection } from '../lib/services/openai';
   import Button from '../lib/components/Button.svelte';
   import Toast from '../lib/components/Toast.svelte';
@@ -21,9 +22,33 @@
     logRetentionDays: 30,
     notifyOnClassification: true,
     notifyOnAutoResponse: true,
+    aiProvider: 'openrouter',
     openaiApiKey: '',
     openaiModel: 'openai/gpt-4o-mini',
+    customBaseUrl: '',
   });
+
+  function getModelsForProvider(provider: AiProvider) {
+    switch (provider) {
+      case 'openai': return OPENAI_DIRECT_MODELS;
+      case 'anthropic': return ANTHROPIC_DIRECT_MODELS;
+      case 'google': return GOOGLE_DIRECT_MODELS;
+      default: return [];
+    }
+  }
+
+  function handleProviderChange(newProvider: AiProvider) {
+    currentSettings.aiProvider = newProvider;
+    // Reset model to first available for new provider
+    if (newProvider === 'openrouter') {
+      currentSettings.openaiModel = 'openai/gpt-4o-mini';
+    } else if (newProvider === 'custom') {
+      currentSettings.openaiModel = '';
+    } else {
+      const models = getModelsForProvider(newProvider);
+      currentSettings.openaiModel = models[0]?.id || '';
+    }
+  }
 
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
   let currentLocale = $state<SupportedLocale>('es');
@@ -76,9 +101,18 @@
       showNotification(T('options_enter_key_first'), 'error');
       return;
     }
+    if (currentSettings.aiProvider === 'custom' && !currentSettings.customBaseUrl) {
+      showNotification(T('options_enter_url_first'), 'error');
+      return;
+    }
     testingConnection = true;
     try {
-      await testConnection(currentSettings.openaiApiKey, currentSettings.openaiModel);
+      await testConnection(
+        currentSettings.openaiApiKey,
+        currentSettings.openaiModel,
+        currentSettings.aiProvider,
+        currentSettings.customBaseUrl,
+      );
       showNotification(T('options_connection_ok'));
     } catch (err: any) {
       showNotification(T('options_connection_error', { msg: err.message }), 'error');
@@ -170,8 +204,32 @@
   </section>
 
   <section>
-    <h2>{T('options_openrouter')}</h2>
-    <p class="info">{T('options_openrouter_desc')}</p>
+    <h2>{T('options_ai_provider')}</h2>
+    <div class="field">
+      <label for="ai-provider">{T('options_provider')}</label>
+      <select id="ai-provider" value={currentSettings.aiProvider} onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value as AiProvider)}>
+        <option value="openrouter">OpenRouter (todos los modelos)</option>
+        <option value="openai">OpenAI (directo)</option>
+        <option value="anthropic">Anthropic (directo)</option>
+        <option value="google">Google Gemini (directo)</option>
+        <option value="custom">Compatible OpenAI (custom)</option>
+      </select>
+    </div>
+    <p class="info">{AI_PROVIDERS[currentSettings.aiProvider]?.keyHint || ''}</p>
+
+    {#if currentSettings.aiProvider === 'custom'}
+      <div class="field">
+        <label for="custom-url">{T('options_custom_url')}</label>
+        <input
+          id="custom-url"
+          type="text"
+          bind:value={currentSettings.customBaseUrl}
+          placeholder="http://localhost:11434/v1/chat/completions"
+          class="api-key-input"
+        />
+      </div>
+    {/if}
+
     <div class="field">
       <label for="api-key">{T('options_api_key')}</label>
       <div class="api-key-row">
@@ -179,7 +237,7 @@
           id="api-key"
           type={showApiKey ? 'text' : 'password'}
           bind:value={currentSettings.openaiApiKey}
-          placeholder="sk-or-..."
+          placeholder={AI_PROVIDERS[currentSettings.aiProvider]?.keyPlaceholder || 'api-key'}
           class="api-key-input"
         />
         <button class="toggle-btn" onclick={() => (showApiKey = !showApiKey)}>
@@ -187,18 +245,36 @@
         </button>
       </div>
     </div>
+
     <div class="field">
       <label for="ai-model">{T('options_model')}</label>
-      <select id="ai-model" bind:value={currentSettings.openaiModel}>
-        {#each providers as provider}
-          <optgroup label={provider}>
-            {#each OPENAI_MODELS.filter(m => m.provider === provider) as model}
-              <option value={model.id}>{model.label}</option>
-            {/each}
-          </optgroup>
-        {/each}
-      </select>
+      {#if currentSettings.aiProvider === 'openrouter'}
+        <select id="ai-model" bind:value={currentSettings.openaiModel}>
+          {#each openrouterProviders as provider}
+            <optgroup label={provider}>
+              {#each OPENAI_MODELS.filter(m => m.provider === provider) as model}
+                <option value={model.id}>{model.label}</option>
+              {/each}
+            </optgroup>
+          {/each}
+        </select>
+      {:else if currentSettings.aiProvider === 'custom'}
+        <input
+          id="ai-model"
+          type="text"
+          bind:value={currentSettings.openaiModel}
+          placeholder="llama3, mistral, etc."
+          class="api-key-input"
+        />
+      {:else}
+        <select id="ai-model" bind:value={currentSettings.openaiModel}>
+          {#each getModelsForProvider(currentSettings.aiProvider) as model}
+            <option value={model.id}>{model.label}</option>
+          {/each}
+        </select>
+      {/if}
     </div>
+
     <div class="field">
       <Button onclick={handleTestConnection} disabled={testingConnection || !currentSettings.openaiApiKey}>
         {testingConnection ? T('options_testing') : T('options_test_connection')}

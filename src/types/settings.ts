@@ -1,3 +1,5 @@
+export type AiProvider = 'openrouter' | 'openai' | 'anthropic' | 'google' | 'custom';
+
 export interface Settings {
   classificationEnabled: boolean;
   autoResponseEnabled: boolean;
@@ -6,8 +8,10 @@ export interface Settings {
   logRetentionDays: number;
   notifyOnClassification: boolean;
   notifyOnAutoResponse: boolean;
+  aiProvider: AiProvider;
   openaiApiKey: string;
   openaiModel: string;
+  customBaseUrl: string;
 }
 
 export interface ActivityEntry {
