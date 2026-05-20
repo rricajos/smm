@@ -414,6 +414,11 @@ export interface Translations {
   options_imported: string;
   options_import_error: string;
   options_language: string;
+  options_provider_openrouter: string;
+  options_provider_openai: string;
+  options_provider_anthropic: string;
+  options_provider_google: string;
+  options_provider_custom: string;
 
   // Notifications (background)
   notif_classified: string;

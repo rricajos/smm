@@ -208,11 +208,11 @@
     <div class="field">
       <label for="ai-provider">{T('options_provider')}</label>
       <select id="ai-provider" value={currentSettings.aiProvider} onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value as AiProvider)}>
-        <option value="openrouter">OpenRouter (todos los modelos)</option>
-        <option value="openai">OpenAI (directo)</option>
-        <option value="anthropic">Anthropic (directo)</option>
-        <option value="google">Google Gemini (directo)</option>
-        <option value="custom">Compatible OpenAI (custom)</option>
+        <option value="openrouter">{T('options_provider_openrouter')}</option>
+        <option value="openai">{T('options_provider_openai')}</option>
+        <option value="anthropic">{T('options_provider_anthropic')}</option>
+        <option value="google">{T('options_provider_google')}</option>
+        <option value="custom">{T('options_provider_custom')}</option>
       </select>
     </div>
     <p class="info">{AI_PROVIDERS[currentSettings.aiProvider]?.keyHint || ''}</p>
@@ -293,7 +293,7 @@
         value={currentLocale}
         onchange={(e) => setLocale((e.target as HTMLSelectElement).value as SupportedLocale)}
       >
-        <option value="es">Espanol</option>
+        <option value="es">Español</option>
         <option value="en">English</option>
       </select>
     </div>

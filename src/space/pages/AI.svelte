@@ -19,10 +19,20 @@
     FolderProposal,
     RuleProposal,
   } from '../../lib/services/openai';
-  import { OPENAI_MODELS } from '../../lib/utils/constants';
+  import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS } from '../../lib/utils/constants';
+  import type { AiProvider } from '../../types/settings';
   import { t, locale } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
-  const providers = [...new Set(OPENAI_MODELS.map(m => m.provider))];
+  const openrouterProviders = [...new Set(OPENAI_MODELS.map(m => m.provider))];
+
+  function getDirectModels(provider: AiProvider) {
+    switch (provider) {
+      case 'openai': return OPENAI_DIRECT_MODELS;
+      case 'anthropic': return ANTHROPIC_DIRECT_MODELS;
+      case 'google': return GOOGLE_DIRECT_MODELS;
+      default: return [];
+    }
+  }
   import { renderMarkdown } from '../../lib/utils/markdown';
   import { chatStore, activeConversation, allConversations, type StoredDisplayMessage, type ChatConversation } from '../../lib/stores/chat';
 
@@ -569,22 +579,49 @@
     <h3>{T('ai_title')}</h3>
     <div class="model-selector">
       <label for="ai-model-select">{T('ai_model_label')}</label>
-      <select
-        id="ai-model-select"
-        value={currentSettings.openaiModel || 'openai/gpt-4o-mini'}
-        onchange={(e) => {
-          const val = (e.target as HTMLSelectElement).value;
-          settings.update({ openaiModel: val });
-        }}
-      >
-        {#each providers as provider}
-          <optgroup label={provider}>
-            {#each OPENAI_MODELS.filter(m => m.provider === provider) as model}
-              <option value={model.id}>{model.label}</option>
-            {/each}
-          </optgroup>
-        {/each}
-      </select>
+      {#if currentSettings.aiProvider === 'openrouter' || !currentSettings.aiProvider}
+        <select
+          id="ai-model-select"
+          value={currentSettings.openaiModel || 'openai/gpt-4o-mini'}
+          onchange={(e) => {
+            const val = (e.target as HTMLSelectElement).value;
+            settings.update({ openaiModel: val });
+          }}
+        >
+          {#each openrouterProviders as provider}
+            <optgroup label={provider}>
+              {#each OPENAI_MODELS.filter(m => m.provider === provider) as model}
+                <option value={model.id}>{model.label}</option>
+              {/each}
+            </optgroup>
+          {/each}
+        </select>
+      {:else if currentSettings.aiProvider === 'custom'}
+        <input
+          id="ai-model-select"
+          type="text"
+          value={currentSettings.openaiModel || ''}
+          onchange={(e) => {
+            const val = (e.target as HTMLInputElement).value;
+            settings.update({ openaiModel: val });
+          }}
+          placeholder="llama3, mistral, etc."
+          class="model-input"
+        />
+      {:else}
+        <select
+          id="ai-model-select"
+          value={currentSettings.openaiModel || ''}
+          onchange={(e) => {
+            const val = (e.target as HTMLSelectElement).value;
+            settings.update({ openaiModel: val });
+          }}
+        >
+          {#each getDirectModels(currentSettings.aiProvider) as model}
+            <option value={model.id}>{model.label}</option>
+          {/each}
+        </select>
+      {/if}
       <button
         class="health-dot health-{apiHealth}"
         onclick={checkApiHealth}
@@ -850,10 +887,11 @@
     display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary, #666);
   }
   .model-selector label { white-space: nowrap; }
-  .model-selector select {
+  .model-selector select, .model-selector .model-input {
     padding: 4px 8px; border: 1px solid var(--border-color, #ccc); border-radius: 4px;
     font-size: 12px; font-family: inherit; background: var(--bg-secondary, #f0f0f4); color: inherit;
   }
+  .model-input { width: 160px; }
   .health-dot {
     width: 10px; height: 10px; border-radius: 50%; border: none; cursor: pointer;
     flex-shrink: 0; padding: 0;

@@ -35,13 +35,10 @@ messenger.spacesToolbar.addButton('smartMailManager', {
   // Ensure the "Analyzed" tag exists so it shows up in Thunderbird settings
   try {
     const existingTags = await messenger.messages.tags.list();
-    console.log('[SMM] Existing tags:', JSON.stringify(existingTags.map((t: any) => t.key)));
     const found = existingTags.find((t: any) => t.key === SMM_ANALYZED_TAG);
     if (!found) {
       await messenger.messages.tags.create(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
-      console.log('[SMM] Created analyzed tag successfully');
-    } else {
-      console.log('[SMM] Analyzed tag already exists');
+      console.log('[SMM] Created analyzed tag');
     }
   } catch (err) {
     console.error('[SMM] Error creating analyzed tag:', err);

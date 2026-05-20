@@ -416,6 +416,11 @@ export const en: Translations = {
   options_imported: 'Data imported successfully',
   options_import_error: 'Error importing data',
   options_language: 'Language',
+  options_provider_openrouter: 'OpenRouter (all models)',
+  options_provider_openai: 'OpenAI (direct)',
+  options_provider_anthropic: 'Anthropic (direct)',
+  options_provider_google: 'Google Gemini (direct)',
+  options_provider_custom: 'OpenAI-compatible (custom)',
 
   // Notifications (background)
   notif_classified: 'Classified: {subject} ({n} rule{s})',
