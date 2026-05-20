@@ -31,11 +31,11 @@ messenger.spacesToolbar.addButton('smartMailManager', {
 
   // Ensure the "Analyzed" tag exists so it shows up in Thunderbird settings
   try {
-    const existingTags = await messenger.messages.listTags();
+    const existingTags = await messenger.messages.tags.list();
     console.log('[SMM] Existing tags:', JSON.stringify(existingTags.map((t: any) => t.key)));
     const found = existingTags.find((t: any) => t.key === SMM_ANALYZED_TAG);
     if (!found) {
-      await messenger.messages.createTag(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
+      await messenger.messages.tags.create(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
       console.log('[SMM] Created analyzed tag successfully');
     } else {
       console.log('[SMM] Analyzed tag already exists');
@@ -131,7 +131,7 @@ messenger.runtime.onMessage.addListener(
 
       case 'GET_TAGS': {
         try {
-          return await messenger.messages.listTags();
+          return await messenger.messages.tags.list();
         } catch {
           return [];
         }
@@ -216,7 +216,7 @@ messenger.runtime.onMessage.addListener(
         }));
         let tags: any[] = [];
         try {
-          tags = await messenger.messages.listTags();
+          tags = await messenger.messages.tags.list();
         } catch { /* fallback to empty */ }
         return { folders: folderInfos, tags };
       }
@@ -506,9 +506,9 @@ messenger.runtime.onMessage.addListener(
       case 'MARK_EMAILS_ANALYZED': {
         try {
           // Ensure the tag exists
-          const existingTags = await messenger.messages.listTags();
+          const existingTags = await messenger.messages.tags.list();
           if (!existingTags.find((t: any) => t.key === SMM_ANALYZED_TAG)) {
-            await messenger.messages.createTag(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
+            await messenger.messages.tags.create(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
           }
 
           let marked = 0;

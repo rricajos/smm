@@ -130,6 +130,36 @@ REGLAS IMPORTANTES:
 import type { AiProvider } from '../../types/settings';
 import { AI_PROVIDERS } from '../utils/constants';
 
+/**
+ * Robustly extract JSON from AI response text.
+ * Handles cases where the model wraps JSON in markdown code blocks or adds surrounding text.
+ */
+function extractJSON(text: string): any {
+  // 1. Direct parse
+  try {
+    return JSON.parse(text);
+  } catch { /* continue */ }
+
+  // 2. Extract from markdown code blocks: ```json ... ``` or ``` ... ```
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+  if (codeBlockMatch) {
+    try {
+      return JSON.parse(codeBlockMatch[1].trim());
+    } catch { /* continue */ }
+  }
+
+  // 3. Find the outermost { ... } block
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(text.substring(firstBrace, lastBrace + 1));
+    } catch { /* continue */ }
+  }
+
+  throw new Error('No se pudo interpretar la respuesta como JSON');
+}
+
 interface CallOptions {
   apiKey: string;
   model: string;
@@ -178,7 +208,7 @@ async function callAnthropicAPI(
   const data = await response.json();
   const content = data.content?.[0]?.text;
   if (!content) throw new Error('Respuesta vacía de Anthropic');
-  return JSON.parse(content);
+  return extractJSON(content);
 }
 
 async function callOpenAICompatibleAPI(
@@ -225,7 +255,7 @@ async function callOpenAICompatibleAPI(
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error('Respuesta vacía del proveedor');
-  return JSON.parse(content);
+  return extractJSON(content);
 }
 
 async function callAI(
