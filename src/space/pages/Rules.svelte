@@ -421,12 +421,17 @@
           <span class="conflicts-icon">⚠</span>
           {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
         </div>
-        {#if onrequestai}
-          <button class="conflict-ai-btn" onclick={resolveConflictsWithAI}>{T('conflict_resolve_ai')}</button>
-        {/if}
-        {#if hasRedundantConflicts}
-          <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
-        {/if}
+        <div class="conflicts-header-actions">
+          {#if onrequestai}
+            <button class="conflict-ai-btn" onclick={resolveConflictsWithAI}>
+              <span class="conflict-btn-icon">&#9881;</span>
+              {T('conflict_resolve_ai')}
+            </button>
+          {/if}
+          {#if hasRedundantConflicts}
+            <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
+          {/if}
+        </div>
       </div>
       {#each ruleConflicts as conflict, idx}
         <div class="conflict-item" class:conflict-warning={conflict.severity === 'warning'} class:conflict-info={conflict.severity === 'info'}>
@@ -848,44 +853,59 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
     color: #e65100;
+    flex-wrap: wrap;
   }
   .conflicts-header-left {
     display: flex;
     align-items: center;
     gap: 6px;
   }
+  .conflicts-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
   .conflicts-icon {
     font-size: 16px;
   }
   .conflict-ai-btn {
-    font-size: 11px;
-    padding: 3px 10px;
-    border: 1px solid var(--primary-color, #0060df);
-    background: transparent;
-    color: var(--primary-color, #0060df);
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .conflict-ai-btn:hover {
+    font-size: 12px;
+    padding: 5px 14px;
+    border: none;
     background: var(--primary-color, #0060df);
     color: white;
-  }
-  .conflict-merge-all-btn {
-    font-size: 11px;
-    padding: 3px 10px;
-    border: 1px solid #e65100;
-    background: transparent;
-    color: #e65100;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 3px rgba(0, 96, 223, 0.25);
+  }
+  .conflict-ai-btn:hover {
+    background: var(--primary-hover, #003eaa);
+    box-shadow: 0 2px 6px rgba(0, 96, 223, 0.35);
+  }
+  .conflict-btn-icon {
+    font-size: 13px;
+  }
+  .conflict-merge-all-btn {
+    font-size: 12px;
+    padding: 5px 14px;
+    border: 1.5px solid #e65100;
+    background: transparent;
+    color: #e65100;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
   }
   .conflict-merge-all-btn:hover {
     background: #e65100;
@@ -967,8 +987,8 @@
     .conflicts-header { color: #ffb74d; }
     .conflict-warning { background: #3e2700; border-left-color: #ff9800; }
     .conflict-info { background: #0d2137; border-left-color: #42a5f5; }
-    .conflict-ai-btn { border-color: #45a1ff; color: #45a1ff; }
-    .conflict-ai-btn:hover { background: #45a1ff; color: #1c1b22; }
+    .conflict-ai-btn { background: #45a1ff; color: #1c1b22; box-shadow: 0 1px 3px rgba(69, 161, 255, 0.3); }
+    .conflict-ai-btn:hover { background: #73b6ff; box-shadow: 0 2px 6px rgba(69, 161, 255, 0.4); }
     .conflict-merge-all-btn { border-color: #ffb74d; color: #ffb74d; }
     .conflict-merge-all-btn:hover { background: #ffb74d; color: #332d00; }
     .conflict-merged-badge { background: #1b4332; color: #95d5b2; }
