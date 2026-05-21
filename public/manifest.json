@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Smart Mail Manager",
-  "version": "1.5.60",
+  "version": "1.5.61",
   "description": "Clasificación automática de correos y respuestas automáticas para Thunderbird",
   "author": "Ricard Penin Honrubia <ricard.penin.honrubia@gmail.com>",
   "browser_specific_settings": {

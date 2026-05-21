@@ -50,6 +50,13 @@
   import ProposalBlock from '../components/ProposalBlock.svelte';
   import FolderTree from '../components/FolderTree.svelte';
 
+  interface Props {
+    pendingPrompt?: string;
+    onconsumeprompt?: () => void;
+  }
+
+  let { pendingPrompt = '', onconsumeprompt }: Props = $props();
+
   declare const browser: any;
 
   let isStoreReady = $state(false);
@@ -199,6 +206,19 @@
   }
 
   loadMetadata();
+
+  // Handle pending prompt from other tabs (e.g. Rules conflict resolution)
+  $effect(() => {
+    if (pendingPrompt) {
+      activeMode = 'chat';
+      newConversation();
+      // Defer to next tick so the new conversation is active
+      setTimeout(() => {
+        sendChatMessage(pendingPrompt);
+        onconsumeprompt?.();
+      }, 100);
+    }
+  });
 
   // Load account list for batch selector
   (async () => {

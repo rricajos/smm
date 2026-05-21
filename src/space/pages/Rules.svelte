@@ -16,6 +16,12 @@
 
   declare const browser: any;
 
+  interface Props {
+    onrequestai?: (prompt: string) => void;
+  }
+
+  let { onrequestai }: Props = $props();
+
   let currentRules = $state<Rule[]>([]);
   let currentTemplates = $state<ResponseTemplate[]>([]);
   let currentSettings = $state<any>({});
@@ -365,6 +371,19 @@
     });
   }
 
+  function resolveConflictsWithAI() {
+    if (!onrequestai || ruleConflicts.length === 0) return;
+    const conflictLines = ruleConflicts.map((c, i) => {
+      const type = c.type === 'redundant' ? T('conflict_redundant' as any) :
+                   c.type === 'contradictory_move' ? T('conflict_move_different' as any) :
+                   c.type === 'contradictory_priority' ? T('conflict_priority_different' as any) :
+                   c.description;
+      return `${i + 1}. "${c.ruleA.name}" + "${c.ruleB.name}": ${type}`;
+    }).join('\n');
+    const prompt = T('conflict_ai_prompt' as any, { n: ruleConflicts.length, conflicts: conflictLines });
+    onrequestai(prompt);
+  }
+
   // Reset merged set when conflicts change (e.g. after merge the list recomputes)
   $effect(() => {
     ruleConflicts; // track
@@ -402,6 +421,9 @@
           <span class="conflicts-icon">⚠</span>
           {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
         </div>
+        {#if onrequestai}
+          <button class="conflict-ai-btn" onclick={resolveConflictsWithAI}>{T('conflict_resolve_ai')}</button>
+        {/if}
         {#if hasRedundantConflicts}
           <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
         {/if}
@@ -837,6 +859,22 @@
   .conflicts-icon {
     font-size: 16px;
   }
+  .conflict-ai-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid var(--primary-color, #0060df);
+    background: transparent;
+    color: var(--primary-color, #0060df);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .conflict-ai-btn:hover {
+    background: var(--primary-color, #0060df);
+    color: white;
+  }
   .conflict-merge-all-btn {
     font-size: 11px;
     padding: 3px 10px;
@@ -929,6 +967,8 @@
     .conflicts-header { color: #ffb74d; }
     .conflict-warning { background: #3e2700; border-left-color: #ff9800; }
     .conflict-info { background: #0d2137; border-left-color: #42a5f5; }
+    .conflict-ai-btn { border-color: #45a1ff; color: #45a1ff; }
+    .conflict-ai-btn:hover { background: #45a1ff; color: #1c1b22; }
     .conflict-merge-all-btn { border-color: #ffb74d; color: #ffb74d; }
     .conflict-merge-all-btn:hover { background: #ffb74d; color: #332d00; }
     .conflict-merged-badge { background: #1b4332; color: #95d5b2; }

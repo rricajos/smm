@@ -13,6 +13,7 @@
   import type { Translations } from '../lib/i18n/types';
 
   let activeTab = $state('dashboard');
+  let pendingAiPrompt = $state('');
   let unreadCount = $state(0);
   let currentRules = $state<any[]>([]);
   let currentTemplates = $state<any[]>([]);
@@ -31,6 +32,11 @@
     searchFilter = searchQuery || '';
     // Reset after a tick so the child component picks it up
     setTimeout(() => (searchFilter = ''), 100);
+  }
+
+  function handleRequestAI(prompt: string) {
+    pendingAiPrompt = prompt;
+    activeTab = 'ai';
   }
 
   let searchComponent: GlobalSearch | undefined = $state(undefined);
@@ -100,13 +106,13 @@
       <Dashboard />
     </div>
     <div class="tab-panel" class:active-panel={activeTab === 'rules'} role="tabpanel" id="panel-rules" aria-labelledby="tab-rules">
-      <Rules />
+      <Rules onrequestai={handleRequestAI} />
     </div>
     <div class="tab-panel" class:active-panel={activeTab === 'templates'} role="tabpanel" id="panel-templates" aria-labelledby="tab-templates">
       <Templates />
     </div>
     <div class="tab-panel" class:active-panel={activeTab === 'ai'} role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
-      <AI />
+      <AI pendingPrompt={pendingAiPrompt} onconsumeprompt={() => (pendingAiPrompt = '')} />
     </div>
     <div class="tab-panel" class:active-panel={activeTab === 'log'} role="tabpanel" id="panel-log" aria-labelledby="tab-log">
       <Log initialSearch={searchFilter} />

@@ -324,6 +324,8 @@ export interface Translations {
   conflict_merge: string;
   conflict_merge_all: string;
   conflict_merged: string;
+  conflict_resolve_ai: string;
+  conflict_ai_prompt: string;
 
   // Template editor
   tmpl_edit_title: string;

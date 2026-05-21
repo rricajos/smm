@@ -322,6 +322,8 @@ export const es: Translations = {
   conflict_merge: 'Fusionar',
   conflict_merge_all: 'Fusionar duplicados',
   conflict_merged: 'Fusionada',
+  conflict_resolve_ai: 'Resolver con IA',
+  conflict_ai_prompt: 'Tengo {n} conflictos entre reglas que necesito resolver. Analiza cada conflicto y propón consolidaciones o cambios para eliminarlos:\n\n{conflicts}\n\nPropón reglas consolidadas que resuelvan estos conflictos.',
 
   // Template editor
   tmpl_edit_title: 'Editar plantilla',

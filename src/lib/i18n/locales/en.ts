@@ -322,6 +322,8 @@ export const en: Translations = {
   conflict_merge: 'Merge',
   conflict_merge_all: 'Merge duplicates',
   conflict_merged: 'Merged',
+  conflict_resolve_ai: 'Resolve with AI',
+  conflict_ai_prompt: 'I have {n} rule conflicts that need resolving. Analyze each conflict and propose consolidations or changes to eliminate them:\n\n{conflicts}\n\nPropose consolidated rules that resolve these conflicts.',
 
   // Template editor
   tmpl_edit_title: 'Edit template',
