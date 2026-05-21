@@ -417,34 +417,44 @@
   {#if ruleConflicts.length > 0}
     <div class="conflicts-section">
       <div class="conflicts-header">
-        <span class="conflicts-icon">⚠</span>
-        {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
-      </div>
-      {#each ruleConflicts as conflict, idx}
-        <div class="conflict-item" class:conflict-warning={conflict.severity === 'warning'} class:conflict-info={conflict.severity === 'info'}>
-          <div class="conflict-text">
-            <span class="conflict-rules">
-              <button class="conflict-rule-link" onclick={() => { const r = currentRules.find(r => r.id === conflict.ruleA.id); if (r) openEditRule(r); }}>{conflict.ruleA.name}</button>
-              &amp;
-              <button class="conflict-rule-link" onclick={() => { const r = currentRules.find(r => r.id === conflict.ruleB.id); if (r) openEditRule(r); }}>{conflict.ruleB.name}</button>
-            </span>
-            <span class="conflict-desc">{conflictDesc(conflict)}</span>
-          </div>
-          {#if conflict.type === 'redundant' && !mergedConflicts.has(idx)}
-            <button class="conflict-action-btn" onclick={() => mergeRedundantConflict(idx, conflict)}>{T('conflict_merge')}</button>
-          {:else if mergedConflicts.has(idx)}
-            <span class="conflict-merged-badge">{T('conflict_merged')}</span>
-          {/if}
+        <div class="conflicts-header-left">
+          <span class="conflicts-badge">{ruleConflicts.length}</span>
+          <span class="conflicts-title">{T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}</span>
         </div>
-      {/each}
+      </div>
+
+      <div class="conflict-list">
+        {#each ruleConflicts as conflict, idx}
+          <div class="conflict-item" class:conflict-warning={conflict.severity === 'warning'} class:conflict-info={conflict.severity === 'info'}>
+            <div class="conflict-text">
+              <span class="conflict-rules">
+                <button class="conflict-rule-link" onclick={() => { const r = currentRules.find(r => r.id === conflict.ruleA.id); if (r) openEditRule(r); }}>{conflict.ruleA.name}</button>
+                <span class="conflict-amp">&amp;</span>
+                <button class="conflict-rule-link" onclick={() => { const r = currentRules.find(r => r.id === conflict.ruleB.id); if (r) openEditRule(r); }}>{conflict.ruleB.name}</button>
+              </span>
+              <span class="conflict-desc">{conflictDesc(conflict)}</span>
+            </div>
+            {#if conflict.type === 'redundant' && !mergedConflicts.has(idx)}
+              <button class="conflict-action-btn" onclick={() => mergeRedundantConflict(idx, conflict)}>{T('conflict_merge')}</button>
+            {:else if mergedConflicts.has(idx)}
+              <span class="conflict-merged-badge">{T('conflict_merged')}</span>
+            {/if}
+          </div>
+        {/each}
+      </div>
+
       <div class="conflicts-actions">
         {#if onrequestai}
           <button class="conflict-ai-btn" onclick={resolveConflictsWithAI}>
-            &#10024; {T('conflict_resolve_ai')}
+            <svg class="conflict-btn-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
+            {T('conflict_resolve_ai')}
           </button>
         {/if}
         {#if hasRedundantConflicts}
-          <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
+          <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>
+            <svg class="conflict-btn-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+            {T('conflict_merge_all')}
+          </button>
         {/if}
       </div>
     </div>
@@ -837,76 +847,62 @@
   /* Conflicts */
   .conflicts-section {
     border: 1px solid #ffcc80;
-    border-radius: 6px;
-    background: #fff8e1;
-    padding: 10px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #fff8e1 0%, #fff3e0 100%);
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    overflow: hidden;
   }
   .conflicts-header {
-    font-size: 13px;
-    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: #e65100;
+    padding: 10px 14px;
+    background: rgba(230, 81, 0, 0.06);
+    border-bottom: 1px solid rgba(255, 204, 128, 0.5);
   }
-  .conflicts-icon {
-    font-size: 16px;
-  }
-  .conflicts-actions {
+  .conflicts-header-left {
     display: flex;
+    align-items: center;
     gap: 8px;
-    padding-top: 8px;
-    margin-top: 4px;
-    border-top: 1px solid rgba(230, 81, 0, 0.2);
   }
-  .conflict-ai-btn {
-    flex: 1;
-    font-size: 13px;
-    padding: 8px 16px;
-    border: none;
-    background: #0060df;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    white-space: nowrap;
-    text-align: center;
-    transition: background 0.15s, box-shadow 0.15s;
-    box-shadow: 0 2px 6px rgba(0, 96, 223, 0.3);
-  }
-  .conflict-ai-btn:hover {
-    background: #003eaa;
-    box-shadow: 0 3px 10px rgba(0, 96, 223, 0.4);
-  }
-  .conflict-merge-all-btn {
-    font-size: 13px;
-    padding: 8px 16px;
-    border: 2px solid #e65100;
-    background: transparent;
-    color: #e65100;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s;
-  }
-  .conflict-merge-all-btn:hover {
+  .conflicts-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
     background: #e65100;
     color: white;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .conflicts-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #bf360c;
+  }
+  .conflict-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 8px;
   }
   .conflict-item {
     font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    transition: background 0.1s;
+  }
+  .conflict-item:hover {
+    background: rgba(0, 0, 0, 0.04);
   }
   .conflict-text {
     display: flex;
@@ -915,37 +911,49 @@
     min-width: 0;
   }
   .conflict-warning {
-    background: #fff3e0;
+    background: rgba(255, 152, 0, 0.08);
     border-left: 3px solid #ff9800;
   }
   .conflict-info {
-    background: #e3f2fd;
+    background: rgba(33, 150, 243, 0.06);
     border-left: 3px solid #90caf9;
   }
   .conflict-rules {
     font-weight: 600;
     color: var(--text-color, #15141a);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .conflict-amp {
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--text-secondary, #999);
   }
   .conflict-desc {
     color: var(--text-secondary, #666);
+    font-size: 11px;
   }
   .conflict-rule-link {
     background: none;
     border: none;
     padding: 0;
     font: inherit;
+    font-size: 12px;
     font-weight: 600;
     color: var(--primary-color, #0060df);
     cursor: pointer;
     text-decoration: underline;
     text-decoration-style: dotted;
+    text-underline-offset: 2px;
   }
   .conflict-rule-link:hover {
     text-decoration-style: solid;
   }
   .conflict-action-btn {
     font-size: 11px;
-    padding: 2px 10px;
+    padding: 3px 10px;
     border: 1px solid var(--primary-color, #0060df);
     background: var(--primary-color, #0060df);
     color: white;
@@ -955,6 +963,7 @@
     font-weight: 500;
     white-space: nowrap;
     flex-shrink: 0;
+    transition: opacity 0.15s;
   }
   .conflict-action-btn:hover {
     opacity: 0.85;
@@ -969,15 +978,84 @@
     flex-shrink: 0;
     white-space: nowrap;
   }
+  .conflicts-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(230, 81, 0, 0.04);
+    border-top: 1px solid rgba(255, 204, 128, 0.5);
+  }
+  .conflict-btn-svg {
+    flex-shrink: 0;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+  .conflict-ai-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: none;
+    background: linear-gradient(135deg, #0060df, #0050c0);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    box-shadow: 0 2px 8px rgba(0, 96, 223, 0.3);
+  }
+  .conflict-ai-btn:hover {
+    background: linear-gradient(135deg, #003eaa, #003090);
+    box-shadow: 0 3px 12px rgba(0, 96, 223, 0.4);
+    transform: translateY(-1px);
+  }
+  .conflict-ai-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 96, 223, 0.3);
+  }
+  .conflict-merge-all-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 2px solid #e65100;
+    background: transparent;
+    color: #e65100;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+  }
+  .conflict-merge-all-btn:hover {
+    background: #e65100;
+    color: white;
+    transform: translateY(-1px);
+  }
+  .conflict-merge-all-btn:active {
+    transform: translateY(0);
+  }
 
   @media (prefers-color-scheme: dark) {
-    .conflicts-section { background: #332d00; border-color: #8d6e00; }
-    .conflicts-header { color: #ffb74d; }
-    .conflict-warning { background: #3e2700; border-left-color: #ff9800; }
-    .conflict-info { background: #0d2137; border-left-color: #42a5f5; }
-    .conflicts-actions { border-top-color: rgba(141, 110, 0, 0.3); }
-    .conflict-ai-btn { background: #45a1ff; color: #1c1b22; box-shadow: 0 2px 6px rgba(69, 161, 255, 0.3); }
-    .conflict-ai-btn:hover { background: #73b6ff; box-shadow: 0 3px 10px rgba(69, 161, 255, 0.4); }
+    .conflicts-section { background: linear-gradient(135deg, #332d00 0%, #2e2800 100%); border-color: #8d6e00; }
+    .conflicts-header { background: rgba(141, 110, 0, 0.15); border-bottom-color: rgba(141, 110, 0, 0.3); }
+    .conflicts-badge { background: #ff8f00; color: #1c1b22; }
+    .conflicts-title { color: #ffb74d; }
+    .conflict-item:hover { background: rgba(255, 255, 255, 0.04); }
+    .conflict-warning { background: rgba(255, 152, 0, 0.1); border-left-color: #ff9800; }
+    .conflict-info { background: rgba(66, 165, 245, 0.08); border-left-color: #42a5f5; }
+    .conflicts-actions { background: rgba(141, 110, 0, 0.1); border-top-color: rgba(141, 110, 0, 0.3); }
+    .conflict-ai-btn { background: linear-gradient(135deg, #45a1ff, #3b8fe6); color: #1c1b22; box-shadow: 0 2px 8px rgba(69, 161, 255, 0.3); }
+    .conflict-ai-btn:hover { background: linear-gradient(135deg, #73b6ff, #5da8ff); box-shadow: 0 3px 12px rgba(69, 161, 255, 0.4); }
     .conflict-merge-all-btn { border-color: #ffb74d; color: #ffb74d; }
     .conflict-merge-all-btn:hover { background: #ffb74d; color: #332d00; }
     .conflict-merged-badge { background: #1b4332; color: #95d5b2; }
