@@ -505,4 +505,22 @@ export const es: Translations = {
 
   // Chat
   chat_new_conversation: 'Nueva conversación',
+
+  // Dashboard enhancements
+  dashboard_weekly_activity: 'Actividad semanal',
+  dashboard_ai_status: 'Proveedor IA',
+  dashboard_ai_configured: 'Configurado',
+  dashboard_ai_not_configured: 'Sin configurar',
+  dashboard_version: 'Versión',
+  dashboard_shortcuts_hint: 'Ctrl+1-5 pestañas · Ctrl+K buscar',
+
+  // Empty states
+  empty_rules_title: 'Sin reglas de clasificación',
+  empty_rules_desc: 'Las reglas organizan tu correo automáticamente. Crea tu primera regla o explora la galería de presets.',
+  empty_rules_cta: 'Crear primera regla',
+  empty_templates_title: 'Sin plantillas de respuesta',
+  empty_templates_desc: 'Las plantillas generan respuestas automáticas a correos entrantes. Crea tu primera plantilla.',
+  empty_templates_cta: 'Crear primera plantilla',
+  empty_log_title: 'Sin actividad registrada',
+  empty_log_desc: 'Las clasificaciones y respuestas automáticas aparecerán aquí.',
 };

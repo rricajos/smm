@@ -505,4 +505,22 @@ export const en: Translations = {
 
   // Chat
   chat_new_conversation: 'New conversation',
+
+  // Dashboard enhancements
+  dashboard_weekly_activity: 'Weekly activity',
+  dashboard_ai_status: 'AI Provider',
+  dashboard_ai_configured: 'Configured',
+  dashboard_ai_not_configured: 'Not configured',
+  dashboard_version: 'Version',
+  dashboard_shortcuts_hint: 'Ctrl+1-5 tabs · Ctrl+K search',
+
+  // Empty states
+  empty_rules_title: 'No classification rules',
+  empty_rules_desc: 'Rules organize your email automatically. Create your first rule or explore the preset gallery.',
+  empty_rules_cta: 'Create first rule',
+  empty_templates_title: 'No response templates',
+  empty_templates_desc: 'Templates generate automatic responses to incoming emails. Create your first template.',
+  empty_templates_cta: 'Create first template',
+  empty_log_title: 'No activity recorded',
+  empty_log_desc: 'Classifications and automatic responses will appear here.',
 };

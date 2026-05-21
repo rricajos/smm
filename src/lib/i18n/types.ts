@@ -507,4 +507,22 @@ export interface Translations {
 
   // Chat
   chat_new_conversation: string;
+
+  // Dashboard enhancements
+  dashboard_weekly_activity: string;
+  dashboard_ai_status: string;
+  dashboard_ai_configured: string;
+  dashboard_ai_not_configured: string;
+  dashboard_version: string;
+  dashboard_shortcuts_hint: string;
+
+  // Empty states
+  empty_rules_title: string;
+  empty_rules_desc: string;
+  empty_rules_cta: string;
+  empty_templates_title: string;
+  empty_templates_desc: string;
+  empty_templates_cta: string;
+  empty_log_title: string;
+  empty_log_desc: string;
 }

@@ -120,7 +120,13 @@
   </div>
 
   {#if filtered.length === 0}
-    <p class="empty">{T('log_no_entries')}</p>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <p class="empty-title">{T('empty_log_title')}</p>
+      <p class="empty-desc">{T('empty_log_desc')}</p>
+    </div>
   {:else}
     <table>
       <thead>
@@ -212,11 +218,36 @@
     font-size: 13px;
     font-family: inherit;
   }
-  .empty {
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
     text-align: center;
-    padding: 40px;
-    color: var(--text-secondary, #666);
+  }
+  .empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--bg-secondary, #f0f0f4);
+    color: var(--text-secondary, #999);
+    margin-bottom: 16px;
+  }
+  .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: var(--text-color, #15141a);
+  }
+  .empty-desc {
     font-size: 13px;
+    color: var(--text-secondary, #666);
+    margin: 0;
+    max-width: 360px;
+    line-height: 1.5;
   }
   table {
     width: 100%;

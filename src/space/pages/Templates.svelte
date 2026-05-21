@@ -88,9 +88,13 @@
   {/if}
 
   {#if currentTemplates.length === 0}
-    <div class="empty">
-      <p>{T('templates_no_templates')}</p>
-      <p>{T('templates_no_templates_desc')}</p>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <p class="empty-title">{T('empty_templates_title')}</p>
+      <p class="empty-desc">{T('empty_templates_desc')}</p>
+      <Button variant="primary" onclick={openNewTemplate}>{T('empty_templates_cta')}</Button>
     </div>
   {:else}
     <div class="template-list">
@@ -138,11 +142,36 @@
     margin: 0;
     font-size: 15px;
   }
-  .empty {
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
     text-align: center;
-    padding: 40px 20px;
-    color: var(--text-secondary, #666);
+  }
+  .empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--bg-secondary, #f0f0f4);
+    color: var(--text-secondary, #999);
+    margin-bottom: 16px;
+  }
+  .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: var(--text-color, #15141a);
+  }
+  .empty-desc {
     font-size: 13px;
+    color: var(--text-secondary, #666);
+    margin: 0 0 20px 0;
+    max-width: 360px;
+    line-height: 1.5;
   }
   .template-list {
     display: flex;

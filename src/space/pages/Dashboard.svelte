@@ -30,6 +30,25 @@
   );
   let recentActivity = $derived(currentActivity.slice(0, 20));
 
+  // 7-day activity chart
+  let weeklyData = $derived(() => {
+    const days: { label: string; classifications: number; responses: number }[] = [];
+    const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const start = new Date(d).setHours(0, 0, 0, 0);
+      const end = new Date(d).setHours(23, 59, 59, 999);
+      days.push({
+        label: dayNames[d.getDay()],
+        classifications: currentActivity.filter(a => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end).length,
+        responses: currentActivity.filter(a => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end).length,
+      });
+    }
+    return days;
+  });
+  let weeklyMax = $derived(Math.max(1, ...weeklyData().map(d => d.classifications + d.responses)));
+
   // Stats time range
   let statsRange = $state<'7d' | '30d' | 'all'>('30d');
   let statsStart = $derived(
@@ -175,21 +194,41 @@
 
 <div class="dashboard">
   <div class="cards">
-    <div class="card">
-      <div class="card-value">{currentRules.length}</div>
-      <div class="card-label">{T('dashboard_total_rules')}</div>
+    <div class="card card-rules">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div class="card-data">
+        <div class="card-value">{currentRules.length}</div>
+        <div class="card-label">{T('dashboard_total_rules')}</div>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-value">{activeRules}</div>
-      <div class="card-label">{T('dashboard_active_rules')}</div>
+    <div class="card card-active">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="card-data">
+        <div class="card-value">{activeRules}</div>
+        <div class="card-label">{T('dashboard_active_rules')}</div>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-value">{todayClassifications}</div>
-      <div class="card-label">{T('dashboard_classified_today')}</div>
+    <div class="card card-classified">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      </div>
+      <div class="card-data">
+        <div class="card-value">{todayClassifications}</div>
+        <div class="card-label">{T('dashboard_classified_today')}</div>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-value">{todayAutoResponses}</div>
-      <div class="card-label">{T('dashboard_responses_today')}</div>
+    <div class="card card-responses">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="card-data">
+        <div class="card-value">{todayAutoResponses}</div>
+        <div class="card-label">{T('dashboard_responses_today')}</div>
+      </div>
     </div>
   </div>
 
@@ -207,6 +246,35 @@
       {T('dashboard_auto_response')}: {currentSettings.autoResponseEnabled ? T('common_on') : T('common_off')}
     </Button>
   </div>
+
+  <!-- Weekly mini-chart -->
+  {#if currentActivity.length > 0}
+    <div class="weekly-chart">
+      <h3>{T('dashboard_weekly_activity')}</h3>
+      <div class="chart-bars">
+        {#each weeklyData() as day}
+          <div class="chart-col">
+            <div class="chart-bar-wrapper">
+              {#if day.responses > 0}
+                <div class="chart-bar bar-response" style="height: {Math.max(3, Math.round((day.responses / weeklyMax) * 100))}%" title="{day.responses} responses"></div>
+              {/if}
+              {#if day.classifications > 0}
+                <div class="chart-bar bar-classification" style="height: {Math.max(3, Math.round((day.classifications / weeklyMax) * 100))}%" title="{day.classifications} classifications"></div>
+              {/if}
+              {#if day.classifications === 0 && day.responses === 0}
+                <div class="chart-bar bar-empty"></div>
+              {/if}
+            </div>
+            <span class="chart-label">{day.label}</span>
+          </div>
+        {/each}
+      </div>
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot dot-classification"></span> {T('dashboard_classification')}</span>
+        <span class="legend-item"><span class="legend-dot dot-response"></span> {T('dashboard_auto_response')}</span>
+      </div>
+    </div>
+  {/if}
 
   <!-- Rule ranking stats -->
   {#if ruleStats().length > 0}
@@ -388,6 +456,23 @@
       </table>
     {/if}
   </div>
+
+  <!-- Status footer -->
+  <div class="status-footer">
+    <div class="status-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span>{T('dashboard_version')} 1.5</span>
+    </div>
+    <div class="status-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
+      <span>{T('dashboard_ai_status')}: {currentSettings.openaiApiKey ? T('dashboard_ai_configured') : T('dashboard_ai_not_configured')}</span>
+      <span class="status-dot" class:status-ok={currentSettings.openaiApiKey} class:status-off={!currentSettings.openaiApiKey}></span>
+    </div>
+    <div class="status-item status-shortcuts">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>{T('dashboard_shortcuts_hint')}</span>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -402,26 +487,162 @@
     gap: 12px;
   }
   .card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     background: var(--bg-secondary, #f9f9fb);
     border: 1px solid var(--border-color, #e0e0e6);
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border-left: 4px solid transparent;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  .card-rules { border-left-color: #0060df; }
+  .card-active { border-left-color: #2e7d32; }
+  .card-classified { border-left-color: #e65100; }
+  .card-responses { border-left-color: #6a1b9a; }
+  .card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .card-rules .card-icon { background: rgba(0, 96, 223, 0.1); color: #0060df; }
+  .card-active .card-icon { background: rgba(46, 125, 50, 0.1); color: #2e7d32; }
+  .card-classified .card-icon { background: rgba(230, 81, 0, 0.1); color: #e65100; }
+  .card-responses .card-icon { background: rgba(106, 27, 154, 0.1); color: #6a1b9a; }
+  .card-data {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
   .card-value {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
-    color: var(--primary-color, #0060df);
+    color: var(--text-color, #15141a);
+    line-height: 1.1;
   }
   .card-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary, #666);
-    margin-top: 4px;
+    margin-top: 2px;
   }
   .toggles {
     display: flex;
     gap: 8px;
   }
+
+  /* Weekly chart */
+  .weekly-chart {
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--bg-primary, white);
+  }
+  .weekly-chart h3 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+  }
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 80px;
+    padding-bottom: 4px;
+  }
+  .chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+  }
+  .chart-bar-wrapper {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1px;
+  }
+  .chart-bar {
+    width: 100%;
+    max-width: 32px;
+    border-radius: 3px 3px 0 0;
+    transition: height 0.3s ease;
+  }
+  .bar-classification {
+    background: linear-gradient(180deg, #0060df, #0050c0);
+  }
+  .bar-response {
+    background: linear-gradient(180deg, #6a1b9a, #5c178a);
+  }
+  .bar-empty {
+    height: 3px;
+    background: var(--border-color, #e0e0e6);
+    border-radius: 3px;
+  }
+  .chart-label {
+    font-size: 10px;
+    color: var(--text-secondary, #999);
+    font-weight: 600;
+  }
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-secondary, #666);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+  .dot-classification { background: #0060df; }
+  .dot-response { background: #6a1b9a; }
+
+  /* Status footer */
+  .status-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 8px;
+    background: var(--bg-secondary, #f9f9fb);
+    font-size: 11px;
+    color: var(--text-secondary, #666);
+  }
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status-shortcuts {
+    margin-left: auto;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+  .status-ok { background: #2e7d32; }
+  .status-off { background: #bbb; }
 
   /* Folder management */
   .folder-section {
@@ -732,6 +953,21 @@
   }
 
   @media (prefers-color-scheme: dark) {
+    .card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
+    .card-rules .card-icon { background: rgba(69, 161, 255, 0.15); color: #45a1ff; }
+    .card-active .card-icon { background: rgba(102, 187, 106, 0.15); color: #66bb6a; }
+    .card-classified .card-icon { background: rgba(255, 183, 77, 0.15); color: #ffb74d; }
+    .card-responses .card-icon { background: rgba(186, 104, 200, 0.15); color: #ba68c8; }
+    .card-rules { border-left-color: #45a1ff; }
+    .card-active { border-left-color: #66bb6a; }
+    .card-classified { border-left-color: #ffb74d; }
+    .card-responses { border-left-color: #ba68c8; }
+    .bar-classification { background: linear-gradient(180deg, #45a1ff, #3b8fe6); }
+    .bar-response { background: linear-gradient(180deg, #ba68c8, #9c4dcc); }
+    .dot-classification { background: #45a1ff; }
+    .dot-response { background: #ba68c8; }
+    .status-ok { background: #66bb6a; }
+    .status-off { background: #666; }
     .badge-classification { background: #1b4332; color: #95d5b2; }
     .badge-autoResponse { background: #1a3a5c; color: #90caf9; }
     .badge-error { background: #4a1c1c; color: #ef9a9a; }

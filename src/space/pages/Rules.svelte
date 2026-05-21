@@ -461,9 +461,16 @@
   {/if}
 
   {#if currentRules.length === 0}
-    <div class="empty">
-      <p>{T('rules_no_rules')}</p>
-      <p>{T('rules_no_rules_desc')}</p>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <p class="empty-title">{T('empty_rules_title')}</p>
+      <p class="empty-desc">{T('empty_rules_desc')}</p>
+      <div class="empty-actions">
+        <Button variant="primary" onclick={openNewRule}>{T('empty_rules_cta')}</Button>
+        <Button size="sm" onclick={() => (showPresetGallery = true)}>{T('rules_gallery')}</Button>
+      </div>
     </div>
   {:else}
     <div class="rule-list" role="list">
@@ -651,11 +658,41 @@
     border-radius: 6px;
     font-size: 12px;
   }
-  .empty {
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
     text-align: center;
-    padding: 40px 20px;
-    color: var(--text-secondary, #666);
+  }
+  .empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--bg-secondary, #f0f0f4);
+    color: var(--text-secondary, #999);
+    margin-bottom: 16px;
+  }
+  .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: var(--text-color, #15141a);
+  }
+  .empty-desc {
     font-size: 13px;
+    color: var(--text-secondary, #666);
+    margin: 0 0 20px 0;
+    max-width: 360px;
+    line-height: 1.5;
+  }
+  .empty-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
   }
   .rule-list {
     display: flex;
