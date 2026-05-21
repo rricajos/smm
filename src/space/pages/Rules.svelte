@@ -417,21 +417,8 @@
   {#if ruleConflicts.length > 0}
     <div class="conflicts-section">
       <div class="conflicts-header">
-        <div class="conflicts-header-left">
-          <span class="conflicts-icon">⚠</span>
-          {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
-        </div>
-        <div class="conflicts-header-actions">
-          {#if onrequestai}
-            <button class="conflict-ai-btn" onclick={resolveConflictsWithAI}>
-              <span class="conflict-btn-icon">&#9881;</span>
-              {T('conflict_resolve_ai')}
-            </button>
-          {/if}
-          {#if hasRedundantConflicts}
-            <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
-          {/if}
-        </div>
+        <span class="conflicts-icon">⚠</span>
+        {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
       </div>
       {#each ruleConflicts as conflict, idx}
         <div class="conflict-item" class:conflict-warning={conflict.severity === 'warning'} class:conflict-info={conflict.severity === 'info'}>
@@ -450,6 +437,16 @@
           {/if}
         </div>
       {/each}
+      <div class="conflicts-actions">
+        {#if onrequestai}
+          <button class="conflict-ai-btn" onclick={resolveConflictsWithAI}>
+            &#10024; {T('conflict_resolve_ai')}
+          </button>
+        {/if}
+        {#if hasRedundantConflicts}
+          <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
+        {/if}
+      </div>
     </div>
   {/if}
 
@@ -852,52 +849,43 @@
     font-weight: 600;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     color: #e65100;
-    flex-wrap: wrap;
-  }
-  .conflicts-header-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .conflicts-header-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
   }
   .conflicts-icon {
     font-size: 16px;
   }
+  .conflicts-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(230, 81, 0, 0.2);
+  }
   .conflict-ai-btn {
-    font-size: 12px;
-    padding: 5px 14px;
+    flex: 1;
+    font-size: 13px;
+    padding: 8px 16px;
     border: none;
-    background: var(--primary-color, #0060df);
+    background: #0060df;
     color: white;
     border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
     font-weight: 600;
     white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    text-align: center;
     transition: background 0.15s, box-shadow 0.15s;
-    box-shadow: 0 1px 3px rgba(0, 96, 223, 0.25);
+    box-shadow: 0 2px 6px rgba(0, 96, 223, 0.3);
   }
   .conflict-ai-btn:hover {
-    background: var(--primary-hover, #003eaa);
-    box-shadow: 0 2px 6px rgba(0, 96, 223, 0.35);
-  }
-  .conflict-btn-icon {
-    font-size: 13px;
+    background: #003eaa;
+    box-shadow: 0 3px 10px rgba(0, 96, 223, 0.4);
   }
   .conflict-merge-all-btn {
-    font-size: 12px;
-    padding: 5px 14px;
-    border: 1.5px solid #e65100;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 2px solid #e65100;
     background: transparent;
     color: #e65100;
     border-radius: 6px;
@@ -987,8 +975,9 @@
     .conflicts-header { color: #ffb74d; }
     .conflict-warning { background: #3e2700; border-left-color: #ff9800; }
     .conflict-info { background: #0d2137; border-left-color: #42a5f5; }
-    .conflict-ai-btn { background: #45a1ff; color: #1c1b22; box-shadow: 0 1px 3px rgba(69, 161, 255, 0.3); }
-    .conflict-ai-btn:hover { background: #73b6ff; box-shadow: 0 2px 6px rgba(69, 161, 255, 0.4); }
+    .conflicts-actions { border-top-color: rgba(141, 110, 0, 0.3); }
+    .conflict-ai-btn { background: #45a1ff; color: #1c1b22; box-shadow: 0 2px 6px rgba(69, 161, 255, 0.3); }
+    .conflict-ai-btn:hover { background: #73b6ff; box-shadow: 0 3px 10px rgba(69, 161, 255, 0.4); }
     .conflict-merge-all-btn { border-color: #ffb74d; color: #ffb74d; }
     .conflict-merge-all-btn:hover { background: #ffb74d; color: #332d00; }
     .conflict-merged-badge { background: #1b4332; color: #95d5b2; }
