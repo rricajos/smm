@@ -261,6 +261,18 @@ export const es: Translations = {
   ai_success_move_done: '{count} correos movidos de "{source}" a "{dest}"',
   ai_success_move_undo: 'Movimiento deshecho',
   ai_error_move: 'Error al mover correos: {msg}',
+  ai_success_template_created: 'Plantilla "{name}" creada',
+  ai_success_template_undo: 'Plantilla "{name}" eliminada',
+  ai_error_template: 'Error al crear plantilla: {msg}',
+  ai_success_rules_consolidated: 'Reglas fusionadas en "{name}"',
+  ai_success_rules_consolidated_undo: 'Fusión de "{name}" deshecha',
+  ai_error_consolidation: 'Error al consolidar reglas: {msg}',
+  proposal_templates_title: 'Plantillas propuestas',
+  proposal_template_create_all: 'Crear todas',
+  proposal_badge_template_created: 'Creada',
+  proposal_consolidate_rules_title: 'Consolidar reglas',
+  proposal_consolidate_rules_all: 'Consolidar todas',
+  proposal_badge_rules_consolidated: 'Consolidada',
 
   // Template variables
   tpl_var_sender_name: 'Nombre del remitente',
@@ -307,6 +319,9 @@ export const es: Translations = {
   conflict_move_different: 'Ambas reglas mueven a carpetas diferentes.',
   conflict_priority_different: 'Asignan prioridades diferentes ({a} vs {b}).',
   conflict_redundant: 'Condiciones similares con acciones idénticas (posible duplicado).',
+  conflict_merge: 'Fusionar',
+  conflict_merge_all: 'Fusionar duplicados',
+  conflict_merged: 'Fusionada',
 
   // Template editor
   tmpl_edit_title: 'Editar plantilla',
@@ -443,4 +458,49 @@ export const es: Translations = {
   day_thursday: 'Jueves',
   day_friday: 'Viernes',
   day_saturday: 'Sábado',
+
+  // Rules summary labels
+  cond_has_attachments: 'tiene adjuntos',
+  cond_no_attachments: 'sin adjuntos',
+  action_move: 'Mover',
+  action_tag: 'Etiquetar',
+  action_priority: 'Prioridad',
+  action_read: 'Leído',
+  action_autorespond: 'Auto-responder',
+  logic_and: ' Y ',
+  logic_or: ' O ',
+  rules_test_note: 'Nota: esta prueba NO ejecuta las acciones. Solo verifica qué correos coincidirían.',
+  rules_broken_folder: 'Carpeta no encontrada: {id}',
+  rules_broken_tag: 'Etiqueta no encontrada: {key}',
+  rules_broken_template: 'Plantilla no encontrada',
+  rules_import_json_error: 'Error al leer el archivo JSON.',
+
+  // Import modal
+  import_title: 'Importar configuración',
+  import_file_summary: 'Resumen del archivo',
+  import_general_settings: 'Configuración general',
+  import_conflicts_title: 'Conflictos ({n})',
+  import_conflicts_desc: 'Estos elementos ya existen. Elige qué hacer con cada uno:',
+  import_conflict_rule: 'Regla: {name}',
+  import_conflict_template: 'Plantilla: {name}',
+  import_skip: 'Omitir',
+  import_replace: 'Reemplazar',
+  import_duplicate: 'Duplicar',
+  import_btn: 'Importar',
+  import_new_items: '{n} elemento{s} nuevo{s}',
+
+  // Provider hints
+  provider_hint_openrouter: 'Obtén tu key en openrouter.ai',
+  provider_hint_openai: 'Obtén tu key en platform.openai.com',
+  provider_hint_anthropic: 'Obtén tu key en console.anthropic.com',
+  provider_hint_google: 'Obtén tu key en aistudio.google.com',
+  provider_hint_custom: 'Endpoint compatible con la API de OpenAI (Ollama, LM Studio, etc.)',
+
+  // AI fallback names
+  ai_fallback_rule_name: 'Regla IA',
+  ai_fallback_template_name: 'Plantilla IA',
+  ai_fallback_merged_name: 'Regla fusionada',
+
+  // Chat
+  chat_new_conversation: 'Nueva conversación',
 };

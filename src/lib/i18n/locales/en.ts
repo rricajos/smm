@@ -261,6 +261,18 @@ export const en: Translations = {
   ai_success_move_done: '{count} emails moved from "{source}" to "{dest}"',
   ai_success_move_undo: 'Move undone',
   ai_error_move: 'Error moving emails: {msg}',
+  ai_success_template_created: 'Template "{name}" created',
+  ai_success_template_undo: 'Template "{name}" removed',
+  ai_error_template: 'Error creating template: {msg}',
+  ai_success_rules_consolidated: 'Rules merged into "{name}"',
+  ai_success_rules_consolidated_undo: 'Merge of "{name}" undone',
+  ai_error_consolidation: 'Error consolidating rules: {msg}',
+  proposal_templates_title: 'Proposed templates',
+  proposal_template_create_all: 'Create all',
+  proposal_badge_template_created: 'Created',
+  proposal_consolidate_rules_title: 'Consolidate rules',
+  proposal_consolidate_rules_all: 'Consolidate all',
+  proposal_badge_rules_consolidated: 'Consolidated',
 
   // Template variables
   tpl_var_sender_name: 'Sender name',
@@ -307,6 +319,9 @@ export const en: Translations = {
   conflict_move_different: 'Both rules move to different folders.',
   conflict_priority_different: 'Different priorities assigned ({a} vs {b}).',
   conflict_redundant: 'Similar conditions with identical actions (possible duplicate).',
+  conflict_merge: 'Merge',
+  conflict_merge_all: 'Merge duplicates',
+  conflict_merged: 'Merged',
 
   // Template editor
   tmpl_edit_title: 'Edit template',
@@ -443,4 +458,49 @@ export const en: Translations = {
   day_thursday: 'Thursday',
   day_friday: 'Friday',
   day_saturday: 'Saturday',
+
+  // Rules summary labels
+  cond_has_attachments: 'has attachments',
+  cond_no_attachments: 'no attachments',
+  action_move: 'Move',
+  action_tag: 'Tag',
+  action_priority: 'Priority',
+  action_read: 'Read',
+  action_autorespond: 'Auto-respond',
+  logic_and: ' AND ',
+  logic_or: ' OR ',
+  rules_test_note: 'Note: this test does NOT execute actions. It only checks which emails would match.',
+  rules_broken_folder: 'Folder not found: {id}',
+  rules_broken_tag: 'Tag not found: {key}',
+  rules_broken_template: 'Template not found',
+  rules_import_json_error: 'Error reading JSON file.',
+
+  // Import modal
+  import_title: 'Import configuration',
+  import_file_summary: 'File summary',
+  import_general_settings: 'General settings',
+  import_conflicts_title: 'Conflicts ({n})',
+  import_conflicts_desc: 'These items already exist. Choose what to do with each:',
+  import_conflict_rule: 'Rule: {name}',
+  import_conflict_template: 'Template: {name}',
+  import_skip: 'Skip',
+  import_replace: 'Replace',
+  import_duplicate: 'Duplicate',
+  import_btn: 'Import',
+  import_new_items: '{n} new item{s}',
+
+  // Provider hints
+  provider_hint_openrouter: 'Get your key at openrouter.ai',
+  provider_hint_openai: 'Get your key at platform.openai.com',
+  provider_hint_anthropic: 'Get your key at console.anthropic.com',
+  provider_hint_google: 'Get your key at aistudio.google.com',
+  provider_hint_custom: 'OpenAI-compatible endpoint (Ollama, LM Studio, etc.)',
+
+  // AI fallback names
+  ai_fallback_rule_name: 'AI Rule',
+  ai_fallback_template_name: 'AI Template',
+  ai_fallback_merged_name: 'Merged Rule',
+
+  // Chat
+  chat_new_conversation: 'New conversation',
 };

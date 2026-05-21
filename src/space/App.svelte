@@ -95,18 +95,22 @@
     </div>
   </nav>
 
-  <div class="content" role="tabpanel" id="panel-{activeTab}" aria-labelledby="tab-{activeTab}">
-    {#if activeTab === 'dashboard'}
+  <div class="content">
+    <div class="tab-panel" class:active-panel={activeTab === 'dashboard'} role="tabpanel" id="panel-dashboard" aria-labelledby="tab-dashboard">
       <Dashboard />
-    {:else if activeTab === 'rules'}
+    </div>
+    <div class="tab-panel" class:active-panel={activeTab === 'rules'} role="tabpanel" id="panel-rules" aria-labelledby="tab-rules">
       <Rules />
-    {:else if activeTab === 'templates'}
+    </div>
+    <div class="tab-panel" class:active-panel={activeTab === 'templates'} role="tabpanel" id="panel-templates" aria-labelledby="tab-templates">
       <Templates />
-    {:else if activeTab === 'ai'}
+    </div>
+    <div class="tab-panel" class:active-panel={activeTab === 'ai'} role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
       <AI />
-    {:else}
+    </div>
+    <div class="tab-panel" class:active-panel={activeTab === 'log'} role="tabpanel" id="panel-log" aria-labelledby="tab-log">
       <Log initialSearch={searchFilter} />
-    {/if}
+    </div>
   </div>
 </div>
 
@@ -206,5 +210,16 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  .tab-panel {
+    display: none;
+    flex: 1;
+    min-height: 0;
+  }
+  .tab-panel.active-panel {
+    display: flex;
+    flex-direction: column;
   }
 </style>

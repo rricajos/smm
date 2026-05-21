@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FolderProposal, MoveProposal, RuleProposal } from '../../lib/services/openai';
+  import type { FolderProposal, MoveProposal, RuleProposal, TemplateProposal, RuleConsolidationProposal } from '../../lib/services/openai';
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
@@ -8,23 +8,29 @@
   t.subscribe((fn) => (T = fn));
 
   interface Props {
-    type: 'folders' | 'moves' | 'rules';
+    type: 'folders' | 'moves' | 'rules' | 'templates' | 'consolidateRules';
     folderProposals?: FolderProposal[];
     moveProposals?: MoveProposal[];
     ruleProposals?: RuleProposal[];
+    templateProposals?: TemplateProposal[];
+    ruleConsolidationProposals?: RuleConsolidationProposal[];
     acceptedSet: Set<number>;
     onacceptfolder?: (idx: number, proposal: FolderProposal) => void;
     onacceptmove?: (idx: number, proposal: MoveProposal) => void;
     onacceptrule?: (idx: number, proposal: RuleProposal) => void;
     oneditrule?: (proposal: RuleProposal) => void;
+    onaccepttemplate?: (idx: number, proposal: TemplateProposal) => void;
+    onacceptconsolidation?: (idx: number, proposal: RuleConsolidationProposal) => void;
     onacceptall?: () => void;
   }
 
-  let { type, folderProposals, moveProposals, ruleProposals, acceptedSet, onacceptfolder, onacceptmove, onacceptrule, oneditrule, onacceptall }: Props = $props();
+  let { type, folderProposals, moveProposals, ruleProposals, templateProposals, ruleConsolidationProposals, acceptedSet, onacceptfolder, onacceptmove, onacceptrule, oneditrule, onaccepttemplate, onacceptconsolidation, onacceptall }: Props = $props();
 
   let items = $derived(
     type === 'folders' ? folderProposals || [] :
     type === 'moves' ? moveProposals || [] :
+    type === 'templates' ? templateProposals || [] :
+    type === 'consolidateRules' ? ruleConsolidationProposals || [] :
     ruleProposals || []
   );
   let allAccepted = $derived(items.every((_, i) => acceptedSet.has(i)));
@@ -34,11 +40,19 @@
   <div class="proposals-block">
     <div class="proposals-header">
       <span class="proposals-title">
-        {type === 'folders' ? T('proposal_folders_title') : type === 'moves' ? T('proposal_moves_title') : T('proposal_rules_title')} ({items.length})
+        {type === 'folders' ? T('proposal_folders_title') :
+         type === 'moves' ? T('proposal_moves_title') :
+         type === 'templates' ? T('proposal_templates_title') :
+         type === 'consolidateRules' ? T('proposal_consolidate_rules_title') :
+         T('proposal_rules_title')} ({items.length})
       </span>
       {#if !allAccepted && onacceptall}
         <button class="accept-all-btn" onclick={onacceptall}>
-          {type === 'folders' ? T('proposal_create_all') : type === 'moves' ? T('proposal_consolidate_all') : T('proposal_accept_all')}
+          {type === 'folders' ? T('proposal_create_all') :
+           type === 'moves' ? T('proposal_consolidate_all') :
+           type === 'templates' ? T('proposal_template_create_all') :
+           type === 'consolidateRules' ? T('proposal_consolidate_rules_all') :
+           T('proposal_accept_all')}
         </button>
       {/if}
     </div>
@@ -111,6 +125,60 @@
                 <Button size="sm" onclick={() => oneditrule(rp)}>{T('common_edit')}</Button>
               {/if}
             </div>
+          {/if}
+        </div>
+      {/each}
+    {/if}
+
+    {#if type === 'templates' && templateProposals}
+      {#each templateProposals as tp, idx}
+        <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
+          <div class="proposal-info">
+            <span class="proposal-icon">&#9993;</span>
+            <div>
+              <strong>{tp.template.name}</strong>
+              <small>{tp.description}</small>
+              <div class="rule-summary">
+                <span class="detail-chip">{tp.template.sendMode === 'draft' ? T('templates_draft') : tp.template.sendMode === 'sendNow' ? T('templates_send_now') : T('templates_send_later')}</span>
+                <span class="detail-chip">{tp.template.replyType === 'replyToSender' ? T('templates_reply') : T('templates_reply_all')}</span>
+                {#if tp.template.subject}
+                  <span class="detail-chip action-chip">{tp.template.subject}</span>
+                {/if}
+              </div>
+            </div>
+          </div>
+          {#if acceptedSet.has(idx)}
+            <span class="accepted-badge">{T('proposal_badge_template_created')}</span>
+          {:else if onaccepttemplate}
+            <Button size="sm" variant="primary" onclick={() => onaccepttemplate(idx, tp)}>{T('proposal_create')}</Button>
+          {/if}
+        </div>
+      {/each}
+    {/if}
+
+    {#if type === 'consolidateRules' && ruleConsolidationProposals}
+      {#each ruleConsolidationProposals as rc, idx}
+        <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
+          <div class="proposal-info">
+            <span class="proposal-icon">&#128256;</span>
+            <div>
+              <strong>{rc.sourceRuleNames.join(' + ')} &rarr; {rc.mergedRule.name}</strong>
+              <small>{rc.description}</small>
+              <div class="rule-summary">
+                {#each rc.mergedRule.conditions as cond}
+                  <span class="detail-chip">{cond.field} {cond.operator} "{cond.value || (cond.boolValue ? T('common_yes') : T('common_no'))}"</span>
+                {/each}
+                <span class="arrow-chip">&rarr;</span>
+                {#each rc.mergedRule.actions as act}
+                  <span class="detail-chip action-chip">{act.type}{act.folderId ? ` ${act.folderId}` : ''}{act.tagKey ? ` ${act.tagKey}` : ''}</span>
+                {/each}
+              </div>
+            </div>
+          </div>
+          {#if acceptedSet.has(idx)}
+            <span class="accepted-badge">{T('proposal_badge_rules_consolidated')}</span>
+          {:else if onacceptconsolidation}
+            <Button size="sm" variant="primary" onclick={() => onacceptconsolidation(idx, rc)}>{T('proposal_consolidate')}</Button>
           {/if}
         </div>
       {/each}

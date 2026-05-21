@@ -23,11 +23,11 @@ export async function triggerAutoResponse(
   // Safety checks
   if (fullMessage) {
     if (isAutoSubmitted(fullMessage)) {
-      console.log('[SMM] Skipping auto-response: auto-submitted message');
+      console.debug('[SMM] Skipping auto-response: auto-submitted message');
       return;
     }
     if (isMailingList(fullMessage)) {
-      console.log('[SMM] Skipping auto-response: mailing list message');
+      console.debug('[SMM] Skipping auto-response: mailing list message');
       return;
     }
   }
@@ -36,14 +36,14 @@ export async function triggerAutoResponse(
   const ownAddresses = await getOwnAddresses();
   const senderEmail = extractEmail(header.author || '').toLowerCase();
   if (ownAddresses.includes(senderEmail)) {
-    console.log('[SMM] Skipping auto-response: message from own account');
+    console.debug('[SMM] Skipping auto-response: message from own account');
     return;
   }
 
   // Don't respond to messages in Sent/Drafts/Trash
   const folderType = header.folder?.type;
   if (folderType === 'sent' || folderType === 'drafts' || folderType === 'trash') {
-    console.log('[SMM] Skipping auto-response: message in excluded folder');
+    console.debug('[SMM] Skipping auto-response: message in excluded folder');
     return;
   }
 

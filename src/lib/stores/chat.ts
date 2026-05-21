@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import type { FolderProposal, MoveProposal, RuleProposal, ChatMessage } from '../services/openai';
+import type { FolderProposal, MoveProposal, RuleProposal, TemplateProposal, RuleConsolidationProposal, ChatMessage } from '../services/openai';
 import { STORAGE_KEYS } from '../utils/constants';
 
 declare const browser: any;
@@ -10,9 +10,13 @@ export interface StoredDisplayMessage {
   folderProposals?: FolderProposal[];
   moveProposals?: MoveProposal[];
   ruleProposals?: RuleProposal[];
+  templateProposals?: TemplateProposal[];
+  ruleConsolidationProposals?: RuleConsolidationProposal[];
   acceptedFolders?: number[];
   acceptedMoves?: number[];
   acceptedRules?: number[];
+  acceptedTemplates?: number[];
+  acceptedConsolidations?: number[];
 }
 
 export interface ChatConversation {
@@ -21,6 +25,7 @@ export interface ChatConversation {
   createdAt: number;
   displayMessages: StoredDisplayMessage[];
   apiHistory: ChatMessage[];
+  createdFolderMap?: Record<string, string>;
 }
 
 interface ChatStoreState {
@@ -35,12 +40,16 @@ function generateId(): string {
 function createEmptyConversation(): ChatConversation {
   return {
     id: generateId(),
-    title: 'Nueva conversacion',
+    title: 'New conversation',
     createdAt: Date.now(),
     displayMessages: [],
     apiHistory: [],
+    createdFolderMap: {},
   };
 }
+
+// Tracks whether the store has finished loading from browser.storage.local
+export const storeReady = writable(false);
 
 function createChatStore() {
   const initial = createEmptyConversation();
@@ -49,6 +58,8 @@ function createChatStore() {
     activeId: initial.id,
   });
 
+  let loaded = false;
+
   // Load from storage (backward compatible with old single-conversation format)
   try {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
@@ -56,7 +67,10 @@ function createChatStore() {
         const saved = result[STORAGE_KEYS.CHAT_HISTORY];
         if (saved) {
           if (saved.conversations && saved.activeId) {
-            // New multi-conversation format
+            // Ensure createdFolderMap exists on each conversation
+            for (const conv of saved.conversations) {
+              if (!conv.createdFolderMap) conv.createdFolderMap = {};
+            }
             set(saved);
           } else if (saved.displayMessages || saved.apiHistory) {
             // Old single-conversation format — migrate
@@ -70,11 +84,20 @@ function createChatStore() {
             set({ conversations: [migrated], activeId: migrated.id });
           }
         }
+        loaded = true;
+        storeReady.set(true);
       });
+    } else {
+      loaded = true;
+      storeReady.set(true);
     }
-  } catch { /* ignore */ }
+  } catch {
+    loaded = true;
+    storeReady.set(true);
+  }
 
   function persist(state: ChatStoreState) {
+    if (!loaded) return; // Don't overwrite storage before initial load completes
     try {
       browser.storage.local.set({
         [STORAGE_KEYS.CHAT_HISTORY]: JSON.parse(JSON.stringify(state)),
@@ -144,6 +167,28 @@ function createChatStore() {
       });
     },
 
+    // --- Folder map methods (operate on active conversation) ---
+
+    setFolderMapping(key: string, folderId: string) {
+      update(state => {
+        return updateActive(state, conv => {
+          if (!conv.createdFolderMap) conv.createdFolderMap = {};
+          conv.createdFolderMap = { ...conv.createdFolderMap, [key]: folderId };
+        });
+      });
+    },
+
+    removeFolderMapping(key: string) {
+      update(state => {
+        return updateActive(state, conv => {
+          if (conv.createdFolderMap) {
+            const { [key]: _, ...rest } = conv.createdFolderMap;
+            conv.createdFolderMap = rest;
+          }
+        });
+      });
+    },
+
     // --- Message methods (operate on active conversation) ---
 
     addUserMessage(content: string) {
@@ -164,6 +209,8 @@ function createChatStore() {
       folderProposals?: FolderProposal[],
       ruleProposals?: RuleProposal[],
       moveProposals?: MoveProposal[],
+      templateProposals?: TemplateProposal[],
+      ruleConsolidationProposals?: RuleConsolidationProposal[],
     ) {
       update(state => {
         return updateActive(state, conv => {
@@ -173,9 +220,13 @@ function createChatStore() {
             folderProposals,
             moveProposals,
             ruleProposals,
+            templateProposals,
+            ruleConsolidationProposals,
             acceptedFolders: [],
             acceptedMoves: [],
             acceptedRules: [],
+            acceptedTemplates: [],
+            acceptedConsolidations: [],
           }];
           conv.apiHistory = [...conv.apiHistory, { role: 'assistant' as const, content }];
         });
@@ -254,12 +305,61 @@ function createChatStore() {
       });
     },
 
+    markTemplateAccepted(msgIdx: number, proposalIdx: number) {
+      update(state => {
+        return updateActive(state, conv => {
+          const msg = conv.displayMessages[msgIdx];
+          if (msg && msg.acceptedTemplates && !msg.acceptedTemplates.includes(proposalIdx)) {
+            msg.acceptedTemplates = [...msg.acceptedTemplates, proposalIdx];
+            conv.displayMessages = [...conv.displayMessages];
+          }
+        });
+      });
+    },
+
+    unmarkTemplateAccepted(msgIdx: number, proposalIdx: number) {
+      update(state => {
+        return updateActive(state, conv => {
+          const msg = conv.displayMessages[msgIdx];
+          if (msg && msg.acceptedTemplates) {
+            msg.acceptedTemplates = msg.acceptedTemplates.filter(i => i !== proposalIdx);
+            conv.displayMessages = [...conv.displayMessages];
+          }
+        });
+      });
+    },
+
+    markConsolidationAccepted(msgIdx: number, proposalIdx: number) {
+      update(state => {
+        return updateActive(state, conv => {
+          const msg = conv.displayMessages[msgIdx];
+          if (msg && msg.acceptedConsolidations && !msg.acceptedConsolidations.includes(proposalIdx)) {
+            msg.acceptedConsolidations = [...msg.acceptedConsolidations, proposalIdx];
+            conv.displayMessages = [...conv.displayMessages];
+          }
+        });
+      });
+    },
+
+    unmarkConsolidationAccepted(msgIdx: number, proposalIdx: number) {
+      update(state => {
+        return updateActive(state, conv => {
+          const msg = conv.displayMessages[msgIdx];
+          if (msg && msg.acceptedConsolidations) {
+            msg.acceptedConsolidations = msg.acceptedConsolidations.filter(i => i !== proposalIdx);
+            conv.displayMessages = [...conv.displayMessages];
+          }
+        });
+      });
+    },
+
     clear() {
       update(state => {
         return updateActive(state, conv => {
           conv.displayMessages = [];
           conv.apiHistory = [];
-          conv.title = 'Nueva conversacion';
+          conv.title = 'New conversation';
+          conv.createdFolderMap = {};
         });
       });
     },

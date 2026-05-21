@@ -40,8 +40,10 @@ function createSettingsStore() {
         logRetentionDays: newSettings.logRetentionDays,
         notifyOnClassification: newSettings.notifyOnClassification,
         notifyOnAutoResponse: newSettings.notifyOnAutoResponse,
+        aiProvider: newSettings.aiProvider,
         openaiApiKey: newSettings.openaiApiKey,
         openaiModel: newSettings.openaiModel,
+        customBaseUrl: newSettings.customBaseUrl,
       };
       set(plain);
       await browser.storage.local.set({ [STORAGE_KEY]: plain });

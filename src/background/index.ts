@@ -26,7 +26,7 @@ messenger.spacesToolbar.addButton('smartMailManager', {
     const s = await getSettings();
     if (s.logRetentionDays > 0) {
       const removed = await cleanupOldActivityEntries(s.logRetentionDays);
-      if (removed > 0) console.log(`[SMM] Log cleanup: removed ${removed} old entries`);
+      if (removed > 0) console.debug(`[SMM] Log cleanup: removed ${removed} old entries`);
     }
   } catch (err) {
     console.error('[SMM] Error during log cleanup:', err);
@@ -38,7 +38,7 @@ messenger.spacesToolbar.addButton('smartMailManager', {
     const found = existingTags.find((t: any) => t.key === SMM_ANALYZED_TAG);
     if (!found) {
       await messenger.messages.tags.create(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
-      console.log('[SMM] Created analyzed tag');
+      console.debug('[SMM] Created analyzed tag');
     }
   } catch (err) {
     console.error('[SMM] Error creating analyzed tag:', err);

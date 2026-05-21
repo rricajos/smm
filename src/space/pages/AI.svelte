@@ -19,6 +19,8 @@
     FolderProposal,
     MoveProposal,
     RuleProposal,
+    TemplateProposal,
+    RuleConsolidationProposal,
   } from '../../lib/services/openai';
   import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS } from '../../lib/utils/constants';
   import type { AiProvider } from '../../types/settings';
@@ -35,7 +37,7 @@
     }
   }
   import { renderMarkdown } from '../../lib/utils/markdown';
-  import { chatStore, activeConversation, allConversations, type StoredDisplayMessage, type ChatConversation } from '../../lib/stores/chat';
+  import { chatStore, activeConversation, allConversations, storeReady, type StoredDisplayMessage, type ChatConversation } from '../../lib/stores/chat';
 
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
   t.subscribe((fn) => (T = fn));
@@ -49,6 +51,9 @@
   import FolderTree from '../components/FolderTree.svelte';
 
   declare const browser: any;
+
+  let isStoreReady = $state(false);
+  storeReady.subscribe((v) => (isStoreReady = v));
 
   let currentSettings = $state<any>({});
   let currentRules = $state<Rule[]>([]);
@@ -139,8 +144,8 @@
   // Active tab
   let activeMode = $state<'chat' | 'quick'>('chat');
 
-  // Map of NEW:FolderName -> real folder ID after creation
-  let createdFolderMap = $state<Record<string, string>>({});
+  // Map of NEW:FolderName -> real folder ID after creation (persisted in conversation)
+  let createdFolderMap = $derived(currentConversation.createdFolderMap || {});
 
   // Undo state
   let undoToast = $state<{
@@ -264,6 +269,7 @@
         currentSettings.openaiModel || 'openai/gpt-4o-mini',
         currentSettings.aiProvider || 'openrouter',
         currentSettings.customBaseUrl,
+        currentTemplates,
       );
 
       chatStore.addAssistantMessage(
@@ -271,6 +277,8 @@
         response.folderProposals,
         response.ruleProposals,
         response.moveProposals,
+        response.templateProposals,
+        response.ruleConsolidationProposals,
       );
       scrollToBottom();
     } catch (err: any) {
@@ -310,15 +318,13 @@
 
       if (result.success) {
         const folderId = result.folder.id;
-        createdFolderMap[`NEW:${proposal.name}`] = folderId;
-        createdFolderMap = { ...createdFolderMap };
+        chatStore.setFolderMapping(`NEW:${proposal.name}`, folderId);
         chatStore.markFolderAccepted(msgIdx, proposalIdx);
         await loadMetadata();
         showUndoToast(T('ai_success_folder_created', { name: proposal.name }), async () => {
           await browser.runtime.sendMessage({ type: 'DELETE_FOLDER', folderId });
           chatStore.unmarkFolderAccepted(msgIdx, proposalIdx);
-          delete createdFolderMap[`NEW:${proposal.name}`];
-          createdFolderMap = { ...createdFolderMap };
+          chatStore.removeFolderMapping(`NEW:${proposal.name}`);
           await loadMetadata();
           showSuccess(T('ai_success_folder_undo', { name: proposal.name }));
         });
@@ -328,8 +334,7 @@
           await loadMetadata();
           const existing = folderInfos.find(f => f.name === proposal.name && f.path.includes(proposal.name));
           if (existing) {
-            createdFolderMap[`NEW:${proposal.name}`] = existing.id;
-            createdFolderMap = { ...createdFolderMap };
+            chatStore.setFolderMapping(`NEW:${proposal.name}`, existing.id);
             chatStore.markFolderAccepted(msgIdx, proposalIdx);
             showSuccess(T('ai_success_folder_existed', { name: proposal.name }));
           } else {
@@ -345,10 +350,14 @@
   function acceptRuleProposal(msgIdx: number, proposalIdx: number, proposal: RuleProposal) {
     const rule = { ...proposal.rule };
     rule.actions = rule.actions.map(a => {
-      if (a.folderId && a.folderId.startsWith('NEW:') && createdFolderMap[a.folderId]) {
-        return { ...a, folderId: createdFolderMap[a.folderId] };
+      let resolved = { ...a };
+      if (resolved.folderId?.startsWith('NEW:') && createdFolderMap[resolved.folderId]) {
+        resolved.folderId = createdFolderMap[resolved.folderId];
       }
-      return a;
+      if (resolved.templateId?.startsWith('NEW_TPL:') && createdTemplateMap[resolved.templateId]) {
+        resolved.templateId = createdTemplateMap[resolved.templateId];
+      }
+      return resolved;
     });
     rules.addRule(rule);
     chatStore.markRuleAccepted(msgIdx, proposalIdx);
@@ -364,10 +373,14 @@
   function editRuleProposal(proposal: RuleProposal) {
     const rule = { ...proposal.rule };
     rule.actions = rule.actions.map(a => {
-      if (a.folderId && a.folderId.startsWith('NEW:') && createdFolderMap[a.folderId]) {
-        return { ...a, folderId: createdFolderMap[a.folderId] };
+      let resolved = { ...a };
+      if (resolved.folderId?.startsWith('NEW:') && createdFolderMap[resolved.folderId]) {
+        resolved.folderId = createdFolderMap[resolved.folderId];
       }
-      return a;
+      if (resolved.templateId?.startsWith('NEW_TPL:') && createdTemplateMap[resolved.templateId]) {
+        resolved.templateId = createdTemplateMap[resolved.templateId];
+      }
+      return resolved;
     });
     editingRule = rule;
     showEditor = true;
@@ -439,22 +452,123 @@
     }
   }
 
+  // --- Template proposal handlers ---
+
+  // Map of NEW_TPL:TemplateName -> real template ID after creation
+  let createdTemplateMap: Record<string, string> = {};
+
+  function acceptTemplateProposal(msgIdx: number, proposalIdx: number, proposal: TemplateProposal) {
+    try {
+      templates.addTemplate(proposal.template);
+      const tplId = proposal.template.id;
+      const tplName = proposal.template.name;
+      createdTemplateMap[`NEW_TPL:${tplName}`] = tplId;
+      chatStore.markTemplateAccepted(msgIdx, proposalIdx);
+      showUndoToast(T('ai_success_template_created', { name: tplName }), async () => {
+        templates.deleteTemplate(tplId);
+        delete createdTemplateMap[`NEW_TPL:${tplName}`];
+        chatStore.unmarkTemplateAccepted(msgIdx, proposalIdx);
+        showSuccess(T('ai_success_template_undo', { name: tplName }));
+      });
+    } catch (err: any) {
+      error = T('ai_error_template', { msg: err.message });
+    }
+  }
+
+  function acceptAllTemplates(msgIdx: number, proposals: TemplateProposal[]) {
+    proposals.forEach((p, i) => {
+      const msg = chatMessages[msgIdx];
+      if (!msg.acceptedTemplates?.includes(i)) acceptTemplateProposal(msgIdx, i, p);
+    });
+  }
+
+  // --- Rule consolidation handlers ---
+
+  function acceptConsolidationProposal(msgIdx: number, proposalIdx: number, proposal: RuleConsolidationProposal) {
+    try {
+      // Resolve sourceRuleIds: match by ID first, fall back to name matching
+      const resolvedIds: string[] = [];
+      for (let i = 0; i < proposal.sourceRuleIds.length; i++) {
+        const idOrRef = proposal.sourceRuleIds[i];
+        const name = proposal.sourceRuleNames[i];
+        // Direct ID match
+        const byId = currentRules.find(r => r.id === idOrRef);
+        if (byId) { resolvedIds.push(byId.id); continue; }
+        // NEW_RULE: reference — match by name
+        if (idOrRef.startsWith('NEW_RULE:')) {
+          const refName = idOrRef.slice(9).toLowerCase();
+          const byName = currentRules.find(r => r.name.toLowerCase() === refName);
+          if (byName) { resolvedIds.push(byName.id); continue; }
+        }
+        // Fallback: match by sourceRuleNames
+        if (name) {
+          const byName = currentRules.find(r => r.name.toLowerCase() === name.toLowerCase());
+          if (byName) { resolvedIds.push(byName.id); continue; }
+        }
+        // Last resort: try the raw value as a name
+        const byRawName = currentRules.find(r => r.name.toLowerCase() === idOrRef.toLowerCase());
+        if (byRawName) { resolvedIds.push(byRawName.id); continue; }
+      }
+
+      // Save backup of original rules for undo
+      const originalRules = resolvedIds
+        .map(id => currentRules.find(r => r.id === id))
+        .filter(Boolean) as Rule[];
+
+      // Delete original rules
+      resolvedIds.forEach(id => rules.deleteRule(id));
+
+      // Resolve NEW:FolderName and NEW_TPL:TemplateName references in merged rule
+      const mergedRule = { ...proposal.mergedRule };
+      mergedRule.actions = mergedRule.actions.map(a => {
+        let resolved = { ...a };
+        if (resolved.folderId?.startsWith('NEW:') && createdFolderMap[resolved.folderId]) {
+          resolved.folderId = createdFolderMap[resolved.folderId];
+        }
+        if (resolved.templateId?.startsWith('NEW_TPL:') && createdTemplateMap[resolved.templateId]) {
+          resolved.templateId = createdTemplateMap[resolved.templateId];
+        }
+        return resolved;
+      });
+
+      // Add merged rule
+      rules.addRule(mergedRule);
+      chatStore.markConsolidationAccepted(msgIdx, proposalIdx);
+
+      const mergedId = mergedRule.id;
+      const mergedName = mergedRule.name;
+      showUndoToast(T('ai_success_rules_consolidated', { name: mergedName }), async () => {
+        // Undo: delete merged, restore originals
+        rules.deleteRule(mergedId);
+        originalRules.forEach(r => rules.addRule(r));
+        chatStore.unmarkConsolidationAccepted(msgIdx, proposalIdx);
+        showSuccess(T('ai_success_rules_consolidated_undo', { name: mergedName }));
+      });
+    } catch (err: any) {
+      error = T('ai_error_consolidation', { msg: err.message });
+    }
+  }
+
+  function acceptAllConsolidations(msgIdx: number, proposals: RuleConsolidationProposal[]) {
+    proposals.forEach((p, i) => {
+      const msg = chatMessages[msgIdx];
+      if (!msg.acceptedConsolidations?.includes(i)) acceptConsolidationProposal(msgIdx, i, p);
+    });
+  }
+
   function clearChat() {
     chatStore.clear();
-    createdFolderMap = {};
     cachedEmails = [];
   }
 
   function newConversation() {
     chatStore.newConversation();
-    createdFolderMap = {};
     cachedEmails = [];
     showConversationList = false;
   }
 
   function switchConversation(id: string) {
     chatStore.switchConversation(id);
-    createdFolderMap = {};
     cachedEmails = [];
     showConversationList = false;
   }
@@ -462,7 +576,6 @@
   function deleteConversation(id: string) {
     if (!confirm(T('ai_delete_conversation_confirm'))) return;
     chatStore.deleteConversation(id);
-    createdFolderMap = {};
   }
 
   function formatDate(ts: number): string {
@@ -768,6 +881,26 @@
                     onacceptrule={(idx, rp) => acceptRuleProposal(msgIdx, idx, rp)}
                     oneditrule={editRuleProposal}
                     onacceptall={() => acceptAllRules(msgIdx, msg.ruleProposals || [])}
+                  />
+                {/if}
+
+                {#if msg.templateProposals && msg.templateProposals.length > 0}
+                  <ProposalBlock
+                    type="templates"
+                    templateProposals={msg.templateProposals}
+                    acceptedSet={new Set(msg.acceptedTemplates || [])}
+                    onaccepttemplate={(idx, tp) => acceptTemplateProposal(msgIdx, idx, tp)}
+                    onacceptall={() => acceptAllTemplates(msgIdx, msg.templateProposals || [])}
+                  />
+                {/if}
+
+                {#if msg.ruleConsolidationProposals && msg.ruleConsolidationProposals.length > 0}
+                  <ProposalBlock
+                    type="consolidateRules"
+                    ruleConsolidationProposals={msg.ruleConsolidationProposals}
+                    acceptedSet={new Set(msg.acceptedConsolidations || [])}
+                    onacceptconsolidation={(idx, rc) => acceptConsolidationProposal(msgIdx, idx, rc)}
+                    onacceptall={() => acceptAllConsolidations(msgIdx, msg.ruleConsolidationProposals || [])}
                   />
                 {/if}
               </div>

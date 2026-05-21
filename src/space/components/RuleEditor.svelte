@@ -4,6 +4,7 @@
   import { detectRuleConflicts } from '../../lib/utils/rule-conflicts';
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
+  import { onDestroy } from 'svelte';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
   import ConditionRow from './ConditionRow.svelte';
@@ -25,7 +26,8 @@
   let { show, rule, folders, tags, templates, existingRules = [], onsave, onclose }: Props = $props();
 
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
+  const unsubT = t.subscribe((fn) => (T = fn));
+  onDestroy(() => unsubT());
 
   let name = $state('');
   let conditions = $state<Condition[]>([]);
@@ -298,7 +300,7 @@
     <!-- Conflict warnings -->
     {#if editorConflicts().length > 0}
       <div class="editor-conflicts">
-        <span class="editor-conflicts-icon">\u26A0</span>
+        <span class="editor-conflicts-icon">⚠</span>
         <div class="editor-conflicts-list">
           {#each editorConflicts() as conflict}
             <span class="editor-conflict-text">

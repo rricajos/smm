@@ -3,11 +3,13 @@
   import { TEMPLATE_VARIABLES } from '../../lib/utils/constants';
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
+  import { onDestroy } from 'svelte';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
 
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
+  const unsubT = t.subscribe((fn) => (T = fn));
+  onDestroy(() => unsubT());
 
   interface Props {
     show: boolean;

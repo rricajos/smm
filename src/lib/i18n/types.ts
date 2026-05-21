@@ -259,6 +259,22 @@ export interface Translations {
   ai_success_move_done: string;
   ai_success_move_undo: string;
   ai_error_move: string;
+  ai_success_template_created: string;
+  ai_success_template_undo: string;
+  ai_error_template: string;
+  ai_success_rules_consolidated: string;
+  ai_success_rules_consolidated_undo: string;
+  ai_error_consolidation: string;
+
+  // Template proposals
+  proposal_templates_title: string;
+  proposal_template_create_all: string;
+  proposal_badge_template_created: string;
+
+  // Rule consolidation proposals
+  proposal_consolidate_rules_title: string;
+  proposal_consolidate_rules_all: string;
+  proposal_badge_rules_consolidated: string;
 
   // Template variables
   tpl_var_sender_name: string;
@@ -305,6 +321,9 @@ export interface Translations {
   conflict_move_different: string;
   conflict_priority_different: string;
   conflict_redundant: string;
+  conflict_merge: string;
+  conflict_merge_all: string;
+  conflict_merged: string;
 
   // Template editor
   tmpl_edit_title: string;
@@ -441,4 +460,49 @@ export interface Translations {
   day_thursday: string;
   day_friday: string;
   day_saturday: string;
+
+  // Rules summary labels
+  cond_has_attachments: string;
+  cond_no_attachments: string;
+  action_move: string;
+  action_tag: string;
+  action_priority: string;
+  action_read: string;
+  action_autorespond: string;
+  logic_and: string;
+  logic_or: string;
+  rules_test_note: string;
+  rules_broken_folder: string;
+  rules_broken_tag: string;
+  rules_broken_template: string;
+  rules_import_json_error: string;
+
+  // Import modal
+  import_title: string;
+  import_file_summary: string;
+  import_general_settings: string;
+  import_conflicts_title: string;
+  import_conflicts_desc: string;
+  import_conflict_rule: string;
+  import_conflict_template: string;
+  import_skip: string;
+  import_replace: string;
+  import_duplicate: string;
+  import_btn: string;
+  import_new_items: string;
+
+  // Provider hints
+  provider_hint_openrouter: string;
+  provider_hint_openai: string;
+  provider_hint_anthropic: string;
+  provider_hint_google: string;
+  provider_hint_custom: string;
+
+  // AI fallback names
+  ai_fallback_rule_name: string;
+  ai_fallback_template_name: string;
+  ai_fallback_merged_name: string;
+
+  // Chat
+  chat_new_conversation: string;
 }

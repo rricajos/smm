@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Rule } from '../../types/rules';
+  import type { Rule, Condition } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
   import { rules } from '../../lib/stores/rules';
   import { templates } from '../../lib/stores/templates';
@@ -89,13 +89,13 @@
       const problems: string[] = [];
       for (const action of rule.actions) {
         if (action.type === 'moveToFolder' && action.folderId && folderIds.size > 0 && !folderIds.has(action.folderId)) {
-          problems.push(`Carpeta no encontrada: ${action.folderId}`);
+          problems.push(T('rules_broken_folder', { id: action.folderId }));
         }
         if (action.type === 'addTag' && action.tagKey && tagKeys.size > 0 && !tagKeys.has(action.tagKey)) {
-          problems.push(`Etiqueta no encontrada: ${action.tagKey}`);
+          problems.push(T('rules_broken_tag', { key: action.tagKey }));
         }
         if (action.type === 'autoRespond' && action.templateId && templateIds.size > 0 && !templateIds.has(action.templateId)) {
-          problems.push('Plantilla no encontrada');
+          problems.push(T('rules_broken_template'));
         }
       }
       if (problems.length > 0) refs[rule.id] = problems;
@@ -238,7 +238,7 @@
         importValidation = detectConflicts(result.data!, currentRules, currentTemplates);
         showImportModal = true;
       } catch {
-        importError = 'Error al leer el archivo JSON.';
+        importError = T('rules_import_json_error');
       }
     };
     input.click();
@@ -291,10 +291,10 @@
   }
 
   function conditionSummary(rule: Rule): string {
-    const logic = rule.conditionLogic === 'all' ? ' Y ' : ' O ';
+    const logic = rule.conditionLogic === 'all' ? T('logic_and') : T('logic_or');
     return rule.conditions
       .map((c) => {
-        if (c.field === 'hasAttachments') return c.boolValue ? 'tiene adjuntos' : 'sin adjuntos';
+        if (c.field === 'hasAttachments') return c.boolValue ? T('cond_has_attachments') : T('cond_no_attachments');
         return `${c.field} ${c.operator} "${c.value}"`;
       })
       .join(logic);
@@ -302,14 +302,74 @@
 
   function actionSummary(rule: Rule): string {
     const labels: Record<string, string> = {
-      moveToFolder: 'Mover',
-      addTag: 'Etiquetar',
-      setPriority: 'Prioridad',
-      markRead: 'Leído',
-      autoRespond: 'Auto-responder',
+      moveToFolder: T('action_move'),
+      addTag: T('action_tag'),
+      setPriority: T('action_priority'),
+      markRead: T('action_read'),
+      autoRespond: T('action_autorespond'),
     };
     return rule.actions.map((a) => labels[a.type] || a.type).join(', ');
   }
+
+  // --- Conflict resolution ---
+  const conflictI18nKey: Record<string, string> = {
+    contradictory_move: 'conflict_move_different',
+    contradictory_priority: 'conflict_priority_different',
+    redundant: 'conflict_redundant',
+  };
+
+  function conflictDesc(conflict: RuleConflict): string {
+    const key = conflictI18nKey[conflict.type];
+    return key ? T(key as any, conflict.params) : conflict.description;
+  }
+
+  let mergedConflicts = $state(new Set<number>());
+
+  let hasRedundantConflicts = $derived(ruleConflicts.some(c => c.type === 'redundant'));
+
+  function condKey(c: Condition): string {
+    return `${c.field}|${c.operator}|${(c.value || '').toLowerCase()}|${c.boolValue ?? ''}`;
+  }
+
+  function mergeRedundantConflict(conflictIdx: number, conflict: RuleConflict) {
+    const ruleA = currentRules.find(r => r.id === conflict.ruleA.id);
+    const ruleB = currentRules.find(r => r.id === conflict.ruleB.id);
+    if (!ruleA || !ruleB) return;
+
+    // Combine conditions, avoiding exact duplicates
+    const existing = new Set(ruleA.conditions.map(condKey));
+    const merged: Condition[] = [...ruleA.conditions];
+    for (const cond of ruleB.conditions) {
+      if (!existing.has(condKey(cond))) {
+        merged.push(cond);
+      }
+    }
+
+    rules.updateRule(ruleA.id, {
+      ...ruleA,
+      conditions: merged,
+      conditionLogic: merged.length > 1 ? 'any' : ruleA.conditionLogic,
+      updatedAt: Date.now(),
+    });
+    rules.deleteRule(ruleB.id);
+    mergedConflicts = new Set([...mergedConflicts, conflictIdx]);
+  }
+
+  function mergeAllRedundant() {
+    const deleted = new Set<string>();
+    ruleConflicts.forEach((conflict, idx) => {
+      if (conflict.type !== 'redundant') return;
+      if (deleted.has(conflict.ruleA.id) || deleted.has(conflict.ruleB.id)) return;
+      mergeRedundantConflict(idx, conflict);
+      deleted.add(conflict.ruleB.id);
+    });
+  }
+
+  // Reset merged set when conflicts change (e.g. after merge the list recomputes)
+  $effect(() => {
+    ruleConflicts; // track
+    mergedConflicts = new Set();
+  });
 </script>
 
 <div class="rules-page">
@@ -338,13 +398,29 @@
   {#if ruleConflicts.length > 0}
     <div class="conflicts-section">
       <div class="conflicts-header">
-        <span class="conflicts-icon">\u26A0</span>
-        {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
+        <div class="conflicts-header-left">
+          <span class="conflicts-icon">⚠</span>
+          {T('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}
+        </div>
+        {#if hasRedundantConflicts}
+          <button class="conflict-merge-all-btn" onclick={mergeAllRedundant}>{T('conflict_merge_all')}</button>
+        {/if}
       </div>
-      {#each ruleConflicts as conflict}
+      {#each ruleConflicts as conflict, idx}
         <div class="conflict-item" class:conflict-warning={conflict.severity === 'warning'} class:conflict-info={conflict.severity === 'info'}>
-          <span class="conflict-rules">"{conflict.ruleA.name}" y "{conflict.ruleB.name}"</span>
-          <span class="conflict-desc">{conflict.description}</span>
+          <div class="conflict-text">
+            <span class="conflict-rules">
+              <button class="conflict-rule-link" onclick={() => { const r = currentRules.find(r => r.id === conflict.ruleA.id); if (r) openEditRule(r); }}>{conflict.ruleA.name}</button>
+              &amp;
+              <button class="conflict-rule-link" onclick={() => { const r = currentRules.find(r => r.id === conflict.ruleB.id); if (r) openEditRule(r); }}>{conflict.ruleB.name}</button>
+            </span>
+            <span class="conflict-desc">{conflictDesc(conflict)}</span>
+          </div>
+          {#if conflict.type === 'redundant' && !mergedConflicts.has(idx)}
+            <button class="conflict-action-btn" onclick={() => mergeRedundantConflict(idx, conflict)}>{T('conflict_merge')}</button>
+          {:else if mergedConflicts.has(idx)}
+            <span class="conflict-merged-badge">{T('conflict_merged')}</span>
+          {/if}
         </div>
       {/each}
     </div>
@@ -467,7 +543,7 @@
           <p class="no-matches">{T('editor_test_no_match')}</p>
         {/if}
 
-        <p class="test-note">Nota: esta prueba NO ejecuta las acciones. Solo verifica que correos coincidirian.</p>
+        <p class="test-note">{T('rules_test_note')}</p>
       </div>
     {/if}
   </Modal>
@@ -749,19 +825,48 @@
     font-weight: 600;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
     color: #e65100;
   }
+  .conflicts-header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .conflicts-icon {
     font-size: 16px;
+  }
+  .conflict-merge-all-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid #e65100;
+    background: transparent;
+    color: #e65100;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .conflict-merge-all-btn:hover {
+    background: #e65100;
+    color: white;
   }
   .conflict-item {
     font-size: 12px;
     padding: 4px 8px;
     border-radius: 4px;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .conflict-text {
+    display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
   }
   .conflict-warning {
     background: #fff3e0;
@@ -778,12 +883,55 @@
   .conflict-desc {
     color: var(--text-secondary, #666);
   }
+  .conflict-rule-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: var(--primary-color, #0060df);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+  .conflict-rule-link:hover {
+    text-decoration-style: solid;
+  }
+  .conflict-action-btn {
+    font-size: 11px;
+    padding: 2px 10px;
+    border: 1px solid var(--primary-color, #0060df);
+    background: var(--primary-color, #0060df);
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .conflict-action-btn:hover {
+    opacity: 0.85;
+  }
+  .conflict-merged-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-weight: 500;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 
   @media (prefers-color-scheme: dark) {
     .conflicts-section { background: #332d00; border-color: #8d6e00; }
     .conflicts-header { color: #ffb74d; }
     .conflict-warning { background: #3e2700; border-left-color: #ff9800; }
     .conflict-info { background: #0d2137; border-left-color: #42a5f5; }
+    .conflict-merge-all-btn { border-color: #ffb74d; color: #ffb74d; }
+    .conflict-merge-all-btn:hover { background: #ffb74d; color: #332d00; }
+    .conflict-merged-badge { background: #1b4332; color: #95d5b2; }
     .rule-item.has-warning { border-color: #8d6e00; background: #332d00; }
     .broken-ref-warning span { background: #332d00; border-color: #8d6e00; color: #ffb74d; }
     .test-stat.match .test-stat-value { color: #66bb6a; }

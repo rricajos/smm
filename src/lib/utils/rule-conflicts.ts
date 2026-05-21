@@ -5,6 +5,7 @@ export interface RuleConflict {
   ruleB: { id: string; name: string };
   type: 'contradictory_move' | 'redundant' | 'contradictory_priority';
   description: string;
+  params?: Record<string, string>;
   severity: 'warning' | 'info';
 }
 
@@ -41,6 +42,7 @@ export function detectRuleConflicts(rules: Rule[]): RuleConflict[] {
           ruleB: { id: b.id, name: b.name },
           type: 'contradictory_priority',
           description: `Asignan prioridades diferentes (${prioA.priority} vs ${prioB.priority}).`,
+          params: { a: String(prioA.priority), b: String(prioB.priority) },
           severity: 'warning',
         });
       }

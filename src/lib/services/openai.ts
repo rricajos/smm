@@ -1,4 +1,6 @@
 import type { Rule, Condition, Action } from '../../types/rules';
+import type { ResponseTemplate } from '../../types/templates';
+import { getLocaleFromStorage, translate } from '../i18n';
 
 export interface EmailSummary {
   from: string;
@@ -89,7 +91,7 @@ function summarizeExistingRules(existingRules: Rule[]): string {
       if (a.type === 'setPriority') return `prioridad ${a.priority}`;
       return a.type;
     }).join(', ');
-    return `  - "${r.name}" [${r.enabled ? 'activa' : 'inactiva'}]: SI ${conds} → ${acts}`;
+    return `  - ID: "${r.id}" "${r.name}" [${r.enabled ? 'activa' : 'inactiva'}]: SI ${conds} → ${acts}`;
   }).join('\n');
 }
 
@@ -418,11 +420,25 @@ export interface RuleProposal {
   description: string;
 }
 
+export interface TemplateProposal {
+  template: ResponseTemplate;
+  description: string;
+}
+
+export interface RuleConsolidationProposal {
+  mergedRule: Rule;
+  sourceRuleIds: string[];
+  sourceRuleNames: string[];
+  description: string;
+}
+
 export interface AssistantResponse {
   message: string;
   folderProposals: FolderProposal[];
   moveProposals: MoveProposal[];
   ruleProposals: RuleProposal[];
+  templateProposals: TemplateProposal[];
+  ruleConsolidationProposals: RuleConsolidationProposal[];
 }
 
 function buildConsultantSystemPrompt(
@@ -430,6 +446,7 @@ function buildConsultantSystemPrompt(
   tags: TagInfo[],
   existingRules: Rule[],
   emails: EmailSummary[],
+  existingTemplates: ResponseTemplate[] = [],
 ): string {
   const folderList = folders.map(f => `  - ID: "${f.id}" → ${f.path}`).join('\n');
   const tagList = tags.length > 0
@@ -442,6 +459,10 @@ function buildConsultantSystemPrompt(
         `  ${i + 1}. De: ${sanitizeEmailContent(e.from)} | Asunto: ${sanitizeEmailContent(e.subject)}`
       ).join('\n')}\n===END_USER_EMAILS===`
     : '  (no hay correos disponibles)';
+
+  const templatesSummary = existingTemplates.length > 0
+    ? existingTemplates.map(t => `  - ID: "${t.id}" → "${t.name}" [${t.sendMode}, ${t.replyType}]`).join('\n')
+    : '  (no hay plantillas configuradas)';
 
   return `Eres un consultor experto en organización de correo electrónico. Tu trabajo es ayudar al usuario a tener un buzón perfectamente organizado. Eres PROACTIVO y no tienes miedo de proponer cambios grandes.
 
@@ -489,6 +510,30 @@ RESPONDE SIEMPRE EN JSON con este schema:
       ],
       "description": "string - qué hace esta regla"
     }
+  ],
+  "template_proposals": [
+    {
+      "name": "string - nombre descriptivo de la plantilla",
+      "subject": "string - asunto del correo (puede usar variables como {{subject}})",
+      "body": "string - cuerpo del correo (puede usar variables)",
+      "isPlainText": true | false,
+      "sendMode": "draft" | "sendNow" | "sendLater",
+      "replyType": "replyToSender" | "replyToAll",
+      "description": "string - cuándo usar esta plantilla"
+    }
+  ],
+  "rule_consolidation_proposals": [
+    {
+      "sourceRuleIds": ["string - ID de regla existente a fusionar", "..."],
+      "sourceRuleNames": ["string - nombre de la regla", "..."],
+      "mergedRule": {
+        "name": "string - nombre de la regla fusionada",
+        "conditionLogic": "all" | "any",
+        "conditions": [{ misma estructura que rule_proposals }],
+        "actions": [{ misma estructura que rule_proposals }]
+      },
+      "description": "string - por qué fusionar estas reglas"
+    }
   ]
 }
 
@@ -505,6 +550,23 @@ CONSOLIDACIÓN DE CARPETAS (move_proposals):
 - Prioriza SIEMPRE consolidar carpetas duplicadas antes que crear nuevas
 - Si hay 3 carpetas "Notificaciones" en distintos sitios, propón mover todo a una sola y eliminar las otras 2
 
+PLANTILLAS DE RESPUESTA (template_proposals):
+- Si detectas que ciertos correos se beneficiarían de respuestas automáticas, propón crear plantillas
+- Las plantillas pueden usar estas variables: {{sender_name}}, {{sender_email}}, {{to}}, {{subject}}, {{date}}, {{time}}, {{day_of_week}}, {{original_body}}, {{original_body_snippet}}, {{my_name}}, {{my_email}}
+- sendMode: "draft" (guardar borrador, más seguro), "sendNow" (enviar inmediatamente), "sendLater" (enviar después)
+- replyType: "replyToSender" (solo al remitente) o "replyToAll" (responder a todos)
+- Si propones una plantilla Y una regla que la use, en la acción de la regla pon "type": "autoRespond" con "templateId": "NEW_TPL:NombrePlantilla"
+- NO dupliques plantillas que ya existen
+
+CONSOLIDACIÓN DE REGLAS (rule_consolidation_proposals):
+- Si detectas reglas SIMILARES o DUPLICADAS (mismas acciones pero condiciones ligeramente distintas), propón FUSIONARLAS
+- Para reglas EXISTENTES: usa sus IDs EXACTOS en sourceRuleIds (de la lista de REGLAS CONFIGURADAS)
+- Para reglas que estás PROPONIENDO en la misma respuesta (rule_proposals): usa "NEW_RULE:NombreExacto" en sourceRuleIds
+- sourceRuleNames debe contener los nombres legibles de las reglas (siempre obligatorio)
+- La mergedRule debe combinar las condiciones de las reglas originales de forma lógica
+- Normalmente: fusionar con conditionLogic "any" (activar si CUALQUIER condición se cumple)
+- Al aceptar, las reglas originales se eliminan y se crea la fusionada
+
 ESTADO ACTUAL DEL BUZÓN:
 
 CARPETAS EXISTENTES:
@@ -513,8 +575,11 @@ ${folderList}
 TAGS DISPONIBLES:
 ${tagList}
 
-REGLAS CONFIGURADAS:
+REGLAS CONFIGURADAS (incluye IDs para rule_consolidation_proposals):
 ${rulesSummary}
+
+PLANTILLAS EXISTENTES:
+${templatesSummary}
 
 CORREOS RECIENTES (muestra de patrones):
 ${emailSummary}
@@ -583,8 +648,9 @@ export async function chatWithAssistant(
   model: string,
   provider: AiProvider = 'openrouter',
   customBaseUrl?: string,
+  existingTemplates: ResponseTemplate[] = [],
 ): Promise<AssistantResponse> {
-  const systemPrompt = buildConsultantSystemPrompt(folders, tags, existingRules, emails);
+  const systemPrompt = buildConsultantSystemPrompt(folders, tags, existingRules, emails, existingTemplates);
   const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
   const parsed = await callAIChat(
@@ -592,8 +658,9 @@ export async function chatWithAssistant(
     systemPrompt, chatMessages,
   );
   const now = Date.now();
+  const loc = await getLocaleFromStorage();
 
-  return {
+  const result = {
     message: parsed.message || '',
     folderProposals: (parsed.folder_proposals || []).map((fp: any): FolderProposal => ({
       name: fp.name || '',
@@ -612,7 +679,7 @@ export async function chatWithAssistant(
     ruleProposals: (parsed.rule_proposals || []).map((rp: any): RuleProposal => ({
       rule: {
         id: crypto.randomUUID(),
-        name: rp.name || 'Regla IA',
+        name: rp.name || translate(loc, 'ai_fallback_rule_name'),
         enabled: true,
         conditions: (rp.conditions || []).map((c: any): Condition => ({
           field: c.field || 'subject',
@@ -635,7 +702,82 @@ export async function chatWithAssistant(
       },
       description: rp.description || '',
     })),
+    templateProposals: (parsed.template_proposals || []).map((tp: any): TemplateProposal => ({
+      template: {
+        id: crypto.randomUUID(),
+        name: tp.name || translate(loc, 'ai_fallback_template_name'),
+        subject: tp.subject || '',
+        body: tp.body || '',
+        isPlainText: tp.isPlainText ?? true,
+        sendMode: tp.sendMode || 'draft',
+        replyType: tp.replyType || 'replyToSender',
+      },
+      description: tp.description || '',
+    })),
+    ruleConsolidationProposals: (parsed.rule_consolidation_proposals || []).map((rc: any): RuleConsolidationProposal => ({
+      mergedRule: {
+        id: crypto.randomUUID(),
+        name: rc.mergedRule?.name || translate(loc, 'ai_fallback_merged_name'),
+        enabled: true,
+        conditions: (rc.mergedRule?.conditions || []).map((c: any): Condition => ({
+          field: c.field || 'subject',
+          operator: c.operator || 'contains',
+          value: c.value || '',
+          boolValue: c.boolValue,
+          caseSensitive: c.caseSensitive ?? false,
+        })),
+        conditionLogic: rc.mergedRule?.conditionLogic || 'any',
+        actions: (rc.mergedRule?.actions || []).map((a: any): Action => ({
+          type: a.type || 'markRead',
+          folderId: a.folderId,
+          tagKey: a.tagKey,
+          priority: a.priority,
+          templateId: a.templateId,
+        })),
+        stopProcessing: false,
+        createdAt: now,
+        updatedAt: now,
+      },
+      sourceRuleIds: rc.sourceRuleIds || [],
+      sourceRuleNames: rc.sourceRuleNames || [],
+      description: rc.description || '',
+    })),
   };
+
+  // Resolve NEW_RULE: references and name-based fallbacks in consolidation proposals
+  if (result.ruleConsolidationProposals.length > 0 && result.ruleProposals.length > 0) {
+    // Build map: rule name (lowercase) -> generated UUID from rule proposals
+    const newRuleMap = new Map<string, string>();
+    for (const rp of result.ruleProposals) {
+      newRuleMap.set(rp.rule.name.toLowerCase(), rp.rule.id);
+    }
+    // Also map existing rules by name
+    const existingRuleMap = new Map<string, string>();
+    for (const r of existingRules) {
+      existingRuleMap.set(r.name.toLowerCase(), r.id);
+    }
+
+    for (const rc of result.ruleConsolidationProposals) {
+      rc.sourceRuleIds = rc.sourceRuleIds.map((idOrRef: string) => {
+        // Handle NEW_RULE:Name references
+        if (idOrRef.startsWith('NEW_RULE:')) {
+          const name = idOrRef.slice(9).toLowerCase();
+          return newRuleMap.get(name) || idOrRef;
+        }
+        // If it matches an existing rule ID, keep it
+        if (existingRules.some(r => r.id === idOrRef)) return idOrRef;
+        // Fallback: try matching as a name against new proposals
+        const byNewName = newRuleMap.get(idOrRef.toLowerCase());
+        if (byNewName) return byNewName;
+        // Fallback: try matching as a name against existing rules
+        const byExistingName = existingRuleMap.get(idOrRef.toLowerCase());
+        if (byExistingName) return byExistingName;
+        return idOrRef;
+      });
+    }
+  }
+
+  return result;
 }
 
 export async function testConnection(

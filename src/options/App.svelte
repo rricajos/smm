@@ -215,7 +215,7 @@
         <option value="custom">{T('options_provider_custom')}</option>
       </select>
     </div>
-    <p class="info">{AI_PROVIDERS[currentSettings.aiProvider]?.keyHint || ''}</p>
+    <p class="info">{T(AI_PROVIDERS[currentSettings.aiProvider]?.keyHintKey as any)}</p>
 
     {#if currentSettings.aiProvider === 'custom'}
       <div class="field">
