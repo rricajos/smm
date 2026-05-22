@@ -1,6 +1,7 @@
 <script lang="ts">
   import { settings } from '../lib/stores/settings';
   import { activity } from '../lib/stores/activity';
+  import { rules } from '../lib/stores/rules';
   import { t } from '../lib/i18n';
   import type { Translations } from '../lib/i18n/types';
   import Button from '../lib/components/Button.svelte';
@@ -9,12 +10,20 @@
 
   let currentSettings = $state<any>({});
   let currentActivity = $state<any[]>([]);
+  let currentRules = $state<any[]>([]);
   let classifyStatus = $state('');
 
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
   t.subscribe((fn) => (T = fn));
   settings.subscribe((v) => (currentSettings = v));
   activity.subscribe((v) => (currentActivity = v));
+  rules.subscribe((v) => (currentRules = v));
+
+  let activeRules = $derived(currentRules.filter((r) => r.enabled).length);
+  let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
+  let todayClassifications = $derived(
+    currentActivity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
+  );
 
   let recentActivity = $derived(currentActivity.slice(0, 5));
 
@@ -42,6 +51,11 @@
     setTimeout(() => (classifyStatus = ''), 3000);
   }
 
+  async function openPanel() {
+    await browser.runtime.sendMessage({ type: 'OPEN_SPACE' });
+    window.close();
+  }
+
   function formatTime(ts: number): string {
     const d = new Date(ts);
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -50,6 +64,26 @@
 
 <div class="popup">
   <h2>Smart Mail Manager</h2>
+
+  <!-- Quick stats bar -->
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <span class="stat-value">{currentRules.length}</span>
+      <span class="stat-label">{T('popup_total_rules')}</span>
+    </div>
+    <div class="stat-chip">
+      <span class="stat-value">{activeRules}</span>
+      <span class="stat-label">{T('popup_active_rules')}</span>
+    </div>
+    <div class="stat-chip">
+      <span class="stat-value">{todayClassifications}</span>
+      <span class="stat-label">{T('popup_today_classified')}</span>
+    </div>
+    <div class="stat-chip" class:ai-ok={currentSettings.openaiApiKey} class:ai-off={!currentSettings.openaiApiKey}>
+      <span class="stat-value">{T('popup_ai_status')}</span>
+      <span class="stat-label">{currentSettings.openaiApiKey ? T('popup_ai_ok') : T('popup_ai_not_set')}</span>
+    </div>
+  </div>
 
   <div class="toggles">
     <button class="toggle" class:on={currentSettings.classificationEnabled} onclick={toggleClassification}>
@@ -83,6 +117,11 @@
       {/each}
     {/if}
   </div>
+
+  <button class="open-panel-btn" onclick={openPanel}>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    {T('popup_open_panel')}
+  </button>
 </div>
 
 <style>
@@ -98,6 +137,65 @@
     --text-secondary: #5b5b66;
   }
 
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .stat-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+  }
+  .stat-chip .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1.2;
+  }
+  .stat-chip .stat-label {
+    font-size: 9px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .stat-chip.ai-ok {
+    border-color: #2e7d32;
+  }
+  .stat-chip.ai-ok .stat-value {
+    color: #2e7d32;
+  }
+  .stat-chip.ai-off {
+    border-color: #bbb;
+  }
+  .stat-chip.ai-off .stat-value {
+    color: #999;
+  }
+  .open-panel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .open-panel-btn:hover {
+    background: #e7f0fd;
+  }
+
   @media (prefers-color-scheme: dark) {
     :global(body) {
       color: #fbfbfe;
@@ -111,6 +209,11 @@
     .toggle.on { background: #1a3a5c; border-color: var(--primary-color); }
     .dot { background: #666; }
     .entry { border-bottom-color: var(--border-color); }
+    .stat-chip.ai-ok { border-color: #66bb6a; }
+    .stat-chip.ai-ok .stat-value { color: #66bb6a; }
+    .stat-chip.ai-off .stat-value { color: #666; }
+    .open-panel-btn { color: #45a1ff; }
+    .open-panel-btn:hover { background: #1a3a5c; }
   }
   .popup {
     width: 300px;

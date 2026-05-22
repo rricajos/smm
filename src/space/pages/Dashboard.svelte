@@ -79,6 +79,20 @@
       .slice(0, 5);
   });
 
+  // Top senders from activity
+  let topSenders = $derived(() => {
+    const senders = new Map<string, number>();
+    for (const entry of filteredForStats) {
+      if (entry.from) {
+        senders.set(entry.from, (senders.get(entry.from) || 0) + 1);
+      }
+    }
+    return [...senders.entries()]
+      .map(([from, count]) => ({ from, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  });
+
   // Process existing state
   let processing = $state(false);
   let processResult = $state<{
@@ -299,6 +313,30 @@
               ></div>
             </div>
             <span class="stat-count">{stat.count}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Top senders -->
+  {#if topSenders().length > 0}
+    <div class="stats-section">
+      <div class="stats-header">
+        <h3>{T('dashboard_top_senders')}</h3>
+      </div>
+      <div class="stats-list">
+        {#each topSenders() as sender, i}
+          <div class="stat-row">
+            <span class="stat-rank">#{i + 1}</span>
+            <span class="stat-name" title={sender.from}>{sender.from}</span>
+            <div class="stat-bar-container">
+              <div
+                class="stat-bar stat-bar-sender"
+                style="width: {Math.round((sender.count / topSenders()[0].count) * 100)}%"
+              ></div>
+            </div>
+            <span class="stat-count">{sender.count}</span>
           </div>
         {/each}
       </div>
@@ -951,6 +989,9 @@
     color: var(--text-secondary, #666);
     flex-shrink: 0;
   }
+  .stat-bar-sender {
+    background: #e65100;
+  }
 
   @media (prefers-color-scheme: dark) {
     .card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
@@ -974,6 +1015,7 @@
     .rule-badge { background: #1b4332; color: #95d5b2; }
     .stat.match .stat-value { color: #66bb6a; }
     .stat.error .stat-value { color: #ef5350; }
+    .stat-bar-sender { background: #ffb74d; }
     .stats-range { background: #1c1b22; border-color: #4a4a5a; }
     .folder-msg.error { background: #4a1c1c; color: #ef9a9a; }
     .folder-msg.success { background: #1b3320; color: #81c784; }

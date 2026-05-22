@@ -527,4 +527,22 @@ export const en: Translations = {
   // Template AI suggestion
   templates_suggest_ai: 'Suggest with AI',
   templates_ai_prompt: 'Analyze my recent emails and propose useful auto-response templates. I have {n} rule{s} configured and {t} template{s} existing. Suggest templates that complement my current setup, such as acknowledgements, frequent inquiry replies or out-of-office messages.',
+
+  // Popup enhancements
+  popup_total_rules: 'Rules',
+  popup_active_rules: 'Active',
+  popup_today_classified: 'Today',
+  popup_ai_status: 'AI',
+  popup_ai_ok: 'Configured',
+  popup_ai_not_set: 'Not configured',
+  popup_open_panel: 'Open full panel',
+
+  // Dashboard top senders
+  dashboard_top_senders: 'Top senders',
+  dashboard_sender: 'Sender',
+  dashboard_emails_count: '{n} email{s}',
+
+  // Log sorting
+  log_sort_asc: 'Ascending',
+  log_sort_desc: 'Descending',
 };

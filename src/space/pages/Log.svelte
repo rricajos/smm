@@ -17,6 +17,19 @@
   let page = $state(1);
   const PAGE_SIZE = 50;
 
+  type SortColumn = 'timestamp' | 'type' | 'ruleName' | 'subject' | 'from';
+  let sortColumn = $state<SortColumn>('timestamp');
+  let sortDir = $state<'asc' | 'desc'>('desc');
+
+  function toggleSort(col: SortColumn) {
+    if (sortColumn === col) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = col;
+      sortDir = col === 'timestamp' ? 'desc' : 'asc';
+    }
+  }
+
   let retentionDays = $state(30);
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
 
@@ -30,8 +43,8 @@
     }
   });
 
-  let filtered = $derived(
-    currentActivity.filter((entry) => {
+  let filtered = $derived(() => {
+    const list = currentActivity.filter((entry) => {
       if (filterType !== 'all' && entry.type !== filterType) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -42,11 +55,20 @@
         );
       }
       return true;
-    }),
-  );
+    });
+    const col = sortColumn;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    list.sort((a: any, b: any) => {
+      if (col === 'timestamp') return (a.timestamp - b.timestamp) * dir;
+      const va = (a[col] || '').toLowerCase();
+      const vb = (b[col] || '').toLowerCase();
+      return va < vb ? -dir : va > vb ? dir : 0;
+    });
+    return list;
+  });
 
-  let totalPages = $derived(Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
-  let paginated = $derived(filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  let totalPages = $derived(Math.max(1, Math.ceil(filtered().length / PAGE_SIZE)));
+  let paginated = $derived(filtered().slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
 
   // Reset page when filter changes
   $effect(() => {
@@ -67,7 +89,7 @@
   function exportCSV() {
     const headers = [T('log_col_date'), T('log_col_type'), T('log_col_rule'), T('log_col_subject'), T('log_col_from'), T('log_col_actions'), T('log_col_details')];
     const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
-    const rows = filtered.map(e => [
+    const rows = filtered().map(e => [
       new Date(e.timestamp).toISOString(),
       e.type,
       e.ruleName,
@@ -98,7 +120,7 @@
     <h3>{T('log_title')}</h3>
     <div class="header-actions">
       <span class="retention-badge">{T('log_retention', { n: retentionDays })}</span>
-      {#if filtered.length > 0}
+      {#if filtered().length > 0}
         <Button size="sm" onclick={exportCSV}>{T('log_export_csv')}</Button>
       {/if}
       <Button size="sm" variant="danger" onclick={handleClear}>{T('log_clear')}</Button>
@@ -119,7 +141,7 @@
     </select>
   </div>
 
-  {#if filtered.length === 0}
+  {#if filtered().length === 0}
     <div class="empty-state">
       <div class="empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -131,11 +153,26 @@
     <table>
       <thead>
         <tr>
-          <th>{T('log_col_date')}</th>
-          <th>{T('log_col_type')}</th>
-          <th>{T('log_col_rule')}</th>
-          <th>{T('log_col_subject')}</th>
-          <th>{T('log_col_from')}</th>
+          <th class="sortable" class:sorted={sortColumn === 'timestamp'} onclick={() => toggleSort('timestamp')}>
+            {T('log_col_date')}
+            <span class="sort-arrow">{sortColumn === 'timestamp' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+          </th>
+          <th class="sortable" class:sorted={sortColumn === 'type'} onclick={() => toggleSort('type')}>
+            {T('log_col_type')}
+            <span class="sort-arrow">{sortColumn === 'type' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+          </th>
+          <th class="sortable" class:sorted={sortColumn === 'ruleName'} onclick={() => toggleSort('ruleName')}>
+            {T('log_col_rule')}
+            <span class="sort-arrow">{sortColumn === 'ruleName' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+          </th>
+          <th class="sortable" class:sorted={sortColumn === 'subject'} onclick={() => toggleSort('subject')}>
+            {T('log_col_subject')}
+            <span class="sort-arrow">{sortColumn === 'subject' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+          </th>
+          <th class="sortable" class:sorted={sortColumn === 'from'} onclick={() => toggleSort('from')}>
+            {T('log_col_from')}
+            <span class="sort-arrow">{sortColumn === 'from' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+          </th>
           <th>{T('log_col_actions')}</th>
           <th>{T('log_col_details')}</th>
         </tr>
@@ -159,7 +196,7 @@
       </tbody>
     </table>
     <div class="pagination-row">
-      <p class="count">{T('log_entries_count', { n: filtered.length, s: filtered.length !== 1 ? 's' : '' })}</p>
+      <p class="count">{T('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}</p>
       {#if totalPages > 1}
         <div class="pagination">
           <button class="page-btn" disabled={page <= 1} onclick={() => (page = page - 1)}>{T('log_page_prev')}</button>
@@ -260,6 +297,25 @@
     border-bottom: 2px solid var(--border-color, #e0e0e6);
     font-weight: 600;
     color: var(--text-secondary, #555);
+  }
+  th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  th.sortable:hover {
+    color: var(--primary-color, #0060df);
+  }
+  th.sorted {
+    color: var(--primary-color, #0060df);
+  }
+  .sort-arrow {
+    font-size: 9px;
+    margin-left: 2px;
+    opacity: 0.4;
+  }
+  th.sorted .sort-arrow {
+    opacity: 1;
   }
   td {
     padding: 5px 8px;

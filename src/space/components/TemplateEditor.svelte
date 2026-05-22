@@ -52,6 +52,9 @@
   exampleVars['senderEmail'] = 'juan@example.com';
   exampleVars['originalSubject'] = 'Re: Presupuesto';
 
+  let subjectEl = $state<HTMLInputElement | null>(null);
+  let bodyEl = $state<HTMLTextAreaElement | null>(null);
+
   let showPreview = $state(false);
 
   let previewSubject = $derived(
@@ -81,10 +84,18 @@
 
   function insertVariable(key: string, target: 'subject' | 'body') {
     const tag = `{{${key}}}`;
-    if (target === 'subject') {
-      subject += tag;
+    const el = target === 'subject' ? subjectEl : bodyEl;
+    if (el) {
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      const before = el.value.slice(0, start);
+      const after = el.value.slice(end);
+      const newValue = before + tag + after;
+      if (target === 'subject') { subject = newValue; } else { body = newValue; }
+      const cursorPos = start + tag.length;
+      setTimeout(() => { el.focus(); el.setSelectionRange(cursorPos, cursorPos); }, 0);
     } else {
-      body += tag;
+      if (target === 'subject') { subject += tag; } else { body += tag; }
     }
   }
 
@@ -113,7 +124,7 @@
 
     <div class="field">
       <label for="tmpl-subject">{T('tmpl_subject_label')}</label>
-      <input id="tmpl-subject" type="text" bind:value={subject} />
+      <input id="tmpl-subject" type="text" bind:value={subject} bind:this={subjectEl} />
       <div class="var-buttons">
         {#each variables as v}
           <button class="var-btn" onclick={() => insertVariable(v.key, 'subject')}>
@@ -125,7 +136,7 @@
 
     <div class="field">
       <label for="tmpl-body">{T('tmpl_body_label')}</label>
-      <textarea id="tmpl-body" bind:value={body} rows="8"></textarea>
+      <textarea id="tmpl-body" bind:value={body} bind:this={bodyEl} rows="8"></textarea>
       <div class="var-buttons">
         {#each variables as v}
           <button class="var-btn" onclick={() => insertVariable(v.key, 'body')}>

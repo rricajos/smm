@@ -529,4 +529,22 @@ export interface Translations {
   // Template AI suggestion
   templates_suggest_ai: string;
   templates_ai_prompt: string;
+
+  // Popup enhancements
+  popup_total_rules: string;
+  popup_active_rules: string;
+  popup_today_classified: string;
+  popup_ai_status: string;
+  popup_ai_ok: string;
+  popup_ai_not_set: string;
+  popup_open_panel: string;
+
+  // Dashboard top senders
+  dashboard_top_senders: string;
+  dashboard_sender: string;
+  dashboard_emails_count: string;
+
+  // Log sorting
+  log_sort_asc: string;
+  log_sort_desc: string;
 }

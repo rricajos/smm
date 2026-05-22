@@ -573,6 +573,15 @@ messenger.runtime.onMessage.addListener(
         }
       }
 
+      case 'OPEN_SPACE': {
+        try {
+          await messenger.spacesToolbar.clickButton('smartMailManager');
+          return { success: true };
+        } catch {
+          return { success: false };
+        }
+      }
+
       default:
         return { error: 'Unknown message type' };
     }
