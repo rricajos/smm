@@ -48,14 +48,14 @@
   import RuleEditor from '../components/RuleEditor.svelte';
   import ChatWelcome from '../components/ChatWelcome.svelte';
   import ProposalBlock from '../components/ProposalBlock.svelte';
-  import FolderTree from '../components/FolderTree.svelte';
-
   interface Props {
     pendingPrompt?: string;
     onconsumeprompt?: () => void;
+    selectedFolder?: { id: string; name: string; path: string } | null;
+    onclearfolder?: () => void;
   }
 
-  let { pendingPrompt = '', onconsumeprompt }: Props = $props();
+  let { pendingPrompt = '', onconsumeprompt, selectedFolder = null, onclearfolder }: Props = $props();
 
   declare const browser: any;
 
@@ -103,13 +103,6 @@
     }
   });
 
-  // Lazy-load folder tree when panel opens
-  $effect(() => {
-    if (showFolderTree && folderTreeRef) {
-      folderTreeRef.loadTree();
-    }
-  });
-
   // Rule editor state
   let showEditor = $state(false);
   let editingRule = $state<Rule | null>(null);
@@ -131,9 +124,6 @@
   let chatLoading = $state(false);
   let chatContainerEl: HTMLDivElement | undefined = $state(undefined);
   let showConversationList = $state(false);
-  let showFolderTree = $state(false);
-  let folderTreeRef: FolderTree | undefined = $state(undefined);
-  let selectedFolder = $state<{ id: string; name: string; path: string } | null>(null);
 
   // Quick generate state
   let description = $state('');
@@ -248,14 +238,6 @@
   function showSuccess(msg: string) {
     successMessage = msg;
     setTimeout(() => (successMessage = ''), 3000);
-  }
-
-  function handleFolderSelect(folderId: string, folderName: string, folderPath: string) {
-    if (selectedFolder?.id === folderId) {
-      selectedFolder = null; // deselect if already selected
-    } else {
-      selectedFolder = { id: folderId, name: folderName, path: folderPath };
-    }
   }
 
   // --- Chat functions ---
@@ -834,7 +816,6 @@
           <span class="conv-arrow">{showConversationList ? '\u25B2' : '\u25BC'}</span>
         </button>
         <button class="conv-action-btn" onclick={newConversation} title={T('ai_new_conversation')}>+</button>
-        <button class="conv-tree-btn" class:active={showFolderTree} onclick={() => { showFolderTree = !showFolderTree; }} title={T('ai_view_folders')}>{'\u229E'}</button>
       </div>
       {#if showConversationList}
         <div class="conversation-list">
@@ -854,13 +835,7 @@
       {/if}
     </div>
 
-    <div class="chat-layout" class:with-sidebar={showFolderTree}>
-      {#if showFolderTree}
-        <div class="folder-sidebar">
-          <FolderTree bind:this={folderTreeRef} onfolderselect={handleFolderSelect} selectedFolderId={selectedFolder?.id} />
-        </div>
-      {/if}
-
+    <div class="chat-layout">
       <div class="chat-section">
         {#if chatMessages.length === 0}
           <ChatWelcome onaction={sendChatMessage} />
@@ -938,7 +913,7 @@
             <div class="folder-context-bar">
               <span class="folder-context-label">{T('ai_folder_context_label')}</span>
               <span class="folder-context-name">&#128193; {selectedFolder.name}</span>
-              <button class="folder-context-clear" onclick={() => (selectedFolder = null)} title={T('ai_folder_context_clear')}>&times;</button>
+              <button class="folder-context-clear" onclick={() => onclearfolder?.()} title={T('ai_folder_context_clear')}>&times;</button>
             </div>
           {/if}
 
@@ -1151,29 +1126,8 @@
     font-size: 14px; font-weight: 600; font-family: inherit; line-height: 1; flex-shrink: 0;
   }
   .conv-action-btn:hover { opacity: 0.9; }
-  .conv-tree-btn {
-    padding: 4px 8px; border: 1px solid var(--border-color, #e0e0e6); border-radius: 4px;
-    background: var(--bg-secondary, #f0f0f4); cursor: pointer;
-    font-size: 14px; font-weight: 700; line-height: 1; flex-shrink: 0;
-    font-family: inherit; color: var(--text-secondary, #666);
-    transition: background 0.15s, color 0.15s;
-  }
-  .conv-tree-btn:hover { background: var(--bg-hover, #e0e0e6); color: var(--text-color, #15141a); }
-  .conv-tree-btn.active { background: var(--primary-color, #0060df); border-color: var(--primary-color, #0060df); color: white; }
-
-  /* Chat + Folder sidebar layout */
+  /* Chat layout */
   .chat-layout { display: flex; flex: 1; min-height: 0; gap: 0; }
-  .chat-layout.with-sidebar { gap: 0; }
-  .folder-sidebar {
-    width: 260px; min-width: 200px; max-width: 320px;
-    border-right: 1px solid var(--border-color, #e0e0e6);
-    overflow-y: auto; flex-shrink: 0;
-    animation: slideIn 0.15s ease-out;
-  }
-  @keyframes slideIn {
-    from { opacity: 0; width: 0; }
-    to { opacity: 1; width: 260px; }
-  }
 
   /* Folder context bar above input */
   .folder-context-bar {

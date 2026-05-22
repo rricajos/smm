@@ -5,6 +5,7 @@
   import AI from './pages/AI.svelte';
   import Log from './pages/Log.svelte';
   import GlobalSearch from './components/GlobalSearch.svelte';
+  import FolderTree from './components/FolderTree.svelte';
   import { unreadClassifications } from '../lib/stores/badges';
   import { rules } from '../lib/stores/rules';
   import { templates } from '../lib/stores/templates';
@@ -19,6 +20,9 @@
   let currentTemplates = $state<any[]>([]);
   let currentActivity = $state<any[]>([]);
   let searchFilter = $state('');
+  let showFolderTree = $state(false);
+  let folderTreeRef: FolderTree | undefined = $state(undefined);
+  let selectedFolder = $state<{ id: string; name: string; path: string } | null>(null);
   let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
 
   t.subscribe((fn) => (T = fn));
@@ -26,6 +30,21 @@
   rules.subscribe(v => (currentRules = v));
   templates.subscribe(v => (currentTemplates = v));
   activity.subscribe(v => (currentActivity = v));
+
+  // Lazy-load folder tree when panel opens
+  $effect(() => {
+    if (showFolderTree && folderTreeRef) {
+      folderTreeRef.loadTree();
+    }
+  });
+
+  function handleFolderSelect(folderId: string, folderName: string, folderPath: string) {
+    if (selectedFolder?.id === folderId) {
+      selectedFolder = null;
+    } else {
+      selectedFolder = { id: folderId, name: folderName, path: folderPath };
+    }
+  }
 
   function handleSearchNavigate(tabId: string, searchQuery: string) {
     activeTab = tabId;
@@ -112,23 +131,38 @@
         </button>
       {/each}
     </div>
+    <button
+      class="folder-toggle-btn"
+      class:active={showFolderTree}
+      onclick={() => { showFolderTree = !showFolderTree; }}
+      title={T('ai_view_folders')}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    </button>
   </nav>
 
   <div class="content">
-    <div class="tab-panel" class:active-panel={activeTab === 'dashboard'} role="tabpanel" id="panel-dashboard" aria-labelledby="tab-dashboard">
-      <Dashboard />
-    </div>
-    <div class="tab-panel" class:active-panel={activeTab === 'rules'} role="tabpanel" id="panel-rules" aria-labelledby="tab-rules">
-      <Rules onrequestai={handleRequestAI} />
-    </div>
-    <div class="tab-panel" class:active-panel={activeTab === 'templates'} role="tabpanel" id="panel-templates" aria-labelledby="tab-templates">
-      <Templates onrequestai={handleRequestAI} />
-    </div>
-    <div class="tab-panel" class:active-panel={activeTab === 'ai'} role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
-      <AI pendingPrompt={pendingAiPrompt} onconsumeprompt={() => (pendingAiPrompt = '')} />
-    </div>
-    <div class="tab-panel" class:active-panel={activeTab === 'log'} role="tabpanel" id="panel-log" aria-labelledby="tab-log">
-      <Log initialSearch={searchFilter} />
+    {#if showFolderTree}
+      <div class="folder-sidebar">
+        <FolderTree bind:this={folderTreeRef} onfolderselect={handleFolderSelect} selectedFolderId={selectedFolder?.id} />
+      </div>
+    {/if}
+    <div class="tab-panels">
+      <div class="tab-panel" class:active-panel={activeTab === 'dashboard'} role="tabpanel" id="panel-dashboard" aria-labelledby="tab-dashboard">
+        <Dashboard />
+      </div>
+      <div class="tab-panel" class:active-panel={activeTab === 'rules'} role="tabpanel" id="panel-rules" aria-labelledby="tab-rules">
+        <Rules onrequestai={handleRequestAI} />
+      </div>
+      <div class="tab-panel" class:active-panel={activeTab === 'templates'} role="tabpanel" id="panel-templates" aria-labelledby="tab-templates">
+        <Templates onrequestai={handleRequestAI} />
+      </div>
+      <div class="tab-panel" class:active-panel={activeTab === 'ai'} role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
+        <AI pendingPrompt={pendingAiPrompt} onconsumeprompt={() => (pendingAiPrompt = '')} selectedFolder={selectedFolder} onclearfolder={() => (selectedFolder = null)} />
+      </div>
+      <div class="tab-panel" class:active-panel={activeTab === 'log'} role="tabpanel" id="panel-log" aria-labelledby="tab-log">
+        <Log initialSearch={searchFilter} />
+      </div>
     </div>
   </div>
 </div>
@@ -238,10 +272,31 @@
   }
   .content {
     flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .folder-sidebar {
+    width: 260px;
+    min-width: 200px;
+    max-width: 320px;
+    border-right: 1px solid var(--border-color, #e0e0e6);
+    overflow-y: auto;
+    flex-shrink: 0;
+    animation: slideIn 0.15s ease-out;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; width: 0; }
+    to { opacity: 1; width: 260px; }
+  }
+  .tab-panels {
+    flex: 1;
     overflow-y: auto;
     padding: 20px;
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .tab-panel {
     display: none;
@@ -251,5 +306,27 @@
   .tab-panel.active-panel {
     display: flex;
     flex-direction: column;
+  }
+  .folder-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 4px;
+    background: var(--bg-primary, white);
+    cursor: pointer;
+    color: var(--text-secondary, #666);
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .folder-toggle-btn:hover {
+    background: var(--bg-hover, #e0e0e6);
+    color: var(--text-color, #15141a);
+  }
+  .folder-toggle-btn.active {
+    background: var(--primary-color, #0060df);
+    border-color: var(--primary-color, #0060df);
+    color: white;
   }
 </style>
