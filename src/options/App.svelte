@@ -253,9 +253,9 @@
           placeholder={AI_PROVIDERS[currentSettings.aiProvider]?.keyPlaceholder || 'api-key'}
           class="api-key-input"
         />
-        <button class="toggle-btn" onclick={() => (showApiKey = !showApiKey)}>
+        <Button size="sm" onclick={() => (showApiKey = !showApiKey)}>
           {showApiKey ? T('common_hide') : T('common_show')}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -342,7 +342,6 @@
     .field input[type="number"],
     .field select,
     .api-key-input { background: #1c1b22; color: #fbfbfe; border-color: #4a4a5a; }
-    .toggle-btn { color: #fbfbfe; }
   }
 
   .options {
@@ -424,24 +423,11 @@
     font-size: 13px;
     font-family: monospace;
   }
-  .toggle-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--bg-secondary);
-    cursor: pointer;
-    font-size: 12px;
-    font-family: inherit;
-    white-space: nowrap;
-  }
   .field-hint {
     display: block;
     margin-top: 4px;
     font-size: 11px;
     color: #5b5b66;
-  }
-  .toggle-btn:hover {
-    background: var(--bg-hover);
   }
   .field select {
     padding: 6px 10px;

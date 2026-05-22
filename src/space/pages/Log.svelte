@@ -232,9 +232,9 @@
       <p class="count">{T('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}</p>
       {#if totalPages > 1}
         <div class="pagination">
-          <button class="page-btn" disabled={page <= 1} onclick={() => (page = page - 1)} aria-label={T('log_page_prev')}>{T('log_page_prev')}</button>
+          <Button size="sm" disabled={page <= 1} onclick={() => (page = page - 1)} aria-label={T('log_page_prev')}>{T('log_page_prev')}</Button>
           <span class="page-info" aria-live="polite">{T('log_page_of', { current: page, total: totalPages })}</span>
-          <button class="page-btn" disabled={page >= totalPages} onclick={() => (page = page + 1)} aria-label={T('log_page_next')}>{T('log_page_next')}</button>
+          <Button size="sm" disabled={page >= totalPages} onclick={() => (page = page + 1)} aria-label={T('log_page_next')}>{T('log_page_next')}</Button>
         </div>
       {/if}
     </div>
@@ -436,23 +436,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  .page-btn {
-    padding: 4px 10px;
-    font-size: 12px;
-    border: 1px solid var(--border-color, #ccc);
-    border-radius: 4px;
-    background: var(--bg-secondary, #f0f0f4);
-    cursor: pointer;
-    font-family: inherit;
-    color: var(--text-color, #15141a);
-  }
-  .page-btn:hover:not(:disabled) {
-    background: var(--bg-hover, #e0e0e6);
-  }
-  .page-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
   }
   .page-info {
     font-size: 12px;

@@ -47,13 +47,13 @@
          T('proposal_rules_title')} ({items.length})
       </span>
       {#if !allAccepted && onacceptall}
-        <button class="accept-all-btn" onclick={onacceptall}>
+        <Button size="xs" variant="ghost" onclick={onacceptall}>
           {type === 'folders' ? T('proposal_create_all') :
            type === 'moves' ? T('proposal_consolidate_all') :
            type === 'templates' ? T('proposal_template_create_all') :
            type === 'consolidateRules' ? T('proposal_consolidate_rules_all') :
            T('proposal_accept_all')}
-        </button>
+        </Button>
       {/if}
     </div>
 
@@ -205,20 +205,6 @@
   .proposals-title {
     font-size: 12px;
     font-weight: 600;
-  }
-  .accept-all-btn {
-    font-size: 11px;
-    padding: 3px 10px;
-    border: 1px solid var(--primary-color, #0060df);
-    background: transparent;
-    color: var(--primary-color, #0060df);
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .accept-all-btn:hover {
-    background: var(--primary-color, #0060df);
-    color: white;
   }
   .proposal-item {
     display: flex;

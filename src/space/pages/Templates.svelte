@@ -96,10 +96,10 @@
     <h3>{T('templates_title')}</h3>
     <div class="header-actions">
       {#if onrequestai}
-        <button class="suggest-ai-btn" onclick={suggestWithAI}>
+        <Button variant="primary" onclick={suggestWithAI}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
           {T('templates_suggest_ai')}
-        </button>
+        </Button>
       {/if}
       <Button variant="primary" onclick={openNewTemplate}>{T('templates_new')}</Button>
     </div>
@@ -124,10 +124,10 @@
       <div class="empty-actions">
         <Button variant="primary" onclick={openNewTemplate}>{T('empty_templates_cta')}</Button>
         {#if onrequestai}
-          <button class="suggest-ai-btn" onclick={suggestWithAI}>
+          <Button variant="primary" onclick={suggestWithAI}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
             {T('templates_suggest_ai')}
-          </button>
+          </Button>
         {/if}
       </div>
     </div>
@@ -181,32 +181,6 @@
     display: flex;
     gap: 6px;
     align-items: center;
-  }
-  .suggest-ai-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    padding: 6px 12px;
-    border: none;
-    background: linear-gradient(135deg, #0060df, #0050c0);
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-    box-shadow: 0 2px 6px rgba(0, 96, 223, 0.25);
-  }
-  .suggest-ai-btn:hover {
-    background: linear-gradient(135deg, #003eaa, #003090);
-    box-shadow: 0 3px 10px rgba(0, 96, 223, 0.35);
-    transform: translateY(-1px);
-  }
-  .suggest-ai-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 4px rgba(0, 96, 223, 0.25);
   }
   .empty-actions {
     display: flex;
@@ -309,7 +283,5 @@
 
   @media (prefers-color-scheme: dark) {
     .filter-input { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
-    .suggest-ai-btn { background: linear-gradient(135deg, #45a1ff, #3b8fe6); color: #1c1b22; box-shadow: 0 2px 6px rgba(69, 161, 255, 0.3); }
-    .suggest-ai-btn:hover { background: linear-gradient(135deg, #73b6ff, #5da8ff); box-shadow: 0 3px 10px rgba(69, 161, 255, 0.4); }
   }
 </style>

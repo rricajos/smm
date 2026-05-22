@@ -2,8 +2,8 @@
   import type { Snippet } from 'svelte';
 
   interface Props {
-    variant?: 'primary' | 'secondary' | 'danger';
-    size?: 'sm' | 'md';
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+    size?: 'xs' | 'sm' | 'md';
     disabled?: boolean;
     onclick?: () => void;
     children?: Snippet;
@@ -23,16 +23,27 @@
 
 <style>
   .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
     border: 1px solid var(--border-color, #ccc);
     border-radius: 4px;
     cursor: pointer;
     font-family: inherit;
     font-size: 13px;
-    transition: background-color 0.15s, border-color 0.15s;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  /* Sizes */
+  .btn-xs {
+    padding: 2px 6px;
+    font-size: 11px;
   }
   .btn-sm {
     padding: 4px 8px;
@@ -41,6 +52,7 @@
   .btn-md {
     padding: 6px 12px;
   }
+  /* Variants */
   .btn-primary {
     background: var(--primary-color, #0060df);
     color: white;
@@ -63,5 +75,14 @@
   }
   .btn-danger:hover:not(:disabled) {
     background: #c50042;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--primary-color, #0060df);
+    border-color: var(--primary-color, #0060df);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--primary-color, #0060df);
+    color: white;
   }
 </style>

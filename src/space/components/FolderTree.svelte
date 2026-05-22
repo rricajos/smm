@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
+  import Button from '../../lib/components/Button.svelte';
 
   declare const browser: any;
 
@@ -272,12 +273,12 @@
     </span>
     <div class="tree-actions">
       {#if hasLoaded && trees.length > 0}
-        <button class="tree-btn" onclick={expandAll} title={T('folder_tree_expand_all')}>+</button>
-        <button class="tree-btn" onclick={collapseAll} title={T('folder_tree_collapse_all')}>&minus;</button>
+        <Button size="xs" onclick={expandAll} title={T('folder_tree_expand_all')}>+</Button>
+        <Button size="xs" onclick={collapseAll} title={T('folder_tree_collapse_all')}>&minus;</Button>
       {/if}
-      <button class="tree-btn refresh-btn" onclick={loadTree} disabled={loading} title={T('folder_tree_refresh')}>
+      <Button size="xs" onclick={loadTree} disabled={loading} title={T('folder_tree_refresh')}>
         {loading ? '...' : '\u21BB'}
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -347,8 +348,8 @@
         onkeydown={handleRenameKeydown}
         autofocus
       />
-      <button class="inline-btn" onclick={confirmRename}>OK</button>
-      <button class="inline-btn" onclick={() => { renamingId = null; renameValue = ''; }}>X</button>
+      <Button size="xs" onclick={confirmRename}>OK</Button>
+      <Button size="xs" onclick={() => { renamingId = null; renameValue = ''; }}>X</Button>
     {:else}
       <span class="folder-name">{node.name}</span>
       <span class="folder-counts">
@@ -378,8 +379,8 @@
           placeholder={T('folder_tree_name_placeholder')}
           autofocus
         />
-        <button class="inline-btn" onclick={confirmCreate}>OK</button>
-        <button class="inline-btn" onclick={() => (creatingIn = null)}>X</button>
+        <Button size="xs" onclick={confirmCreate}>OK</Button>
+        <Button size="xs" onclick={() => (creatingIn = null)}>X</Button>
       </div>
     {/if}
     {#each node.children as child}
@@ -440,19 +441,9 @@
     gap: 3px;
     flex-shrink: 0;
   }
-  .tree-btn {
-    padding: 2px 7px;
-    border: 1px solid var(--border-color, #ccc);
-    border-radius: 4px;
-    background: var(--bg-primary, white);
-    cursor: pointer;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--text-color, #15141a);
+  .tree-actions :global(.btn) {
     line-height: 1;
   }
-  .tree-btn:hover:not(:disabled) { background: var(--bg-hover, #e0e0e6); }
-  .tree-btn:disabled { opacity: 0.4; cursor: default; }
   .tree-msg {
     padding: 4px 10px;
     font-size: 11px;
@@ -575,25 +566,16 @@
     flex: 1;
     padding: 2px 5px;
     border: 1px solid var(--primary-color, #0060df);
-    border-radius: 3px;
+    border-radius: 4px;
     font-size: 11px;
     font-family: inherit;
     background: var(--bg-primary, white);
     color: inherit;
     min-width: 0;
   }
-  .inline-btn {
-    padding: 1px 6px;
-    border: 1px solid var(--border-color, #ccc);
-    border-radius: 3px;
-    background: none;
-    cursor: pointer;
-    font-size: 10px;
-    font-family: inherit;
-    color: var(--text-secondary, #666);
+  .folder-row :global(.btn) {
     flex-shrink: 0;
   }
-  .inline-btn:hover { background: var(--bg-hover, #e0e0e6); }
 
   /* Context menu */
   .context-menu {
@@ -628,7 +610,6 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .tree-btn { background: var(--bg-secondary, #2b2a33); border-color: #4a4a5a; }
     .folder-row:hover { background: #38374a; }
     .context-menu { background: #2b2a33; border-color: #4a4a5a; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
     .context-menu button { color: #fbfbfe; }

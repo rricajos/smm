@@ -450,8 +450,8 @@
                   {folder.path || folder.name}
                 </span>
                 <div class="folder-actions">
-                  <button class="folder-btn" onclick={() => startRename(folder)} title={T('common_edit')}>&#9998;</button>
-                  <button class="folder-btn danger" onclick={() => deleteFolder(folder)} title={T('common_delete')}>&#10005;</button>
+                  <Button size="xs" onclick={() => startRename(folder)} title={T('common_edit')}>&#9998;</Button>
+                  <Button size="xs" variant="danger" onclick={() => deleteFolder(folder)} title={T('common_delete')}>&#10005;</Button>
                 </div>
               {/if}
             </div>
@@ -734,22 +734,14 @@
     transition: opacity 0.15s;
   }
   .folder-item:hover .folder-actions { opacity: 1; }
-  .folder-btn {
-    padding: 2px 6px;
-    border: 1px solid var(--border-color, #ccc);
-    border-radius: 3px;
-    background: none;
-    cursor: pointer;
+  .folder-actions :global(.btn) {
     font-size: 12px;
-    color: var(--text-secondary, #666);
   }
-  .folder-btn:hover { background: var(--bg-hover, #e0e0e6); }
-  .folder-btn.danger:hover { background: #fce4ec; color: #c62828; }
   .rename-input {
     flex: 1;
     padding: 3px 6px;
     border: 1px solid var(--primary-color, #0060df);
-    border-radius: 3px;
+    border-radius: 4px;
     font-size: 12px;
     font-family: inherit;
     background: var(--bg-primary, white);
@@ -1019,7 +1011,6 @@
     .stats-range { background: #1c1b22; border-color: #4a4a5a; }
     .folder-msg.error { background: #4a1c1c; color: #ef9a9a; }
     .folder-msg.success { background: #1b3320; color: #81c784; }
-    .folder-btn.danger:hover { background: #4a1c1c; color: #ef9a9a; }
     .rename-input { background: #1c1b22; border-color: #45a1ff; }
   }
 </style>
