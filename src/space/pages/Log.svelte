@@ -5,6 +5,7 @@
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
+  import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
 
   interface Props {
     initialSearch?: string;
@@ -19,6 +20,7 @@
   const PAGE_SIZE = 50;
   let expandedRow = $state<number | null>(null);
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let showClearConfirm = $state(false);
 
   function handleSearchInput(value: string) {
     searchInput = value;
@@ -92,8 +94,12 @@
   }
 
   function handleClear() {
-    if (!confirm(T('log_clear_confirm'))) return;
+    showClearConfirm = true;
+  }
+
+  function confirmClear() {
     activity.clear();
+    showClearConfirm = false;
   }
 
   function exportCSV() {
@@ -141,10 +147,11 @@
     <input
       type="text"
       placeholder={T('log_search_placeholder')}
+      aria-label={T('log_search_placeholder')}
       value={searchInput}
       oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
     />
-    <select bind:value={filterType}>
+    <select bind:value={filterType} aria-label={T('log_filter_all')}>
       <option value="all">{T('log_filter_all')}</option>
       <option value="classification">{T('log_filter_classifications')}</option>
       <option value="autoResponse">{T('log_filter_responses')}</option>
@@ -164,33 +171,33 @@
     <table>
       <thead>
         <tr>
-          <th class="sortable" class:sorted={sortColumn === 'timestamp'} onclick={() => toggleSort('timestamp')}>
+          <th class="sortable" class:sorted={sortColumn === 'timestamp'} onclick={() => toggleSort('timestamp')} aria-sort={sortColumn === 'timestamp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
             {T('log_col_date')}
-            <span class="sort-arrow">{sortColumn === 'timestamp' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'timestamp' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'type'} onclick={() => toggleSort('type')}>
+          <th class="sortable" class:sorted={sortColumn === 'type'} onclick={() => toggleSort('type')} aria-sort={sortColumn === 'type' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
             {T('log_col_type')}
-            <span class="sort-arrow">{sortColumn === 'type' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'type' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'ruleName'} onclick={() => toggleSort('ruleName')}>
+          <th class="sortable" class:sorted={sortColumn === 'ruleName'} onclick={() => toggleSort('ruleName')} aria-sort={sortColumn === 'ruleName' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
             {T('log_col_rule')}
-            <span class="sort-arrow">{sortColumn === 'ruleName' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'ruleName' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'subject'} onclick={() => toggleSort('subject')}>
+          <th class="sortable" class:sorted={sortColumn === 'subject'} onclick={() => toggleSort('subject')} aria-sort={sortColumn === 'subject' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
             {T('log_col_subject')}
-            <span class="sort-arrow">{sortColumn === 'subject' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'subject' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'from'} onclick={() => toggleSort('from')}>
+          <th class="sortable" class:sorted={sortColumn === 'from'} onclick={() => toggleSort('from')} aria-sort={sortColumn === 'from' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
             {T('log_col_from')}
-            <span class="sort-arrow">{sortColumn === 'from' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'from' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
-          <th>{T('log_col_actions')}</th>
-          <th>{T('log_col_details')}</th>
+          <th scope="col">{T('log_col_actions')}</th>
+          <th scope="col">{T('log_col_details')}</th>
         </tr>
       </thead>
       <tbody>
         {#each paginated as entry, i}
-          <tr class="clickable-row" class:expanded-row={expandedRow === i} onclick={() => (expandedRow = expandedRow === i ? null : i)}>
+          <tr class="clickable-row" class:expanded-row={expandedRow === i} onclick={() => (expandedRow = expandedRow === i ? null : i)} aria-expanded={expandedRow === i}>
             <td>{formatTime(entry.timestamp)}</td>
             <td>
               <span class="badge badge-{entry.type}">
@@ -225,13 +232,21 @@
       <p class="count">{T('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}</p>
       {#if totalPages > 1}
         <div class="pagination">
-          <button class="page-btn" disabled={page <= 1} onclick={() => (page = page - 1)}>{T('log_page_prev')}</button>
-          <span class="page-info">{T('log_page_of', { current: page, total: totalPages })}</span>
-          <button class="page-btn" disabled={page >= totalPages} onclick={() => (page = page + 1)}>{T('log_page_next')}</button>
+          <button class="page-btn" disabled={page <= 1} onclick={() => (page = page - 1)} aria-label={T('log_page_prev')}>{T('log_page_prev')}</button>
+          <span class="page-info" aria-live="polite">{T('log_page_of', { current: page, total: totalPages })}</span>
+          <button class="page-btn" disabled={page >= totalPages} onclick={() => (page = page + 1)} aria-label={T('log_page_next')}>{T('log_page_next')}</button>
         </div>
       {/if}
     </div>
   {/if}
+
+  <ConfirmDialog
+    show={showClearConfirm}
+    title={T('confirm_clear_log_title')}
+    message={T('confirm_clear_log_msg')}
+    onconfirm={confirmClear}
+    oncancel={() => (showClearConfirm = false)}
+  />
 </div>
 
 <style>

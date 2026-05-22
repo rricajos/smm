@@ -8,6 +8,7 @@
   import { detectRuleConflicts, type RuleConflict } from '../../lib/utils/rule-conflicts';
   import Button from '../../lib/components/Button.svelte';
   import Modal from '../../lib/components/Modal.svelte';
+  import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
   import ImportModal from '../components/ImportModal.svelte';
   import RuleEditor from '../components/RuleEditor.svelte';
   import PresetGallery from '../components/PresetGallery.svelte';
@@ -44,6 +45,9 @@
 
   // Preset gallery
   let showPresetGallery = $state(false);
+
+  // Confirm delete state
+  let confirmDelete = $state<{ show: boolean; id: string; name: string }>({ show: false, id: '', name: '' });
 
   // Filter
   let filterQuery = $state('');
@@ -130,8 +134,12 @@
   }
 
   function handleDelete(id: string, name: string) {
-    if (!confirm(T('rules_confirm_delete', { name }))) return;
-    rules.deleteRule(id);
+    confirmDelete = { show: true, id, name };
+  }
+
+  function confirmDeleteRule() {
+    rules.deleteRule(confirmDelete.id);
+    confirmDelete = { show: false, id: '', name: '' };
   }
 
   function duplicateRule(rule: Rule) {
@@ -266,7 +274,7 @@
         if (resolution === 'replace') {
           finalRules = finalRules.map(r => r.id === conflict.existing.id ? conflict.imported : r);
         } else if (resolution === 'duplicate') {
-          finalRules.push({ ...conflict.imported, id: crypto.randomUUID(), name: `${conflict.imported.name} (importada)` });
+          finalRules.push({ ...conflict.imported, id: crypto.randomUUID(), name: `${conflict.imported.name} ${T('rules_imported_suffix')}` });
         }
       }
       await rules.setRules(finalRules);
@@ -282,7 +290,7 @@
         if (resolution === 'replace') {
           finalTemplates = finalTemplates.map(t => t.id === conflict.existing.id ? conflict.imported : t);
         } else if (resolution === 'duplicate') {
-          finalTemplates.push({ ...conflict.imported, id: crypto.randomUUID(), name: `${conflict.imported.name} (importada)` });
+          finalTemplates.push({ ...conflict.imported, id: crypto.randomUUID(), name: `${conflict.imported.name} ${T('rules_imported_suffix')}` });
         }
       }
       await templates.setTemplates(finalTemplates);
@@ -410,6 +418,7 @@
       type="text"
       class="filter-input"
       placeholder={T('rules_filter')}
+      aria-label={T('rules_filter')}
       bind:value={filterQuery}
     />
   {/if}
@@ -501,7 +510,7 @@
               type="checkbox"
               checked={rule.enabled}
               onchange={() => rules.toggleRule(rule.id)}
-              title={rule.enabled ? 'Desactivar' : 'Activar'}
+              title={rule.enabled ? T('rules_toggle_disable') : T('rules_toggle_enable')}
             />
           </div>
 
@@ -540,7 +549,7 @@
   {/if}
 
   <!-- Test result modal -->
-  <Modal title="Resultado: {testRuleName}" show={showTestModal} onclose={() => { showTestModal = false; testResult = null; }}>
+  <Modal title={T('rules_test_result_title', { name: testRuleName })} show={showTestModal} onclose={() => { showTestModal = false; testResult = null; }}>
     {#if !testResult}
       <div class="test-loading">
         <div class="spinner"></div>
@@ -613,6 +622,14 @@
     {tags}
     oninstall={(rule) => rules.addRule(rule)}
     onclose={() => (showPresetGallery = false)}
+  />
+
+  <ConfirmDialog
+    show={confirmDelete.show}
+    title={T('confirm_delete_rule_title')}
+    message={T('confirm_delete_rule_msg', { name: confirmDelete.name })}
+    onconfirm={confirmDeleteRule}
+    oncancel={() => (confirmDelete = { show: false, id: '', name: '' })}
   />
 </div>
 

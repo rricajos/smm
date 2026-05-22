@@ -45,6 +45,7 @@
   locale.subscribe((l) => (currentLocale = l));
   import Toast from '../../lib/components/Toast.svelte';
   import Button from '../../lib/components/Button.svelte';
+  import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
   import RuleEditor from '../components/RuleEditor.svelte';
   import ChatWelcome from '../components/ChatWelcome.svelte';
   import ProposalBlock from '../components/ProposalBlock.svelte';
@@ -137,6 +138,9 @@
   let selectedAccountId = $state<string>('');
   let batchLimit = $state(500);
   let skipAnalyzed = $state(true);
+
+  // Confirm delete conversation
+  let confirmDeleteConv = $state<{ show: boolean; id: string }>({ show: false, id: '' });
 
   // Active tab
   let activeMode = $state<'chat' | 'quick'>('chat');
@@ -576,8 +580,12 @@
   }
 
   function deleteConversation(id: string) {
-    if (!confirm(T('ai_delete_conversation_confirm'))) return;
-    chatStore.deleteConversation(id);
+    confirmDeleteConv = { show: true, id };
+  }
+
+  function confirmDeleteConversation() {
+    chatStore.deleteConversation(confirmDeleteConv.id);
+    confirmDeleteConv = { show: false, id: '' };
   }
 
   function formatDate(ts: number): string {
@@ -793,6 +801,7 @@
         class="health-dot health-{apiHealth}"
         onclick={checkApiHealth}
         title={apiHealth === 'ok' ? T('ai_health_ok') : apiHealth === 'error' ? T('ai_health_error') : apiHealth === 'checking' ? T('ai_health_checking') : T('ai_health_unknown')}
+        aria-label={apiHealth === 'ok' ? T('ai_health_ok') : apiHealth === 'error' ? T('ai_health_error') : apiHealth === 'checking' ? T('ai_health_checking') : T('ai_health_unknown')}
       ></button>
     </div>
     {#if !currentSettings.openaiApiKey}
@@ -840,7 +849,7 @@
         {#if chatMessages.length === 0}
           <ChatWelcome onaction={sendChatMessage} />
         {:else}
-          <div class="chat-messages" bind:this={chatContainerEl}>
+          <div class="chat-messages" bind:this={chatContainerEl} role="log" aria-live="polite">
             {#each chatMessages as msg, msgIdx}
               <div class="chat-bubble {msg.role}">
                 <div class="bubble-label">{msg.role === 'assistant' ? T('ai_bubble_assistant') : T('ai_bubble_user')}</div>
@@ -923,6 +932,7 @@
               class="chat-input"
               bind:value={chatInput}
               placeholder={T('ai_chat_placeholder')}
+              aria-label={T('ai_chat_placeholder')}
               rows="2"
               disabled={chatLoading}
               onkeydown={handleChatKeydown}
@@ -981,7 +991,7 @@
       </div>
       {#if batchProgress}
         <div class="batch-progress">
-          <div class="batch-progress-bar">
+          <div class="batch-progress-bar" role="progressbar" aria-valuenow={batchProgress.current} aria-valuemin={0} aria-valuemax={batchProgress.total}>
             <div class="batch-progress-fill" style="width: {Math.round((batchProgress.current / batchProgress.total) * 100)}%"></div>
           </div>
           <span class="batch-progress-text">{T('ai_batch_progress', { current: batchProgress.current, total: batchProgress.total, processed: batchProgress.processed })}</span>
@@ -1065,7 +1075,16 @@
     show={undoToast.show}
     actionLabel={T('ai_undo_label')}
     onaction={handleUndo}
+    ondismiss={() => { if (undoToast.timerId) clearTimeout(undoToast.timerId); undoToast = { show: false, message: '', undoFn: null, timerId: null }; }}
     duration={UNDO_DURATION}
+  />
+
+  <ConfirmDialog
+    show={confirmDeleteConv.show}
+    title={T('confirm_delete_conversation_title_dialog')}
+    message={T('confirm_delete_conversation_msg')}
+    onconfirm={confirmDeleteConversation}
+    oncancel={() => (confirmDeleteConv = { show: false, id: '' })}
   />
 </div>
 

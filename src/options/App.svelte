@@ -308,7 +308,7 @@
     <Button variant="primary" onclick={saveSettings}>{T('common_save')}</Button>
   </div>
 
-  <Toast message={toastMessage} type={toastType} show={showToast} />
+  <Toast message={toastMessage} type={toastType} show={showToast} ondismiss={() => (showToast = false)} />
 </div>
 
 <style>

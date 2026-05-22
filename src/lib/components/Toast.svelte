@@ -5,10 +5,11 @@
     show: boolean;
     actionLabel?: string;
     onaction?: () => void;
+    ondismiss?: () => void;
     duration?: number;
   }
 
-  let { message, type = 'info', show, actionLabel, onaction, duration }: Props = $props();
+  let { message, type = 'info', show, actionLabel, onaction, ondismiss, duration }: Props = $props();
 </script>
 
 {#if show}
@@ -16,6 +17,9 @@
     <span class="toast-message">{message}</span>
     {#if actionLabel && onaction}
       <button class="toast-action" onclick={onaction}>{actionLabel}</button>
+    {/if}
+    {#if ondismiss}
+      <button class="toast-close" onclick={ondismiss} aria-label="Dismiss">&times;</button>
     {/if}
     {#if duration}
       <div class="toast-progress" style="--toast-duration: {duration}ms"></div>
@@ -31,13 +35,14 @@
     padding: 12px 20px;
     border-radius: 6px;
     font-size: 13px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     z-index: 2000;
     animation: slideIn 0.3s ease-out;
     display: flex;
     align-items: center;
     gap: 8px;
     overflow: hidden;
+    max-width: 480px;
   }
   .toast-success {
     background: #2ac3a2;
@@ -69,6 +74,19 @@
   .toast-action:hover {
     background: rgba(255, 255, 255, 0.2);
   }
+  .toast-close {
+    border: none;
+    background: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .toast-close:hover {
+    color: white;
+  }
   .toast-progress {
     position: absolute;
     bottom: 0;
@@ -91,5 +109,12 @@
   @keyframes shrink {
     from { width: 100%; }
     to { width: 0%; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .toast-success { background: #1b8a6b; }
+    .toast-error { background: #b71c3a; }
+    .toast-info { background: #1a5ab8; }
+    .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
   }
 </style>

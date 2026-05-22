@@ -571,4 +571,21 @@ export const en: Translations = {
 
   // Log detail expansion
   log_click_expand: 'Click to expand',
+
+  // Confirm dialog
+  confirm_delete_rule_title: 'Delete rule',
+  confirm_delete_rule_msg: 'Are you sure you want to delete the rule "{name}"? This action cannot be undone.',
+  confirm_clear_log_title: 'Clear log',
+  confirm_clear_log_msg: 'Are you sure you want to delete all activity history? This action cannot be undone.',
+  confirm_delete_conversation_title_dialog: 'Delete conversation',
+  confirm_delete_conversation_msg: 'Are you sure you want to delete this conversation? All messages will be lost.',
+
+  // Hardcoded string fixes
+  rules_imported_suffix: '(imported)',
+  rules_toggle_disable: 'Disable',
+  rules_toggle_enable: 'Enable',
+  rules_test_result_title: 'Result: {name}',
+
+  // Toast
+  toast_dismiss: 'Dismiss notification',
 };

@@ -573,4 +573,21 @@ export interface Translations {
 
   // Log detail expansion
   log_click_expand: string;
+
+  // Confirm dialog
+  confirm_delete_rule_title: string;
+  confirm_delete_rule_msg: string;
+  confirm_clear_log_title: string;
+  confirm_clear_log_msg: string;
+  confirm_delete_conversation_title_dialog: string;
+  confirm_delete_conversation_msg: string;
+
+  // Hardcoded string fixes
+  rules_imported_suffix: string;
+  rules_toggle_disable: string;
+  rules_toggle_enable: string;
+  rules_test_result_title: string;
+
+  // Toast
+  toast_dismiss: string;
 }

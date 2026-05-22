@@ -571,4 +571,21 @@ export const es: Translations = {
 
   // Log detail expansion
   log_click_expand: 'Clic para expandir',
+
+  // Confirm dialog
+  confirm_delete_rule_title: 'Eliminar regla',
+  confirm_delete_rule_msg: '¿Estás seguro de que deseas eliminar la regla "{name}"? Esta acción no se puede deshacer.',
+  confirm_clear_log_title: 'Limpiar registro',
+  confirm_clear_log_msg: '¿Estás seguro de que deseas eliminar todo el historial de actividad? Esta acción no se puede deshacer.',
+  confirm_delete_conversation_title_dialog: 'Eliminar conversación',
+  confirm_delete_conversation_msg: '¿Estás seguro de que deseas eliminar esta conversación? Se perderán todos los mensajes.',
+
+  // Hardcoded string fixes
+  rules_imported_suffix: '(importada)',
+  rules_toggle_disable: 'Desactivar',
+  rules_toggle_enable: 'Activar',
+  rules_test_result_title: 'Resultado: {name}',
+
+  // Toast
+  toast_dismiss: 'Cerrar notificación',
 };
