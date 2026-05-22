@@ -833,7 +833,7 @@
               <button class="conv-item-btn" onclick={() => switchConversation(conv.id)}>
                 <span class="conv-item-title">{conv.title}</span>
                 <span class="conv-item-date">{formatDate(conv.createdAt)}</span>
-                <span class="conv-item-count">{conv.displayMessages.length} msgs</span>
+                <span class="conv-item-count">{T('ai_conv_msg_count', { count: conv.displayMessages.length })}</span>
               </button>
               {#if conversations.length > 1}
                 <button class="conv-delete-btn" onclick={() => deleteConversation(conv.id)} title={T('ai_delete_conversation_title')}>&times;</button>

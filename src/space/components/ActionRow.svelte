@@ -109,7 +109,7 @@
     </select>
   {/if}
 
-  <Button size="sm" variant="danger" onclick={onremove}>x</Button>
+  <Button size="sm" variant="danger" onclick={onremove} aria-label={T('a11y_remove_action')}>x</Button>
 </div>
 
 <style>

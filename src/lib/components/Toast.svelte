@@ -10,7 +10,15 @@
   }
 
   let { message, type = 'info', show, actionLabel, onaction, ondismiss, duration }: Props = $props();
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && show && ondismiss) {
+      ondismiss();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
   <div class="toast toast-{type}" role="alert">

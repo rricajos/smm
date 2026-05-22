@@ -47,10 +47,10 @@
   for (const v of TEMPLATE_VARIABLES) {
     exampleVars[v.key] = v.example;
   }
-  // Legacy keys
-  exampleVars['senderName'] = 'Juan García';
+  // Legacy keys (dynamically set via i18n $effect below)
+  exampleVars['senderName'] = '';
   exampleVars['senderEmail'] = 'juan@example.com';
-  exampleVars['originalSubject'] = 'Re: Presupuesto';
+  exampleVars['originalSubject'] = '';
 
   let subjectEl = $state<HTMLInputElement | null>(null);
   let bodyEl = $state<HTMLTextAreaElement | null>(null);
@@ -64,6 +64,12 @@
     body.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => exampleVars[key] || `{{${key}}}`)
   );
 
+  // Keep legacy example vars updated with i18n
+  $effect(() => {
+    exampleVars['senderName'] = T('tmpl_example_sender_name');
+    exampleVars['originalSubject'] = T('tmpl_example_original_subject');
+  });
+
   $effect(() => {
     if (template) {
       name = template.name;
@@ -74,8 +80,8 @@
       replyType = template.replyType;
     } else {
       name = '';
-      subject = 'Re: {{originalSubject}}';
-      body = 'Hola {{senderName}},\n\nGracias por tu mensaje.\n\nSaludos.';
+      subject = T('tmpl_default_subject');
+      body = T('tmpl_default_body');
       isPlainText = true;
       sendMode = 'draft';
       replyType = 'replyToSender';

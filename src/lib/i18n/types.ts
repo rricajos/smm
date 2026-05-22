@@ -590,4 +590,33 @@ export interface Translations {
 
   // Toast
   toast_dismiss: string;
+
+  // Confirm dialogs (folder/template delete)
+  confirm_delete_folder_title: string;
+  confirm_delete_template_title: string;
+
+  // FolderTree i18n titles
+  folder_tree_title_folder_msgs: string;
+  folder_tree_title_subtree_total: string;
+  folder_tree_title_total_msgs: string;
+  folder_tree_title_unread: string;
+
+  // ChatWelcome quick-action prompts
+  chat_welcome_prompt_analyze: string;
+  chat_welcome_prompt_folders: string;
+  chat_welcome_prompt_audit: string;
+
+  // TemplateEditor defaults
+  tmpl_default_subject: string;
+  tmpl_default_body: string;
+  tmpl_example_sender_name: string;
+  tmpl_example_original_subject: string;
+
+  // AI conversation message count
+  ai_conv_msg_count: string;
+
+  // Accessibility
+  a11y_case_sensitive: string;
+  a11y_remove_condition: string;
+  a11y_remove_action: string;
 }

@@ -588,4 +588,33 @@ export const es: Translations = {
 
   // Toast
   toast_dismiss: 'Cerrar notificación',
+
+  // Confirm dialogs (folder/template delete)
+  confirm_delete_folder_title: 'Eliminar carpeta',
+  confirm_delete_template_title: 'Eliminar plantilla',
+
+  // FolderTree i18n titles
+  folder_tree_title_folder_msgs: 'Mensajes en esta carpeta',
+  folder_tree_title_subtree_total: 'Total en subárbol',
+  folder_tree_title_total_msgs: 'Total mensajes',
+  folder_tree_title_unread: 'No leídos',
+
+  // ChatWelcome quick-action prompts
+  chat_welcome_prompt_analyze: 'Analiza mis correos recientes y proponme una estructura de carpetas y reglas para organizar todo de forma optima. Se agresivo con las propuestas.',
+  chat_welcome_prompt_folders: 'Que estructura de carpetas me recomiendas para organizar mejor mi correo profesional?',
+  chat_welcome_prompt_audit: 'Revisa mis reglas actuales y dime si se pueden mejorar o si faltan reglas importantes.',
+
+  // TemplateEditor defaults
+  tmpl_default_subject: 'Re: {{originalSubject}}',
+  tmpl_default_body: 'Hola {{senderName}},\n\nGracias por tu mensaje.\n\nSaludos.',
+  tmpl_example_sender_name: 'Juan García',
+  tmpl_example_original_subject: 'Re: Presupuesto',
+
+  // AI conversation message count
+  ai_conv_msg_count: '{count} msgs',
+
+  // Accessibility
+  a11y_case_sensitive: 'Distinguir mayúsculas/minúsculas',
+  a11y_remove_condition: 'Eliminar condición',
+  a11y_remove_action: 'Eliminar acción',
 };

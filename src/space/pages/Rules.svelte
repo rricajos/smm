@@ -541,7 +541,7 @@
             </Button>
             <Button size="sm" onclick={() => duplicateRule(rule)}>{T('common_duplicate')}</Button>
             <Button size="sm" onclick={() => openEditRule(rule)}>{T('common_edit')}</Button>
-            <Button size="sm" variant="danger" onclick={() => handleDelete(rule.id, rule.name)}>x</Button>
+            <Button size="sm" variant="danger" onclick={() => handleDelete(rule.id, rule.name)} aria-label={T('common_delete')}>x</Button>
           </div>
         </div>
       {/each}

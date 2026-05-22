@@ -2,6 +2,7 @@
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
+  import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
 
   declare const browser: any;
 
@@ -50,6 +51,7 @@
   let renameValue = $state('');
   let actionError = $state('');
   let actionSuccess = $state('');
+  let confirmDeleteNode = $state<{ show: boolean; node: FolderNode | null }>({ show: false, node: null });
 
   export async function loadTree() {
     if (loading) return;
@@ -184,11 +186,17 @@
     closeContextMenu();
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!contextMenu.node) return;
     const node = contextMenu.node;
     closeContextMenu();
-    if (!confirm(T('folder_tree_confirm_delete', { name: node.name }))) return;
+    confirmDeleteNode = { show: true, node };
+  }
+
+  async function confirmDeleteNodeAction() {
+    const node = confirmDeleteNode.node;
+    confirmDeleteNode = { show: false, node: null };
+    if (!node) return;
     actionError = '';
     try {
       const result = await browser.runtime.sendMessage({ type: 'DELETE_FOLDER', folderId: node.id });
@@ -315,6 +323,14 @@
   </div>
 {/if}
 
+<ConfirmDialog
+  show={confirmDeleteNode.show}
+  title={T('confirm_delete_folder_title')}
+  message={T('folder_tree_confirm_delete', { name: confirmDeleteNode.node?.name || '' })}
+  onconfirm={confirmDeleteNodeAction}
+  oncancel={() => (confirmDeleteNode = { show: false, node: null })}
+/>
+
 {#snippet folderRow(node: FolderNode, depth: number, accountId: string)}
   {@const hasChildren = node.children.length > 0}
   {@const childTotal = hasChildren ? subtreeTotal(node) : node.totalMessages}
@@ -354,14 +370,14 @@
       <span class="folder-name">{node.name}</span>
       <span class="folder-counts">
         {#if hasChildren && expandedIds.has(node.id)}
-          <span class="msg-count" title="Mensajes en esta carpeta">{node.totalMessages}</span>
+          <span class="msg-count" title={T('folder_tree_title_folder_msgs')}>{node.totalMessages}</span>
         {:else if hasChildren}
-          <span class="msg-count" title="Total en subarbol">{childTotal}</span>
+          <span class="msg-count" title={T('folder_tree_title_subtree_total')}>{childTotal}</span>
         {:else}
-          <span class="msg-count" title="Total mensajes">{node.totalMessages}</span>
+          <span class="msg-count" title={T('folder_tree_title_total_msgs')}>{node.totalMessages}</span>
         {/if}
         {#if childUnread > 0}
-          <span class="unread-count" title="No leidos">{childUnread}</span>
+          <span class="unread-count" title={T('folder_tree_title_unread')}>{childUnread}</span>
         {/if}
       </span>
     {/if}

@@ -6,6 +6,7 @@
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
   import Modal from '../../lib/components/Modal.svelte';
+  import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
 
   declare const browser: any;
 
@@ -137,6 +138,7 @@
   let folderSuccess = $state('');
   let renamingId = $state<string | null>(null);
   let renameValue = $state('');
+  let confirmDeleteFolder = $state<{ show: boolean; folder: any }>({ show: false, folder: null });
 
   async function loadFolders() {
     try {
@@ -181,8 +183,14 @@
     }
   }
 
-  async function deleteFolder(folder: any) {
-    if (!confirm(T('dashboard_confirm_delete_folder', { name: folder.name }))) return;
+  function deleteFolder(folder: any) {
+    confirmDeleteFolder = { show: true, folder };
+  }
+
+  async function confirmDeleteFolderAction() {
+    const folder = confirmDeleteFolder.folder;
+    confirmDeleteFolder = { show: false, folder: null };
+    if (!folder) return;
     folderError = '';
     try {
       const result = await browser.runtime.sendMessage({
@@ -511,6 +519,14 @@
       <span>{T('dashboard_shortcuts_hint')}</span>
     </div>
   </div>
+
+  <ConfirmDialog
+    show={confirmDeleteFolder.show}
+    title={T('confirm_delete_folder_title')}
+    message={T('dashboard_confirm_delete_folder', { name: confirmDeleteFolder.folder?.name || '' })}
+    onconfirm={confirmDeleteFolderAction}
+    oncancel={() => (confirmDeleteFolder = { show: false, folder: null })}
+  />
 </div>
 
 <style>

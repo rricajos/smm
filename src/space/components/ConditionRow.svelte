@@ -77,17 +77,18 @@
       oninput={(e) => onchange({ ...condition, value: (e.target as HTMLInputElement).value })}
     />
 
-    <label class="case-toggle">
+    <label class="case-toggle" title={T('a11y_case_sensitive')}>
       <input
         type="checkbox"
         checked={condition.caseSensitive}
         onchange={(e) => onchange({ ...condition, caseSensitive: (e.target as HTMLInputElement).checked })}
+        aria-label={T('a11y_case_sensitive')}
       />
       Aa
     </label>
   {/if}
 
-  <Button size="sm" variant="danger" onclick={onremove}>x</Button>
+  <Button size="sm" variant="danger" onclick={onremove} aria-label={T('a11y_remove_condition')}>x</Button>
 </div>
 
 <style>

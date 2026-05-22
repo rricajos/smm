@@ -5,6 +5,7 @@
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
+  import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
   import TemplateEditor from '../components/TemplateEditor.svelte';
 
   interface Props {
@@ -20,6 +21,7 @@
   let showEditor = $state(false);
   let editingTemplate = $state<ResponseTemplate | null>(null);
   let filterQuery = $state('');
+  let confirmDelete = $state<{ show: boolean; id: string; name: string }>({ show: false, id: '', name: '' });
 
   templates.subscribe((v) => (currentTemplates = v));
   rules.subscribe((v) => (currentRules = v));
@@ -56,8 +58,12 @@
   }
 
   function handleDelete(id: string, name: string) {
-    if (!confirm(T('templates_confirm_delete', { name }))) return;
-    templates.deleteTemplate(id);
+    confirmDelete = { show: true, id, name };
+  }
+
+  function confirmDeleteTemplate() {
+    templates.deleteTemplate(confirmDelete.id);
+    confirmDelete = { show: false, id: '', name: '' };
   }
 
   function duplicateTemplate(tmpl: ResponseTemplate) {
@@ -159,6 +165,14 @@
     template={editingTemplate}
     onsave={handleSave}
     onclose={() => { showEditor = false; editingTemplate = null; }}
+  />
+
+  <ConfirmDialog
+    show={confirmDelete.show}
+    title={T('confirm_delete_template_title')}
+    message={T('templates_confirm_delete', { name: confirmDelete.name })}
+    onconfirm={confirmDeleteTemplate}
+    oncancel={() => (confirmDelete = { show: false, id: '', name: '' })}
   />
 </div>
 

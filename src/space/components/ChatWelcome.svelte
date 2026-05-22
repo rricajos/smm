@@ -17,21 +17,21 @@
   <h4>{T('chat_welcome_title')}</h4>
   <p>{T('chat_welcome_desc')}</p>
   <div class="quick-actions">
-    <button class="quick-action" onclick={() => onaction('Analiza mis correos recientes y proponme una estructura de carpetas y reglas para organizar todo de forma optima. Se agresivo con las propuestas.')}>
+    <button class="quick-action" onclick={() => onaction(T('chat_welcome_prompt_analyze'))}>
       <span class="qa-icon">&#128269;</span>
       <span class="qa-text">
         <strong>{T('chat_welcome_action_analyze')}</strong>
         <small>{T('chat_welcome_action_analyze_desc')}</small>
       </span>
     </button>
-    <button class="quick-action" onclick={() => onaction('Que estructura de carpetas me recomiendas para organizar mejor mi correo profesional?')}>
+    <button class="quick-action" onclick={() => onaction(T('chat_welcome_prompt_folders'))}>
       <span class="qa-icon">&#128193;</span>
       <span class="qa-text">
         <strong>{T('chat_welcome_action_folders')}</strong>
         <small>{T('chat_welcome_action_folders_desc')}</small>
       </span>
     </button>
-    <button class="quick-action" onclick={() => onaction('Revisa mis reglas actuales y dime si se pueden mejorar o si faltan reglas importantes.')}>
+    <button class="quick-action" onclick={() => onaction(T('chat_welcome_prompt_audit'))}>
       <span class="qa-icon">&#9881;</span>
       <span class="qa-text">
         <strong>{T('chat_welcome_action_audit')}</strong>
