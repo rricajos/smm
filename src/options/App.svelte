@@ -153,6 +153,19 @@
   <h1>{T('options_title')}</h1>
 
   <section>
+    <h2>{T('options_language')}</h2>
+    <div class="field">
+      <select
+        value={currentLocale}
+        onchange={(e) => setLocale((e.target as HTMLSelectElement).value as SupportedLocale)}
+      >
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
     <h2>{T('options_general')}</h2>
     <div class="field">
       <label class="checkbox-label">
@@ -175,19 +188,6 @@
   </section>
 
   <section>
-    <h2>{T('options_limits')}</h2>
-    <div class="field">
-      <label for="max-responses">{T('options_max_responses')}</label>
-      <input id="max-responses" type="number" min="1" max="100" bind:value={currentSettings.maxAutoResponsesPerHour} />
-    </div>
-    <div class="field">
-      <label for="log-retention">{T('options_log_retention')}</label>
-      <input id="log-retention" type="number" min="1" max="365" bind:value={currentSettings.logRetentionDays} />
-      <span class="field-hint">{T('options_log_retention_hint')}</span>
-    </div>
-  </section>
-
-  <section>
     <h2>{T('options_notifications')}</h2>
     <div class="field">
       <label class="checkbox-label">
@@ -200,6 +200,19 @@
         <input type="checkbox" bind:checked={currentSettings.notifyOnAutoResponse} />
         {T('options_notify_auto_response')}
       </label>
+    </div>
+  </section>
+
+  <section>
+    <h2>{T('options_limits')}</h2>
+    <div class="field">
+      <label for="max-responses">{T('options_max_responses')}</label>
+      <input id="max-responses" type="number" min="1" max="100" bind:value={currentSettings.maxAutoResponsesPerHour} />
+    </div>
+    <div class="field">
+      <label for="log-retention">{T('options_log_retention')}</label>
+      <input id="log-retention" type="number" min="1" max="365" bind:value={currentSettings.logRetentionDays} />
+      <span class="field-hint">{T('options_log_retention_hint')}</span>
     </div>
   </section>
 
@@ -282,23 +295,6 @@
     </div>
   </section>
 
-  <div class="actions">
-    <Button variant="primary" onclick={saveSettings}>{T('common_save')}</Button>
-  </div>
-
-  <section>
-    <h2>{T('options_language')}</h2>
-    <div class="field">
-      <select
-        value={currentLocale}
-        onchange={(e) => setLocale((e.target as HTMLSelectElement).value as SupportedLocale)}
-      >
-        <option value="es">Español</option>
-        <option value="en">English</option>
-      </select>
-    </div>
-  </section>
-
   <section>
     <h2>{T('options_data')}</h2>
     <p class="info">{T('options_data_desc')}</p>
@@ -307,6 +303,10 @@
       <Button onclick={importData}>{T('options_import_data')}</Button>
     </div>
   </section>
+
+  <div class="save-footer">
+    <Button variant="primary" onclick={saveSettings}>{T('common_save')}</Button>
+  </div>
 
   <Toast message={toastMessage} type={toastType} show={showToast} />
 </div>
@@ -348,7 +348,7 @@
   .options {
     max-width: 600px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 24px 24px 72px 24px;
   }
   h1 {
     font-size: 20px;
@@ -390,8 +390,17 @@
     cursor: pointer;
     color: #15141a !important;
   }
-  .actions {
-    margin-bottom: 16px;
+  .save-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 24px;
+    background: var(--bg-secondary, #f0f0f4);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    z-index: 10;
   }
   .info {
     font-size: 13px;

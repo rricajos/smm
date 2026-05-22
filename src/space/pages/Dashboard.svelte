@@ -33,14 +33,14 @@
   // 7-day activity chart
   let weeklyData = $derived(() => {
     const days: { label: string; classifications: number; responses: number }[] = [];
-    const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    const dayKeys: Array<keyof Translations> = ['day_abbr_sun', 'day_abbr_mon', 'day_abbr_tue', 'day_abbr_wed', 'day_abbr_thu', 'day_abbr_fri', 'day_abbr_sat'];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const start = new Date(d).setHours(0, 0, 0, 0);
       const end = new Date(d).setHours(23, 59, 59, 999);
       days.push({
-        label: dayNames[d.getDay()],
+        label: T(dayKeys[d.getDay()]),
         classifications: currentActivity.filter(a => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end).length,
         responses: currentActivity.filter(a => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end).length,
       });
@@ -399,8 +399,8 @@
               <tbody>
                 {#each processResult.details as d}
                   <tr>
-                    <td class="truncate">{d.subject}</td>
-                    <td class="truncate">{d.from}</td>
+                    <td class="truncate" title={d.subject}>{d.subject}</td>
+                    <td class="truncate" title={d.from}>{d.from}</td>
                     <td>
                       {#each d.rules as r}
                         <span class="rule-badge">{r}</span>
@@ -486,8 +486,8 @@
                 </span>
               </td>
               <td>{entry.ruleName}</td>
-              <td class="truncate">{entry.subject}</td>
-              <td class="truncate">{entry.from}</td>
+              <td class="truncate" title={entry.subject}>{entry.subject}</td>
+              <td class="truncate" title={entry.from}>{entry.from}</td>
             </tr>
           {/each}
         </tbody>

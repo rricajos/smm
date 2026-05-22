@@ -547,4 +547,30 @@ export interface Translations {
   // Log sorting
   log_sort_asc: string;
   log_sort_desc: string;
+
+  // Dashboard day abbreviations
+  day_abbr_sun: string;
+  day_abbr_mon: string;
+  day_abbr_tue: string;
+  day_abbr_wed: string;
+  day_abbr_thu: string;
+  day_abbr_fri: string;
+  day_abbr_sat: string;
+
+  // Keyboard shortcuts help
+  shortcuts_title: string;
+  shortcuts_global: string;
+  shortcuts_search: string;
+  shortcuts_tabs: string;
+  shortcuts_rules: string;
+  shortcuts_chat: string;
+  shortcuts_close: string;
+  shortcuts_move_up: string;
+  shortcuts_move_down: string;
+  shortcuts_send: string;
+  shortcuts_newline: string;
+  shortcuts_help: string;
+
+  // Log detail expansion
+  log_click_expand: string;
 }

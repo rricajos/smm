@@ -59,6 +59,7 @@
   }
 
   let searchComponent: GlobalSearch | undefined = $state(undefined);
+  let showShortcuts = $state(false);
 
   $effect(() => {
     if (activeTab === 'dashboard') {
@@ -79,6 +80,15 @@
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
     searchComponent?.focus();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+    e.preventDefault();
+    showShortcuts = !showShortcuts;
+    return;
+  }
+  if (e.key === 'Escape' && showShortcuts) {
+    showShortcuts = false;
     return;
   }
   if (e.ctrlKey || e.metaKey) {
@@ -166,6 +176,38 @@
     </div>
   </div>
 </div>
+
+{#if showShortcuts}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="shortcuts-overlay" onclick={() => (showShortcuts = false)} onkeydown={() => {}}>
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="shortcuts-modal" onclick={(e) => e.stopPropagation()}>
+      <div class="shortcuts-header">
+        <h3>{T('shortcuts_title')}</h3>
+        <button class="shortcuts-close" onclick={() => (showShortcuts = false)}>&times;</button>
+      </div>
+      <div class="shortcuts-body">
+        <div class="shortcut-group">
+          <h4>{T('shortcuts_global')}</h4>
+          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>K</kbd><span>{T('shortcuts_search')}</span></div>
+          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>1</kbd>-<kbd>5</kbd><span>{T('shortcuts_tabs', { n: '1-5' })}</span></div>
+          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>/</kbd><span>{T('shortcuts_help')}</span></div>
+          <div class="shortcut-row"><kbd>Esc</kbd><span>{T('shortcuts_close')}</span></div>
+        </div>
+        <div class="shortcut-group">
+          <h4>{T('shortcuts_rules')}</h4>
+          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&uarr;</kbd><span>{T('shortcuts_move_up')}</span></div>
+          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&darr;</kbd><span>{T('shortcuts_move_down')}</span></div>
+        </div>
+        <div class="shortcut-group">
+          <h4>{T('shortcuts_chat')}</h4>
+          <div class="shortcut-row"><kbd>Enter</kbd><span>{T('shortcuts_send')}</span></div>
+          <div class="shortcut-row"><kbd>Shift</kbd> + <kbd>Enter</kbd><span>{T('shortcuts_newline')}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   :global(body) {
@@ -328,5 +370,91 @@
     background: var(--primary-color, #0060df);
     border-color: var(--primary-color, #0060df);
     color: white;
+  }
+
+  /* Shortcuts help modal */
+  .shortcuts-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.1s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .shortcuts-modal {
+    background: var(--bg-primary, white);
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 10px;
+    width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  }
+  .shortcuts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-color, #e0e0e6);
+  }
+  .shortcuts-header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .shortcuts-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-secondary, #666);
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .shortcuts-close:hover {
+    color: var(--text-color, #15141a);
+  }
+  .shortcuts-body {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .shortcut-group h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary, #666);
+  }
+  .shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  .shortcut-row span {
+    margin-left: auto;
+    color: var(--text-secondary, #666);
+    font-size: 12px;
+  }
+  kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    background: var(--bg-secondary, #f0f0f4);
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--border-color, #ccc);
+    min-width: 20px;
+    text-align: center;
   }
 </style>

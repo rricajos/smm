@@ -545,4 +545,30 @@ export const es: Translations = {
   // Log sorting
   log_sort_asc: 'Ascendente',
   log_sort_desc: 'Descendente',
+
+  // Dashboard day abbreviations
+  day_abbr_sun: 'D',
+  day_abbr_mon: 'L',
+  day_abbr_tue: 'M',
+  day_abbr_wed: 'X',
+  day_abbr_thu: 'J',
+  day_abbr_fri: 'V',
+  day_abbr_sat: 'S',
+
+  // Keyboard shortcuts help
+  shortcuts_title: 'Atajos de teclado',
+  shortcuts_global: 'Global',
+  shortcuts_search: 'Abrir buscador',
+  shortcuts_tabs: 'Ir a pestaña {n}',
+  shortcuts_rules: 'Reglas',
+  shortcuts_chat: 'Chat IA',
+  shortcuts_close: 'Cerrar modal / panel',
+  shortcuts_move_up: 'Mover regla arriba',
+  shortcuts_move_down: 'Mover regla abajo',
+  shortcuts_send: 'Enviar mensaje',
+  shortcuts_newline: 'Nueva línea',
+  shortcuts_help: 'Mostrar esta ayuda',
+
+  // Log detail expansion
+  log_click_expand: 'Clic para expandir',
 };

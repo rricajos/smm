@@ -13,9 +13,18 @@
 
   let currentActivity = $state<ActivityEntry[]>([]);
   let filterType = $state<'all' | 'classification' | 'autoResponse' | 'error'>('all');
+  let searchInput = $state('');
   let searchQuery = $state('');
   let page = $state(1);
   const PAGE_SIZE = 50;
+  let expandedRow = $state<number | null>(null);
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function handleSearchInput(value: string) {
+    searchInput = value;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => { searchQuery = value; }, 250);
+  }
 
   type SortColumn = 'timestamp' | 'type' | 'ruleName' | 'subject' | 'from';
   let sortColumn = $state<SortColumn>('timestamp');
@@ -39,6 +48,7 @@
 
   $effect(() => {
     if (initialSearch) {
+      searchInput = initialSearch;
       searchQuery = initialSearch;
     }
   });
@@ -131,7 +141,8 @@
     <input
       type="text"
       placeholder={T('log_search_placeholder')}
-      bind:value={searchQuery}
+      value={searchInput}
+      oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
     />
     <select bind:value={filterType}>
       <option value="all">{T('log_filter_all')}</option>
@@ -178,20 +189,35 @@
         </tr>
       </thead>
       <tbody>
-        {#each paginated as entry}
-          <tr>
+        {#each paginated as entry, i}
+          <tr class="clickable-row" class:expanded-row={expandedRow === i} onclick={() => (expandedRow = expandedRow === i ? null : i)}>
             <td>{formatTime(entry.timestamp)}</td>
             <td>
               <span class="badge badge-{entry.type}">
                 {typeLabels[entry.type] || entry.type}
               </span>
             </td>
-            <td>{entry.ruleName}</td>
-            <td class="truncate">{entry.subject}</td>
-            <td class="truncate">{entry.from}</td>
-            <td>{entry.actions.join(', ')}</td>
-            <td class="truncate">{entry.details || ''}</td>
+            <td title={entry.ruleName}>{entry.ruleName}</td>
+            <td class="truncate" title={entry.subject}>{entry.subject}</td>
+            <td class="truncate" title={entry.from}>{entry.from}</td>
+            <td title={entry.actions.join(', ')}>{entry.actions.join(', ')}</td>
+            <td class="truncate" title={entry.details || ''}>{entry.details || ''}</td>
           </tr>
+          {#if expandedRow === i}
+            <tr class="detail-row">
+              <td colspan="7">
+                <div class="detail-content">
+                  <div class="detail-field"><strong>{T('log_col_subject')}:</strong> {entry.subject}</div>
+                  <div class="detail-field"><strong>{T('log_col_from')}:</strong> {entry.from}</div>
+                  <div class="detail-field"><strong>{T('log_col_rule')}:</strong> {entry.ruleName}</div>
+                  <div class="detail-field"><strong>{T('log_col_actions')}:</strong> {entry.actions.join(', ')}</div>
+                  {#if entry.details}
+                    <div class="detail-field"><strong>{T('log_col_details')}:</strong> {entry.details}</div>
+                  {/if}
+                </div>
+              </td>
+            </tr>
+          {/if}
         {/each}
       </tbody>
     </table>
@@ -336,12 +362,49 @@
   .badge-classification { background: #d4edda; color: #155724; }
   .badge-autoResponse { background: #cce5ff; color: #004085; }
   .badge-error { background: #f8d7da; color: #721c24; }
+  .clickable-row {
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .clickable-row:hover {
+    background: var(--bg-secondary, #f9f9fb);
+  }
+  .expanded-row {
+    background: var(--bg-secondary, #f9f9fb);
+  }
+  .detail-row td {
+    padding: 0;
+    border-bottom: 2px solid var(--primary-color, #0060df);
+  }
+  .detail-content {
+    padding: 10px 12px;
+    background: var(--bg-secondary, #f9f9fb);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    animation: expandIn 0.15s ease;
+  }
+  @keyframes expandIn {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 200px; }
+  }
+  .detail-field {
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .detail-field strong {
+    color: var(--text-secondary, #555);
+    margin-right: 4px;
+  }
 
   @media (prefers-color-scheme: dark) {
     .badge-classification { background: #1b4332; color: #95d5b2; }
     .badge-autoResponse { background: #1a3a5c; color: #90caf9; }
     .badge-error { background: #4a1c1c; color: #ef9a9a; }
     .filters input, .filters select { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
+    .clickable-row:hover, .expanded-row { background: #2b2a33; }
+    .detail-content { background: #2b2a33; }
   }
 
   .pagination-row {
