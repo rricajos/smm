@@ -525,4 +525,8 @@ export interface Translations {
   empty_templates_cta: string;
   empty_log_title: string;
   empty_log_desc: string;
+
+  // Template AI suggestion
+  templates_suggest_ai: string;
+  templates_ai_prompt: string;
 }

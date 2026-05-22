@@ -122,7 +122,7 @@
       <Rules onrequestai={handleRequestAI} />
     </div>
     <div class="tab-panel" class:active-panel={activeTab === 'templates'} role="tabpanel" id="panel-templates" aria-labelledby="tab-templates">
-      <Templates />
+      <Templates onrequestai={handleRequestAI} />
     </div>
     <div class="tab-panel" class:active-panel={activeTab === 'ai'} role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
       <AI pendingPrompt={pendingAiPrompt} onconsumeprompt={() => (pendingAiPrompt = '')} />

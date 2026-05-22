@@ -523,4 +523,8 @@ export const es: Translations = {
   empty_templates_cta: 'Crear primera plantilla',
   empty_log_title: 'Sin actividad registrada',
   empty_log_desc: 'Las clasificaciones y respuestas automáticas aparecerán aquí.',
+
+  // Template AI suggestion
+  templates_suggest_ai: 'Sugerir con IA',
+  templates_ai_prompt: 'Analiza mis correos recientes y propón plantillas de respuesta automática útiles. Tengo {n} regla{s} configurada{s} y {t} plantilla{s} existente{s}. Sugiere plantillas que complementen mi configuración actual, como acuses de recibo, respuestas a consultas frecuentes o mensajes de ausencia.',
 };

@@ -523,4 +523,8 @@ export const en: Translations = {
   empty_templates_cta: 'Create first template',
   empty_log_title: 'No activity recorded',
   empty_log_desc: 'Classifications and automatic responses will appear here.',
+
+  // Template AI suggestion
+  templates_suggest_ai: 'Suggest with AI',
+  templates_ai_prompt: 'Analyze my recent emails and propose useful auto-response templates. I have {n} rule{s} configured and {t} template{s} existing. Suggest templates that complement my current setup, such as acknowledgements, frequent inquiry replies or out-of-office messages.',
 };
