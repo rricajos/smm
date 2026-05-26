@@ -2,12 +2,9 @@
   import type { Rule } from '../../types/rules';
   import { RULE_PRESETS, PRESET_CATEGORIES, type RulePreset, type PresetCategory } from '../../lib/utils/rule-presets';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   let {
     folders = [],
@@ -51,11 +48,11 @@
     if (!selectedPreset) return;
 
     if (selectedPreset.requiresFolderSelection && !configFolderId) {
-      installError = T('preset_error_folder');
+      installError = $t('preset_error_folder');
       return;
     }
     if (selectedPreset.requiresTagSelection && !configTagKey) {
-      installError = T('preset_error_tag');
+      installError = $t('preset_error_tag');
       return;
     }
 
@@ -94,12 +91,12 @@
   }
 </script>
 
-<Modal title={selectedPreset ? selectedPreset.name : T('preset_gallery_title')} {show} onclose={handleClose}>
+<Modal title={selectedPreset ? selectedPreset.name : $t('preset_gallery_title')} {show} onclose={handleClose}>
   {#if !selectedPreset}
     <div class="preset-gallery">
       <div class="category-tabs">
         <button class="cat-tab" class:active={selectedCategory === 'all'} onclick={() => (selectedCategory = 'all')}>
-          {T('preset_all')}
+          {$t('preset_all')}
         </button>
         {#each PRESET_CATEGORIES as cat}
           <button class="cat-tab" class:active={selectedCategory === cat.key} onclick={() => (selectedCategory = cat.key)}>
@@ -123,7 +120,7 @@
       <p class="preset-config-desc">{selectedPreset.description}</p>
 
       <div class="preset-conditions">
-        <h4>{T('preset_conditions')}</h4>
+        <h4>{$t('preset_conditions')}</h4>
         {#each selectedPreset.conditions as cond}
           <div class="cond-preview">
             <span class="cond-field">{cond.field}</span>
@@ -131,19 +128,19 @@
             <code class="cond-value">{cond.value}</code>
           </div>
         {/each}
-        <span class="cond-logic">{selectedPreset.conditionLogic === 'all' ? T('preset_logic_all') : T('preset_logic_any')}</span>
+        <span class="cond-logic">{selectedPreset.conditionLogic === 'all' ? $t('preset_logic_all') : $t('preset_logic_any')}</span>
       </div>
 
       <div class="preset-actions-preview">
-        <h4>{T('preset_actions')}</h4>
+        <h4>{$t('preset_actions')}</h4>
         <ul>
           {#each selectedPreset.actions as action}
             <li>
-              {#if action.type === 'moveToFolder'}{T('preset_move_to_folder')}{/if}
-              {#if action.type === 'addTag'}{T('preset_add_tag')}{/if}
-              {#if action.type === 'setPriority'}{T('preset_set_priority', { value: action.priority || '' })}{/if}
-              {#if action.type === 'markRead'}{T('preset_mark_read')}{/if}
-              {#if action.type === 'autoRespond'}{T('preset_auto_respond')}{/if}
+              {#if action.type === 'moveToFolder'}{$t('preset_move_to_folder')}{/if}
+              {#if action.type === 'addTag'}{$t('preset_add_tag')}{/if}
+              {#if action.type === 'setPriority'}{$t('preset_set_priority', { value: action.priority || '' })}{/if}
+              {#if action.type === 'markRead'}{$t('preset_mark_read')}{/if}
+              {#if action.type === 'autoRespond'}{$t('preset_auto_respond')}{/if}
             </li>
           {/each}
         </ul>
@@ -151,9 +148,9 @@
 
       {#if selectedPreset.requiresFolderSelection}
         <div class="config-field">
-          <label for="preset-folder">{T('preset_select_folder')}</label>
+          <label for="preset-folder">{$t('preset_select_folder')}</label>
           <select id="preset-folder" bind:value={configFolderId}>
-            <option value="">{T('preset_select_folder_option')}</option>
+            <option value="">{$t('preset_select_folder_option')}</option>
             {#each folders as f}
               <option value={f.id}>{f.path || f.name}</option>
             {/each}
@@ -163,9 +160,9 @@
 
       {#if selectedPreset.requiresTagSelection}
         <div class="config-field">
-          <label for="preset-tag">{T('preset_select_tag')}</label>
+          <label for="preset-tag">{$t('preset_select_tag')}</label>
           <select id="preset-tag" bind:value={configTagKey}>
-            <option value="">{T('preset_select_tag_option')}</option>
+            <option value="">{$t('preset_select_tag_option')}</option>
             {#each tags as t}
               <option value={t.key}>{t.tag}</option>
             {/each}
@@ -178,8 +175,8 @@
       {/if}
 
       <div class="config-buttons">
-        <Button size="sm" onclick={goBack}>&larr; {T('common_back')}</Button>
-        <Button variant="primary" onclick={installPreset}>{T('preset_install')}</Button>
+        <Button size="sm" onclick={goBack}>&larr; {$t('common_back')}</Button>
+        <Button variant="primary" onclick={installPreset}>{$t('preset_install')}</Button>
       </div>
     </div>
   {/if}

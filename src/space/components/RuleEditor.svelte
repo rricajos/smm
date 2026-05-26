@@ -3,8 +3,6 @@
   import type { ResponseTemplate } from '../../types/templates';
   import { detectRuleConflicts } from '../../lib/utils/rule-conflicts';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
-  import { onDestroy } from 'svelte';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
   import ConditionRow from './ConditionRow.svelte';
@@ -25,9 +23,6 @@
 
   let { show, rule, folders, tags, templates, existingRules = [], onsave, onclose }: Props = $props();
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  const unsubT = t.subscribe((fn) => (T = fn));
-  onDestroy(() => unsubT());
 
   let name = $state('');
   let conditions = $state<Condition[]>([]);
@@ -146,22 +141,22 @@
   function validateRule(): string[] {
     const errs: string[] = [];
 
-    if (!name.trim()) errs.push(T('editor_name_required'));
-    if (conditions.length === 0) errs.push(T('editor_min_condition'));
-    if (actions.length === 0) errs.push(T('editor_min_action'));
+    if (!name.trim()) errs.push($t('editor_name_required'));
+    if (conditions.length === 0) errs.push($t('editor_min_condition'));
+    if (actions.length === 0) errs.push($t('editor_min_action'));
 
     // Validate conditions
     for (let i = 0; i < conditions.length; i++) {
       const c = conditions[i];
       if (c.field !== 'hasAttachments') {
         if (!c.value.trim()) {
-          errs.push(T('editor_condition_empty', { n: i + 1 }));
+          errs.push($t('editor_condition_empty', { n: i + 1 }));
         }
         if (c.operator === 'matches') {
           try {
             new RegExp(c.value);
           } catch {
-            errs.push(T('editor_regex_invalid', { n: i + 1, value: c.value }));
+            errs.push($t('editor_regex_invalid', { n: i + 1, value: c.value }));
           }
         }
       }
@@ -171,13 +166,13 @@
     for (let i = 0; i < actions.length; i++) {
       const a = actions[i];
       if (a.type === 'moveToFolder' && !a.folderId) {
-        errs.push(T('editor_action_select_folder', { n: i + 1 }));
+        errs.push($t('editor_action_select_folder', { n: i + 1 }));
       }
       if (a.type === 'addTag' && !a.tagKey) {
-        errs.push(T('editor_action_select_tag', { n: i + 1 }));
+        errs.push($t('editor_action_select_tag', { n: i + 1 }));
       }
       if (a.type === 'autoRespond' && !a.templateId) {
-        errs.push(T('editor_action_select_template', { n: i + 1 }));
+        errs.push($t('editor_action_select_template', { n: i + 1 }));
       }
     }
 
@@ -204,22 +199,22 @@
   }
 </script>
 
-<Modal title={rule ? T('editor_edit_rule') : T('editor_new_rule')} {show} {onclose}>
+<Modal title={rule ? $t('editor_edit_rule') : $t('editor_new_rule')} {show} {onclose}>
   <div class="form">
     <div class="field">
-      <label for="rule-name">{T('editor_rule_name')}</label>
-      <input id="rule-name" type="text" bind:value={name} placeholder={T('editor_rule_name_placeholder')} />
+      <label for="rule-name">{$t('editor_rule_name')}</label>
+      <input id="rule-name" type="text" bind:value={name} placeholder={$t('editor_rule_name_placeholder')} />
     </div>
 
     <div class="section">
       <div class="section-header">
-        <h3>{T('editor_conditions')}</h3>
+        <h3>{$t('editor_conditions')}</h3>
         <div class="logic-toggle">
           <label>
-            <input type="radio" bind:group={conditionLogic} value="all" /> {T('editor_all_and')}
+            <input type="radio" bind:group={conditionLogic} value="all" /> {$t('editor_all_and')}
           </label>
           <label>
-            <input type="radio" bind:group={conditionLogic} value="any" /> {T('editor_any_or')}
+            <input type="radio" bind:group={conditionLogic} value="any" /> {$t('editor_any_or')}
           </label>
         </div>
       </div>
@@ -231,11 +226,11 @@
           onremove={() => removeCondition(i)}
         />
       {/each}
-      <Button size="sm" onclick={addCondition}>{T('editor_add_condition')}</Button>
+      <Button size="sm" onclick={addCondition}>{$t('editor_add_condition')}</Button>
     </div>
 
     <div class="section">
-      <h3>{T('editor_actions')}</h3>
+      <h3>{$t('editor_actions')}</h3>
       {#each actions as action, i}
         <ActionRow
           {action}
@@ -246,13 +241,13 @@
           onremove={() => removeAction(i)}
         />
       {/each}
-      <Button size="sm" onclick={addAction}>{T('editor_add_action')}</Button>
+      <Button size="sm" onclick={addAction}>{$t('editor_add_action')}</Button>
     </div>
 
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={stopProcessing} />
-        {T('editor_stop_processing')}
+        {$t('editor_stop_processing')}
       </label>
     </div>
 
@@ -260,37 +255,37 @@
     <div class="test-section">
       <div class="test-header">
         <Button size="sm" onclick={testCurrentRule} disabled={testing || conditions.length === 0}>
-          {testing ? T('editor_testing') : T('editor_test_rule')}
+          {testing ? $t('editor_testing') : $t('editor_test_rule')}
         </Button>
-        <span class="test-hint">{T('editor_test_hint')}</span>
+        <span class="test-hint">{$t('editor_test_hint')}</span>
       </div>
 
       {#if showTestResults}
         {#if testing}
           <div class="test-loading">
             <div class="spinner"></div>
-            <span>{T('editor_test_analyzing')}</span>
+            <span>{$t('editor_test_analyzing')}</span>
           </div>
         {:else if testResult}
           <div class="test-results-inline">
             <div class="test-stats-row">
-              <span class="test-stat-item">{T('editor_test_analyzed', { n: testResult.processed })}</span>
-              <span class="test-stat-item match">{T('editor_test_matches', { n: testResult.matched })}</span>
+              <span class="test-stat-item">{$t('editor_test_analyzed', { n: testResult.processed })}</span>
+              <span class="test-stat-item match">{$t('editor_test_matches', { n: testResult.matched })}</span>
             </div>
             {#if testResult.details.length > 0}
               <div class="test-match-list">
                 {#each testResult.details.slice(0, 10) as d}
                   <div class="test-match-item">
-                    <span class="test-match-subject">{d.subject || T('editor_no_subject')}</span>
+                    <span class="test-match-subject">{d.subject || $t('editor_no_subject')}</span>
                     <span class="test-match-from">{d.from}</span>
                   </div>
                 {/each}
                 {#if testResult.details.length > 10}
-                  <div class="test-match-more">{T('editor_test_more', { n: testResult.details.length - 10 })}</div>
+                  <div class="test-match-more">{$t('editor_test_more', { n: testResult.details.length - 10 })}</div>
                 {/if}
               </div>
             {:else}
-              <p class="test-no-match">{T('editor_test_no_match')}</p>
+              <p class="test-no-match">{$t('editor_test_no_match')}</p>
             {/if}
           </div>
         {/if}
@@ -320,9 +315,9 @@
     {/if}
 
     <div class="form-actions">
-      <Button variant="secondary" onclick={onclose}>{T('common_cancel')}</Button>
+      <Button variant="secondary" onclick={onclose}>{$t('common_cancel')}</Button>
       <Button variant="primary" onclick={handleSave}>
-        {T('common_save')}
+        {$t('common_save')}
       </Button>
     </div>
   </div>

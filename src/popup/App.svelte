@@ -3,50 +3,40 @@
   import { activity } from '../lib/stores/activity';
   import { rules } from '../lib/stores/rules';
   import { t } from '../lib/i18n';
-  import type { Translations } from '../lib/i18n/types';
   import Button from '../lib/components/Button.svelte';
 
   declare const browser: any;
 
-  let currentSettings = $state<any>({});
-  let currentActivity = $state<any[]>([]);
-  let currentRules = $state<any[]>([]);
   let classifyStatus = $state('');
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
-  settings.subscribe((v) => (currentSettings = v));
-  activity.subscribe((v) => (currentActivity = v));
-  rules.subscribe((v) => (currentRules = v));
-
-  let activeRules = $derived(currentRules.filter((r) => r.enabled).length);
+  let activeRules = $derived($rules.filter((r) => r.enabled).length);
   let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
   let todayClassifications = $derived(
-    currentActivity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
+    $activity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
   );
 
-  let recentActivity = $derived(currentActivity.slice(0, 5));
+  let recentActivity = $derived($activity.slice(0, 5));
 
   function toggleClassification() {
-    settings.update({ classificationEnabled: !currentSettings.classificationEnabled });
+    settings.update({ classificationEnabled: !$settings.classificationEnabled });
   }
 
   function toggleAutoResponse() {
-    settings.update({ autoResponseEnabled: !currentSettings.autoResponseEnabled });
+    settings.update({ autoResponseEnabled: !$settings.autoResponseEnabled });
   }
 
   async function classifyCurrentMessage() {
-    classifyStatus = T('popup_classifying');
+    classifyStatus = $t('popup_classifying');
     try {
       const msg = await browser.runtime.sendMessage({ type: 'GET_DISPLAYED_MESSAGE' });
       if (!msg) {
-        classifyStatus = T('popup_no_message');
+        classifyStatus = $t('popup_no_message');
         return;
       }
       await browser.runtime.sendMessage({ type: 'CLASSIFY_MESSAGE', messageId: msg.id });
-      classifyStatus = T('popup_classified_ok');
+      classifyStatus = $t('popup_classified_ok');
     } catch (err) {
-      classifyStatus = T('popup_classify_error');
+      classifyStatus = $t('popup_classify_error');
     }
     setTimeout(() => (classifyStatus = ''), 3000);
   }
@@ -68,36 +58,36 @@
   <!-- Quick stats bar -->
   <div class="stats-bar">
     <div class="stat-chip">
-      <span class="stat-value">{currentRules.length}</span>
-      <span class="stat-label">{T('popup_total_rules')}</span>
+      <span class="stat-value">{$rules.length}</span>
+      <span class="stat-label">{$t('popup_total_rules')}</span>
     </div>
     <div class="stat-chip">
       <span class="stat-value">{activeRules}</span>
-      <span class="stat-label">{T('popup_active_rules')}</span>
+      <span class="stat-label">{$t('popup_active_rules')}</span>
     </div>
     <div class="stat-chip">
       <span class="stat-value">{todayClassifications}</span>
-      <span class="stat-label">{T('popup_today_classified')}</span>
+      <span class="stat-label">{$t('popup_today_classified')}</span>
     </div>
-    <div class="stat-chip" class:ai-ok={currentSettings.openaiApiKey} class:ai-off={!currentSettings.openaiApiKey}>
-      <span class="stat-value">{T('popup_ai_status')}</span>
-      <span class="stat-label">{currentSettings.openaiApiKey ? T('popup_ai_ok') : T('popup_ai_not_set')}</span>
+    <div class="stat-chip" class:ai-ok={$settings.openaiApiKey} class:ai-off={!$settings.openaiApiKey}>
+      <span class="stat-value">{$t('popup_ai_status')}</span>
+      <span class="stat-label">{$settings.openaiApiKey ? $t('popup_ai_ok') : $t('popup_ai_not_set')}</span>
     </div>
   </div>
 
   <div class="toggles">
-    <button class="toggle" class:on={currentSettings.classificationEnabled} onclick={toggleClassification}>
+    <button class="toggle" class:on={$settings.classificationEnabled} onclick={toggleClassification}>
       <span class="dot"></span>
-      {T('popup_classification')}
+      {$t('popup_classification')}
     </button>
-    <button class="toggle" class:on={currentSettings.autoResponseEnabled} onclick={toggleAutoResponse}>
+    <button class="toggle" class:on={$settings.autoResponseEnabled} onclick={toggleAutoResponse}>
       <span class="dot"></span>
-      {T('popup_auto_response')}
+      {$t('popup_auto_response')}
     </button>
   </div>
 
   <Button variant="primary" onclick={classifyCurrentMessage}>
-    {T('popup_classify_current')}
+    {$t('popup_classify_current')}
   </Button>
 
   {#if classifyStatus}
@@ -105,9 +95,9 @@
   {/if}
 
   <div class="recent">
-    <h4>{T('popup_recent_activity')}</h4>
+    <h4>{$t('popup_recent_activity')}</h4>
     {#if recentActivity.length === 0}
-      <p class="empty">{T('popup_no_activity')}</p>
+      <p class="empty">{$t('popup_no_activity')}</p>
     {:else}
       {#each recentActivity as entry}
         <div class="entry">
@@ -120,7 +110,7 @@
 
   <button class="open-panel-btn" onclick={openPanel}>
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-    {T('popup_open_panel')}
+    {$t('popup_open_panel')}
   </button>
 </div>
 

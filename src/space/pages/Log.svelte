@@ -3,7 +3,6 @@
   import { activity } from '../../lib/stores/activity';
   import { settings } from '../../lib/stores/settings';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
 
@@ -12,7 +11,6 @@
   }
   let { initialSearch = '' }: Props = $props();
 
-  let currentActivity = $state<ActivityEntry[]>([]);
   let filterType = $state<'all' | 'classification' | 'autoResponse' | 'error'>('all');
   let searchInput = $state('');
   let searchQuery = $state('');
@@ -41,12 +39,7 @@
     }
   }
 
-  let retentionDays = $state(30);
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-
-  t.subscribe((fn) => (T = fn));
-  activity.subscribe((v) => (currentActivity = v));
-  settings.subscribe((v) => (retentionDays = v.logRetentionDays || 30));
+  let retentionDays = $derived($settings.logRetentionDays || 30);
 
   $effect(() => {
     if (initialSearch) {
@@ -56,7 +49,7 @@
   });
 
   let filtered = $derived(() => {
-    const list = currentActivity.filter((entry) => {
+    const list = $activity.filter((entry) => {
       if (filterType !== 'all' && entry.type !== filterType) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -103,7 +96,7 @@
   }
 
   function exportCSV() {
-    const headers = [T('log_col_date'), T('log_col_type'), T('log_col_rule'), T('log_col_subject'), T('log_col_from'), T('log_col_actions'), T('log_col_details')];
+    const headers = [$t('log_col_date'), $t('log_col_type'), $t('log_col_rule'), $t('log_col_subject'), $t('log_col_from'), $t('log_col_actions'), $t('log_col_details')];
     const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
     const rows = filtered().map(e => [
       new Date(e.timestamp).toISOString(),
@@ -125,37 +118,37 @@
   }
 
   let typeLabels = $derived<Record<string, string>>({
-    classification: T('log_type_classification'),
-    autoResponse: T('log_type_response'),
-    error: T('log_type_error'),
+    classification: $t('log_type_classification'),
+    autoResponse: $t('log_type_response'),
+    error: $t('log_type_error'),
   });
 </script>
 
 <div class="log-page">
   <div class="header">
-    <h3>{T('log_title')}</h3>
+    <h3>{$t('log_title')}</h3>
     <div class="header-actions">
-      <span class="retention-badge">{T('log_retention', { n: retentionDays })}</span>
+      <span class="retention-badge">{$t('log_retention', { n: retentionDays })}</span>
       {#if filtered().length > 0}
-        <Button size="sm" onclick={exportCSV}>{T('log_export_csv')}</Button>
+        <Button size="sm" onclick={exportCSV}>{$t('log_export_csv')}</Button>
       {/if}
-      <Button size="sm" variant="danger" onclick={handleClear}>{T('log_clear')}</Button>
+      <Button size="sm" variant="danger" onclick={handleClear}>{$t('log_clear')}</Button>
     </div>
   </div>
 
   <div class="filters">
     <input
       type="text"
-      placeholder={T('log_search_placeholder')}
-      aria-label={T('log_search_placeholder')}
+      placeholder={$t('log_search_placeholder')}
+      aria-label={$t('log_search_placeholder')}
       value={searchInput}
       oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
     />
-    <select bind:value={filterType} aria-label={T('log_filter_all')}>
-      <option value="all">{T('log_filter_all')}</option>
-      <option value="classification">{T('log_filter_classifications')}</option>
-      <option value="autoResponse">{T('log_filter_responses')}</option>
-      <option value="error">{T('log_filter_errors')}</option>
+    <select bind:value={filterType} aria-label={$t('log_filter_all')}>
+      <option value="all">{$t('log_filter_all')}</option>
+      <option value="classification">{$t('log_filter_classifications')}</option>
+      <option value="autoResponse">{$t('log_filter_responses')}</option>
+      <option value="error">{$t('log_filter_errors')}</option>
     </select>
   </div>
 
@@ -164,35 +157,35 @@
       <div class="empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-      <p class="empty-title">{T('empty_log_title')}</p>
-      <p class="empty-desc">{T('empty_log_desc')}</p>
+      <p class="empty-title">{$t('empty_log_title')}</p>
+      <p class="empty-desc">{$t('empty_log_desc')}</p>
     </div>
   {:else}
     <table>
       <thead>
         <tr>
           <th class="sortable" class:sorted={sortColumn === 'timestamp'} onclick={() => toggleSort('timestamp')} aria-sort={sortColumn === 'timestamp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
-            {T('log_col_date')}
+            {$t('log_col_date')}
             <span class="sort-arrow" aria-hidden="true">{sortColumn === 'timestamp' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
           <th class="sortable" class:sorted={sortColumn === 'type'} onclick={() => toggleSort('type')} aria-sort={sortColumn === 'type' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
-            {T('log_col_type')}
+            {$t('log_col_type')}
             <span class="sort-arrow" aria-hidden="true">{sortColumn === 'type' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
           <th class="sortable" class:sorted={sortColumn === 'ruleName'} onclick={() => toggleSort('ruleName')} aria-sort={sortColumn === 'ruleName' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
-            {T('log_col_rule')}
+            {$t('log_col_rule')}
             <span class="sort-arrow" aria-hidden="true">{sortColumn === 'ruleName' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
           <th class="sortable" class:sorted={sortColumn === 'subject'} onclick={() => toggleSort('subject')} aria-sort={sortColumn === 'subject' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
-            {T('log_col_subject')}
+            {$t('log_col_subject')}
             <span class="sort-arrow" aria-hidden="true">{sortColumn === 'subject' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
           <th class="sortable" class:sorted={sortColumn === 'from'} onclick={() => toggleSort('from')} aria-sort={sortColumn === 'from' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
-            {T('log_col_from')}
+            {$t('log_col_from')}
             <span class="sort-arrow" aria-hidden="true">{sortColumn === 'from' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
           </th>
-          <th scope="col">{T('log_col_actions')}</th>
-          <th scope="col">{T('log_col_details')}</th>
+          <th scope="col">{$t('log_col_actions')}</th>
+          <th scope="col">{$t('log_col_details')}</th>
         </tr>
       </thead>
       <tbody>
@@ -214,12 +207,12 @@
             <tr class="detail-row">
               <td colspan="7">
                 <div class="detail-content">
-                  <div class="detail-field"><strong>{T('log_col_subject')}:</strong> {entry.subject}</div>
-                  <div class="detail-field"><strong>{T('log_col_from')}:</strong> {entry.from}</div>
-                  <div class="detail-field"><strong>{T('log_col_rule')}:</strong> {entry.ruleName}</div>
-                  <div class="detail-field"><strong>{T('log_col_actions')}:</strong> {entry.actions.join(', ')}</div>
+                  <div class="detail-field"><strong>{$t('log_col_subject')}:</strong> {entry.subject}</div>
+                  <div class="detail-field"><strong>{$t('log_col_from')}:</strong> {entry.from}</div>
+                  <div class="detail-field"><strong>{$t('log_col_rule')}:</strong> {entry.ruleName}</div>
+                  <div class="detail-field"><strong>{$t('log_col_actions')}:</strong> {entry.actions.join(', ')}</div>
                   {#if entry.details}
-                    <div class="detail-field"><strong>{T('log_col_details')}:</strong> {entry.details}</div>
+                    <div class="detail-field"><strong>{$t('log_col_details')}:</strong> {entry.details}</div>
                   {/if}
                 </div>
               </td>
@@ -229,12 +222,12 @@
       </tbody>
     </table>
     <div class="pagination-row">
-      <p class="count">{T('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}</p>
+      <p class="count">{$t('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}</p>
       {#if totalPages > 1}
         <div class="pagination">
-          <Button size="sm" disabled={page <= 1} onclick={() => (page = page - 1)} aria-label={T('log_page_prev')}>{T('log_page_prev')}</Button>
-          <span class="page-info" aria-live="polite">{T('log_page_of', { current: page, total: totalPages })}</span>
-          <Button size="sm" disabled={page >= totalPages} onclick={() => (page = page + 1)} aria-label={T('log_page_next')}>{T('log_page_next')}</Button>
+          <Button size="sm" disabled={page <= 1} onclick={() => (page = page - 1)} aria-label={$t('log_page_prev')}>{$t('log_page_prev')}</Button>
+          <span class="page-info" aria-live="polite">{$t('log_page_of', { current: page, total: totalPages })}</span>
+          <Button size="sm" disabled={page >= totalPages} onclick={() => (page = page + 1)} aria-label={$t('log_page_next')}>{$t('log_page_next')}</Button>
         </div>
       {/if}
     </div>
@@ -242,8 +235,8 @@
 
   <ConfirmDialog
     show={showClearConfirm}
-    title={T('confirm_clear_log_title')}
-    message={T('confirm_clear_log_msg')}
+    title={$t('confirm_clear_log_title')}
+    message={$t('confirm_clear_log_msg')}
     onconfirm={confirmClear}
     oncancel={() => (showClearConfirm = false)}
   />

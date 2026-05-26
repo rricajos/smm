@@ -11,25 +11,13 @@
   import { templates } from '../lib/stores/templates';
   import { activity } from '../lib/stores/activity';
   import { t } from '../lib/i18n';
-  import type { Translations } from '../lib/i18n/types';
 
   let activeTab = $state('dashboard');
   let pendingAiPrompt = $state('');
-  let unreadCount = $state(0);
-  let currentRules = $state<any[]>([]);
-  let currentTemplates = $state<any[]>([]);
-  let currentActivity = $state<any[]>([]);
   let searchFilter = $state('');
   let showFolderTree = $state(false);
   let folderTreeRef: FolderTree | undefined = $state(undefined);
   let selectedFolder = $state<{ id: string; name: string; path: string } | null>(null);
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-
-  t.subscribe((fn) => (T = fn));
-  unreadClassifications.subscribe(v => (unreadCount = v));
-  rules.subscribe(v => (currentRules = v));
-  templates.subscribe(v => (currentTemplates = v));
-  activity.subscribe(v => (currentActivity = v));
 
   // Lazy-load folder tree when panel opens
   $effect(() => {
@@ -68,11 +56,11 @@
   });
 
   let tabs = $derived([
-    { id: 'dashboard', label: T('tab_dashboard'), icon: 'dashboard' },
-    { id: 'rules', label: T('tab_rules'), icon: 'rules' },
-    { id: 'templates', label: T('tab_templates'), icon: 'templates' },
-    { id: 'ai', label: T('tab_ai'), icon: 'ai' },
-    { id: 'log', label: T('tab_log'), icon: 'log' },
+    { id: 'dashboard', label: $t('tab_dashboard'), icon: 'dashboard' },
+    { id: 'rules', label: $t('tab_rules'), icon: 'rules' },
+    { id: 'templates', label: $t('tab_templates'), icon: 'templates' },
+    { id: 'ai', label: $t('tab_ai'), icon: 'ai' },
+    { id: 'log', label: $t('tab_log'), icon: 'log' },
   ]);
 </script>
 
@@ -105,9 +93,9 @@
     <div class="tab-title">Smart Mail Manager</div>
     <GlobalSearch
       bind:this={searchComponent}
-      rules={currentRules}
-      templates={currentTemplates}
-      activity={currentActivity}
+      rules={$rules}
+      templates={$templates}
+      activity={$activity}
       onnavigate={handleSearchNavigate}
     />
     <div class="tab-buttons" role="tablist">
@@ -135,8 +123,8 @@
             {/if}
           </span>
           {tab.label}
-          {#if tab.id === 'dashboard' && unreadCount > 0}
-            <span class="badge-dot">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          {#if tab.id === 'dashboard' && $unreadClassifications > 0}
+            <span class="badge-dot">{$unreadClassifications > 99 ? '99+' : $unreadClassifications}</span>
           {/if}
         </button>
       {/each}
@@ -145,7 +133,7 @@
       class="folder-toggle-btn"
       class:active={showFolderTree}
       onclick={() => { showFolderTree = !showFolderTree; }}
-      title={T('ai_view_folders')}
+      title={$t('ai_view_folders')}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     </button>
@@ -183,26 +171,26 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div class="shortcuts-modal" onclick={(e) => e.stopPropagation()}>
       <div class="shortcuts-header">
-        <h3>{T('shortcuts_title')}</h3>
+        <h3>{$t('shortcuts_title')}</h3>
         <button class="shortcuts-close" onclick={() => (showShortcuts = false)}>&times;</button>
       </div>
       <div class="shortcuts-body">
         <div class="shortcut-group">
-          <h4>{T('shortcuts_global')}</h4>
-          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>K</kbd><span>{T('shortcuts_search')}</span></div>
-          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>1</kbd>-<kbd>5</kbd><span>{T('shortcuts_tabs', { n: '1-5' })}</span></div>
-          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>/</kbd><span>{T('shortcuts_help')}</span></div>
-          <div class="shortcut-row"><kbd>Esc</kbd><span>{T('shortcuts_close')}</span></div>
+          <h4>{$t('shortcuts_global')}</h4>
+          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>K</kbd><span>{$t('shortcuts_search')}</span></div>
+          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>1</kbd>-<kbd>5</kbd><span>{$t('shortcuts_tabs', { n: '1-5' })}</span></div>
+          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>/</kbd><span>{$t('shortcuts_help')}</span></div>
+          <div class="shortcut-row"><kbd>Esc</kbd><span>{$t('shortcuts_close')}</span></div>
         </div>
         <div class="shortcut-group">
-          <h4>{T('shortcuts_rules')}</h4>
-          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&uarr;</kbd><span>{T('shortcuts_move_up')}</span></div>
-          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&darr;</kbd><span>{T('shortcuts_move_down')}</span></div>
+          <h4>{$t('shortcuts_rules')}</h4>
+          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&uarr;</kbd><span>{$t('shortcuts_move_up')}</span></div>
+          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&darr;</kbd><span>{$t('shortcuts_move_down')}</span></div>
         </div>
         <div class="shortcut-group">
-          <h4>{T('shortcuts_chat')}</h4>
-          <div class="shortcut-row"><kbd>Enter</kbd><span>{T('shortcuts_send')}</span></div>
-          <div class="shortcut-row"><kbd>Shift</kbd> + <kbd>Enter</kbd><span>{T('shortcuts_newline')}</span></div>
+          <h4>{$t('shortcuts_chat')}</h4>
+          <div class="shortcut-row"><kbd>Enter</kbd><span>{$t('shortcuts_send')}</span></div>
+          <div class="shortcut-row"><kbd>Shift</kbd> + <kbd>Enter</kbd><span>{$t('shortcuts_newline')}</span></div>
         </div>
       </div>
     </div>

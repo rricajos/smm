@@ -3,7 +3,6 @@
   import { templates } from '../../lib/stores/templates';
   import { rules } from '../../lib/stores/rules';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
   import TemplateEditor from '../components/TemplateEditor.svelte';
@@ -14,27 +13,21 @@
 
   let { onrequestai }: Props = $props();
 
-  let currentTemplates = $state<ResponseTemplate[]>([]);
-  let currentRules = $state<any[]>([]);
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
   let showEditor = $state(false);
   let editingTemplate = $state<ResponseTemplate | null>(null);
   let filterQuery = $state('');
   let confirmDelete = $state<{ show: boolean; id: string; name: string }>({ show: false, id: '', name: '' });
 
-  templates.subscribe((v) => (currentTemplates = v));
-  rules.subscribe((v) => (currentRules = v));
 
   let filteredTemplates = $derived(
     filterQuery.trim()
-      ? currentTemplates.filter(t => {
+      ? $templates.filter(t => {
           const q = filterQuery.toLowerCase().trim();
           return t.name.toLowerCase().includes(q) ||
             t.subject.toLowerCase().includes(q) ||
             t.body.toLowerCase().includes(q);
         })
-      : currentTemplates,
+      : $templates,
   );
 
   function openNewTemplate() {
@@ -70,28 +63,28 @@
     const dup: ResponseTemplate = {
       ...JSON.parse(JSON.stringify(tmpl)),
       id: crypto.randomUUID(),
-      name: `${tmpl.name} ${T('templates_copy_suffix')}`,
+      name: `${tmpl.name} ${$t('templates_copy_suffix')}`,
     };
     templates.addTemplate(dup);
   }
 
   let sendModeLabels = $derived<Record<string, string>>({
-    draft: T('templates_draft'),
-    sendNow: T('templates_send_now'),
-    sendLater: T('templates_send_later'),
+    draft: $t('templates_draft'),
+    sendNow: $t('templates_send_now'),
+    sendLater: $t('templates_send_later'),
   });
 
   let replyTypeLabels = $derived<Record<string, string>>({
-    replyToSender: T('templates_reply'),
-    replyToAll: T('templates_reply_all'),
+    replyToSender: $t('templates_reply'),
+    replyToAll: $t('templates_reply_all'),
   });
 
   function suggestWithAI() {
     if (!onrequestai) return;
-    const prompt = T('templates_ai_prompt' as any, {
-      n: currentRules.length,
-      s: currentRules.length !== 1 ? 's' : '',
-      t: currentTemplates.length,
+    const prompt = $t('templates_ai_prompt' as any, {
+      n: $rules.length,
+      s: $rules.length !== 1 ? 's' : '',
+      t: $templates.length,
     });
     onrequestai(prompt);
   }
@@ -99,40 +92,40 @@
 
 <div class="templates-page">
   <div class="header">
-    <h3>{T('templates_title')}</h3>
+    <h3>{$t('templates_title')}</h3>
     <div class="header-actions">
       {#if onrequestai}
         <Button variant="primary" onclick={suggestWithAI}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
-          {T('templates_suggest_ai')}
+          {$t('templates_suggest_ai')}
         </Button>
       {/if}
-      <Button variant="primary" onclick={openNewTemplate}>{T('templates_new')}</Button>
+      <Button variant="primary" onclick={openNewTemplate}>{$t('templates_new')}</Button>
     </div>
   </div>
 
-  {#if currentTemplates.length > 3}
+  {#if $templates.length > 3}
     <input
       type="text"
       class="filter-input"
-      placeholder={T('templates_filter')}
+      placeholder={$t('templates_filter')}
       bind:value={filterQuery}
     />
   {/if}
 
-  {#if currentTemplates.length === 0}
+  {#if $templates.length === 0}
     <div class="empty-state">
       <div class="empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </div>
-      <p class="empty-title">{T('empty_templates_title')}</p>
-      <p class="empty-desc">{T('empty_templates_desc')}</p>
+      <p class="empty-title">{$t('empty_templates_title')}</p>
+      <p class="empty-desc">{$t('empty_templates_desc')}</p>
       <div class="empty-actions">
-        <Button variant="primary" onclick={openNewTemplate}>{T('empty_templates_cta')}</Button>
+        <Button variant="primary" onclick={openNewTemplate}>{$t('empty_templates_cta')}</Button>
         {#if onrequestai}
           <Button variant="primary" onclick={suggestWithAI}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
-            {T('templates_suggest_ai')}
+            {$t('templates_suggest_ai')}
           </Button>
         {/if}
       </div>
@@ -146,14 +139,14 @@
             <div class="template-details">
               <span class="tag">{sendModeLabels[tmpl.sendMode]}</span>
               <span class="tag">{replyTypeLabels[tmpl.replyType]}</span>
-              <span class="tag">{tmpl.isPlainText ? T('templates_plain_text') : T('templates_html')}</span>
+              <span class="tag">{tmpl.isPlainText ? $t('templates_plain_text') : $t('templates_html')}</span>
             </div>
             <div class="template-preview">{tmpl.subject}</div>
           </div>
           <div class="template-actions">
-            <Button size="sm" onclick={() => duplicateTemplate(tmpl)}>{T('common_duplicate')}</Button>
-            <Button size="sm" onclick={() => openEditTemplate(tmpl)}>{T('common_edit')}</Button>
-            <Button size="sm" variant="danger" onclick={() => handleDelete(tmpl.id, tmpl.name)}>{T('common_delete')}</Button>
+            <Button size="sm" onclick={() => duplicateTemplate(tmpl)}>{$t('common_duplicate')}</Button>
+            <Button size="sm" onclick={() => openEditTemplate(tmpl)}>{$t('common_edit')}</Button>
+            <Button size="sm" variant="danger" onclick={() => handleDelete(tmpl.id, tmpl.name)}>{$t('common_delete')}</Button>
           </div>
         </div>
       {/each}
@@ -169,8 +162,8 @@
 
   <ConfirmDialog
     show={confirmDelete.show}
-    title={T('confirm_delete_template_title')}
-    message={T('templates_confirm_delete', { name: confirmDelete.name })}
+    title={$t('confirm_delete_template_title')}
+    message={$t('templates_confirm_delete', { name: confirmDelete.name })}
     onconfirm={confirmDeleteTemplate}
     oncancel={() => (confirmDelete = { show: false, id: '', name: '' })}
   />

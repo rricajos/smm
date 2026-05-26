@@ -1,10 +1,6 @@
 <script lang="ts">
   import { t } from '../i18n';
-  import type { Translations } from '../i18n/types';
   import Button from './Button.svelte';
-
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   interface Props {
     show: boolean;
@@ -60,8 +56,8 @@
       <h3 id="confirm-title">{title}</h3>
       <p id="confirm-msg">{message}</p>
       <div class="confirm-actions">
-        <Button onclick={oncancel}>{cancelLabel || T('common_cancel')}</Button>
-        <Button variant={variant} onclick={onconfirm}>{confirmLabel || T('common_delete')}</Button>
+        <Button onclick={oncancel}>{cancelLabel || $t('common_cancel')}</Button>
+        <Button variant={variant} onclick={onconfirm}>{confirmLabel || $t('common_delete')}</Button>
       </div>
     </div>
   </div>

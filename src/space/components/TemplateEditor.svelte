@@ -3,13 +3,9 @@
   import { TEMPLATE_VARIABLES } from '../../lib/utils/constants';
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
-  import { onDestroy } from 'svelte';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  const unsubT = t.subscribe((fn) => (T = fn));
-  onDestroy(() => unsubT());
 
   interface Props {
     show: boolean;
@@ -40,7 +36,7 @@
     my_name: 'tpl_var_my_name',
     my_email: 'tpl_var_my_email',
   };
-  let variables = $derived(TEMPLATE_VARIABLES.map(v => ({ key: v.key, label: variableKeys[v.key] ? T(variableKeys[v.key]) : v.label })));
+  let variables = $derived(TEMPLATE_VARIABLES.map(v => ({ key: v.key, label: variableKeys[v.key] ? $t(variableKeys[v.key]) : v.label })));
 
   // Build example variables for preview
   const exampleVars: Record<string, string> = {};
@@ -66,8 +62,8 @@
 
   // Keep legacy example vars updated with i18n
   $effect(() => {
-    exampleVars['senderName'] = T('tmpl_example_sender_name');
-    exampleVars['originalSubject'] = T('tmpl_example_original_subject');
+    exampleVars['senderName'] = $t('tmpl_example_sender_name');
+    exampleVars['originalSubject'] = $t('tmpl_example_original_subject');
   });
 
   $effect(() => {
@@ -80,8 +76,8 @@
       replyType = template.replyType;
     } else {
       name = '';
-      subject = T('tmpl_default_subject');
-      body = T('tmpl_default_body');
+      subject = $t('tmpl_default_subject');
+      body = $t('tmpl_default_body');
       isPlainText = true;
       sendMode = 'draft';
       replyType = 'replyToSender';
@@ -121,15 +117,15 @@
   }
 </script>
 
-<Modal title={template ? T('tmpl_edit_title') : T('tmpl_new_title')} {show} {onclose}>
+<Modal title={template ? $t('tmpl_edit_title') : $t('tmpl_new_title')} {show} {onclose}>
   <div class="form">
     <div class="field">
-      <label for="tmpl-name">{T('tmpl_name_label')}</label>
-      <input id="tmpl-name" type="text" bind:value={name} placeholder={T('tmpl_name_placeholder')} />
+      <label for="tmpl-name">{$t('tmpl_name_label')}</label>
+      <input id="tmpl-name" type="text" bind:value={name} placeholder={$t('tmpl_name_placeholder')} />
     </div>
 
     <div class="field">
-      <label for="tmpl-subject">{T('tmpl_subject_label')}</label>
+      <label for="tmpl-subject">{$t('tmpl_subject_label')}</label>
       <input id="tmpl-subject" type="text" bind:value={subject} bind:this={subjectEl} />
       <div class="var-buttons">
         {#each variables as v}
@@ -141,7 +137,7 @@
     </div>
 
     <div class="field">
-      <label for="tmpl-body">{T('tmpl_body_label')}</label>
+      <label for="tmpl-body">{$t('tmpl_body_label')}</label>
       <textarea id="tmpl-body" bind:value={body} bind:this={bodyEl} rows="8"></textarea>
       <div class="var-buttons">
         {#each variables as v}
@@ -154,19 +150,19 @@
 
     <div class="field-row">
       <div class="field">
-        <label for="send-mode">{T('tmpl_send_mode')}</label>
+        <label for="send-mode">{$t('tmpl_send_mode')}</label>
         <select id="send-mode" bind:value={sendMode}>
-          <option value="draft">{T('tmpl_send_draft')}</option>
-          <option value="sendNow">{T('tmpl_send_now')}</option>
-          <option value="sendLater">{T('tmpl_send_later')}</option>
+          <option value="draft">{$t('tmpl_send_draft')}</option>
+          <option value="sendNow">{$t('tmpl_send_now')}</option>
+          <option value="sendLater">{$t('tmpl_send_later')}</option>
         </select>
       </div>
 
       <div class="field">
-        <label for="reply-type">{T('tmpl_reply_type')}</label>
+        <label for="reply-type">{$t('tmpl_reply_type')}</label>
         <select id="reply-type" bind:value={replyType}>
-          <option value="replyToSender">{T('tmpl_reply_sender')}</option>
-          <option value="replyToAll">{T('tmpl_reply_all')}</option>
+          <option value="replyToSender">{$t('tmpl_reply_sender')}</option>
+          <option value="replyToAll">{$t('tmpl_reply_all')}</option>
         </select>
       </div>
     </div>
@@ -174,33 +170,33 @@
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={isPlainText} />
-        {T('tmpl_plain_text')}
+        {$t('tmpl_plain_text')}
       </label>
     </div>
 
     <!-- Preview -->
     <div class="preview-toggle">
       <button class="preview-btn" onclick={() => (showPreview = !showPreview)}>
-        {showPreview ? T('tmpl_hide_preview') : T('tmpl_show_preview')}
+        {showPreview ? $t('tmpl_hide_preview') : $t('tmpl_show_preview')}
       </button>
     </div>
 
     {#if showPreview}
       <div class="preview-box">
-        <div class="preview-label">{T('tmpl_preview_label')}</div>
-        <div class="preview-subject"><strong>{T('tmpl_preview_subject')}</strong> {previewSubject}</div>
+        <div class="preview-label">{$t('tmpl_preview_label')}</div>
+        <div class="preview-subject"><strong>{$t('tmpl_preview_subject')}</strong> {previewSubject}</div>
         <div class="preview-body">{#each previewBody.split('\n') as line}<p class="preview-line">{line}</p>{/each}</div>
       </div>
     {/if}
 
     <div class="form-actions">
-      <Button variant="secondary" onclick={onclose}>{T('common_cancel')}</Button>
+      <Button variant="secondary" onclick={onclose}>{$t('common_cancel')}</Button>
       <Button
         variant="primary"
         onclick={handleSave}
         disabled={!name.trim() || !subject.trim() || !body.trim()}
       >
-        {T('common_save')}
+        {$t('common_save')}
       </Button>
     </div>
   </div>

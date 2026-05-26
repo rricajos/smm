@@ -81,7 +81,7 @@ src/
 │   ├── services/
 │   │   └── openai.ts        # Servicio AI: clasificación, respuestas, chat con propuestas
 │   │
-│   ├── stores/              # Stores reactivos (patrón subscribe/save con browser.storage)
+│   ├── stores/              # Stores reactivos (writable + browser.storage, consumidos via $store)
 │   │   ├── settings.ts      # Configuración general
 │   │   ├── rules.ts         # Reglas de clasificación
 │   │   ├── templates.ts     # Plantillas de respuesta
@@ -115,7 +115,9 @@ src/
 │       ├── TemplateEditor.svelte   # Editor modal de plantillas con preview
 │       ├── ImportModal.svelte      # Modal de importación con resolución de conflictos
 │       ├── ProposalBlock.svelte    # Bloque de propuesta AI (aceptar/rechazar)
-│       ├── ChatWelcome.svelte      # Pantalla de bienvenida del chat
+│       ├── ChatPanel.svelte        # Panel de chat (conversaciones, mensajes, propuestas)
+│       ├── QuickPanel.svelte      # Panel de generación rápida (análisis, batch, descripción)
+│       ├── ChatWelcome.svelte     # Pantalla de bienvenida del chat
 │       ├── FolderTree.svelte       # Selector de carpeta en árbol jerárquico
 │       ├── GlobalSearch.svelte     # Búsqueda global (Ctrl+K)
 │       └── PresetGallery.svelte    # Galería de presets de reglas
@@ -138,7 +140,8 @@ src/
 
 | Tecnología | Versión | Uso |
 |------------|---------|-----|
-| Svelte | 5.x | UI con runes (`$state`, `$derived`, `$effect`, `$props`) |
+| Svelte | 5.x | UI con runes (`$state`, `$derived`, `$effect`, `$props`) + `$store` auto-subscription |
+| Vitest | 4.x | Tests unitarios para utilidades y lógica de negocio |
 | TypeScript | 6.x | Tipado estricto en todo el proyecto |
 | Vite | 8.x | Build programático con 4 entry points IIFE |
 | Thunderbird | 128+ | APIs: `messenger.*` (Manifest V2) |
@@ -166,6 +169,8 @@ npm install
 | `npm run build` | Build de producción → `dist/` |
 | `npm run watch` | Build + watch de cambios en `src/` |
 | `npm run dev` | Build + watch + `web-ext run` con Thunderbird |
+| `npm test` | Ejecuta tests unitarios con Vitest |
+| `npm run test:watch` | Tests en modo watch |
 | `npm run package` | Build + empaquetado como `smart-mail-manager.xpi` |
 
 ### Sistema de build
@@ -184,6 +189,21 @@ El build usa un script custom (`build.ts`) que:
 3. Genera HTML para cada UI entry point
 4. Copia archivos estáticos de `public/` a `dist/`
 5. En modo watch, recompila al detectar cambios en `src/` (sin re-bump de versión)
+
+### Tests
+
+Tests unitarios con [Vitest](https://vitest.dev/):
+
+```bash
+npm test           # Ejecutar una vez
+npm run test:watch # Modo watch
+```
+
+Cobertura de tests:
+- `rule-conflicts.ts` — Detección de conflictos entre reglas (movimientos contradictorios, prioridades incompatibles, redundancia, solapamiento de condiciones)
+- `config-io.ts` — Exportación, validación de importación, detección de conflictos por ID y nombre
+- `template-engine.ts` — Renderizado de variables `{{}}`, extracción de nombre y email de direcciones
+- `markdown.ts` — Renderizado de markdown a HTML con protección XSS
 
 ### Instalación en Thunderbird
 

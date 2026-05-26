@@ -6,7 +6,6 @@
   import type { AiProvider } from '../types/settings';
   import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS, AI_PROVIDERS } from '../lib/utils/constants';
   import { t, locale, setLocale, type SupportedLocale } from '../lib/i18n';
-  import type { Translations } from '../lib/i18n/types';
   const openrouterProviders = [...new Set(OPENAI_MODELS.map(m => m.provider))];
   import { testConnection } from '../lib/services/openai';
   import Button from '../lib/components/Button.svelte';
@@ -50,22 +49,17 @@
     }
   }
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  let currentLocale = $state<SupportedLocale>('es');
-  t.subscribe((fn) => (T = fn));
-  locale.subscribe((v) => (currentLocale = v));
 
   let showApiKey = $state(false);
   let testingConnection = $state(false);
-  let currentRules = $state<any[]>([]);
-  let currentTemplates = $state<any[]>([]);
   let toastMessage = $state('');
   let toastType = $state<'success' | 'error' | 'info'>('success');
   let showToast = $state(false);
 
-  settings.subscribe((v) => (currentSettings = { ...v }));
-  rules.subscribe((v) => (currentRules = v));
-  templates.subscribe((v) => (currentTemplates = v));
+  // Sync store into local mutable copy for form editing
+  $effect(() => {
+    currentSettings = { ...$settings };
+  });
 
   function showNotification(message: string, type: 'success' | 'error' | 'info' = 'success') {
     toastMessage = message;
@@ -76,13 +70,13 @@
 
   async function saveSettings() {
     await settings.save(currentSettings);
-    showNotification(T('options_saved'));
+    showNotification($t('options_saved'));
   }
 
   function exportData() {
     const data = {
-      rules: currentRules,
-      templates: currentTemplates,
+      rules: $rules,
+      templates: $templates,
       settings: currentSettings,
       exportedAt: new Date().toISOString(),
     };
@@ -93,16 +87,16 @@
     a.download = 'smart-mail-manager-backup.json';
     a.click();
     URL.revokeObjectURL(url);
-    showNotification(T('options_exported'));
+    showNotification($t('options_exported'));
   }
 
   async function handleTestConnection() {
     if (!currentSettings.openaiApiKey) {
-      showNotification(T('options_enter_key_first'), 'error');
+      showNotification($t('options_enter_key_first'), 'error');
       return;
     }
     if (currentSettings.aiProvider === 'custom' && !currentSettings.customBaseUrl) {
-      showNotification(T('options_enter_url_first'), 'error');
+      showNotification($t('options_enter_url_first'), 'error');
       return;
     }
     testingConnection = true;
@@ -113,9 +107,9 @@
         currentSettings.aiProvider,
         currentSettings.customBaseUrl,
       );
-      showNotification(T('options_connection_ok'));
+      showNotification($t('options_connection_ok'));
     } catch (err: any) {
-      showNotification(T('options_connection_error', { msg: err.message }), 'error');
+      showNotification($t('options_connection_error', { msg: err.message }), 'error');
     } finally {
       testingConnection = false;
     }
@@ -140,9 +134,9 @@
         if (data.settings) {
           await browser.storage.local.set({ smm_settings: data.settings });
         }
-        showNotification(T('options_imported'));
+        showNotification($t('options_imported'));
       } catch {
-        showNotification(T('options_import_error'), 'error');
+        showNotification($t('options_import_error'), 'error');
       }
     };
     input.click();
@@ -150,13 +144,13 @@
 </script>
 
 <div class="options">
-  <h1>{T('options_title')}</h1>
+  <h1>{$t('options_title')}</h1>
 
   <section>
-    <h2>{T('options_language')}</h2>
+    <h2>{$t('options_language')}</h2>
     <div class="field">
       <select
-        value={currentLocale}
+        value={$locale}
         onchange={(e) => setLocale((e.target as HTMLSelectElement).value as SupportedLocale)}
       >
         <option value="es">Español</option>
@@ -166,73 +160,73 @@
   </section>
 
   <section>
-    <h2>{T('options_general')}</h2>
+    <h2>{$t('options_general')}</h2>
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={currentSettings.classificationEnabled} />
-        {T('options_enable_classification')}
+        {$t('options_enable_classification')}
       </label>
     </div>
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={currentSettings.autoResponseEnabled} />
-        {T('options_enable_auto_response')}
+        {$t('options_enable_auto_response')}
       </label>
     </div>
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={currentSettings.processExistingOnStartup} />
-        {T('options_process_on_startup')}
+        {$t('options_process_on_startup')}
       </label>
     </div>
   </section>
 
   <section>
-    <h2>{T('options_notifications')}</h2>
+    <h2>{$t('options_notifications')}</h2>
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={currentSettings.notifyOnClassification} />
-        {T('options_notify_classification')}
+        {$t('options_notify_classification')}
       </label>
     </div>
     <div class="field">
       <label class="checkbox-label">
         <input type="checkbox" bind:checked={currentSettings.notifyOnAutoResponse} />
-        {T('options_notify_auto_response')}
+        {$t('options_notify_auto_response')}
       </label>
     </div>
   </section>
 
   <section>
-    <h2>{T('options_limits')}</h2>
+    <h2>{$t('options_limits')}</h2>
     <div class="field">
-      <label for="max-responses">{T('options_max_responses')}</label>
+      <label for="max-responses">{$t('options_max_responses')}</label>
       <input id="max-responses" type="number" min="1" max="100" bind:value={currentSettings.maxAutoResponsesPerHour} />
     </div>
     <div class="field">
-      <label for="log-retention">{T('options_log_retention')}</label>
+      <label for="log-retention">{$t('options_log_retention')}</label>
       <input id="log-retention" type="number" min="1" max="365" bind:value={currentSettings.logRetentionDays} />
-      <span class="field-hint">{T('options_log_retention_hint')}</span>
+      <span class="field-hint">{$t('options_log_retention_hint')}</span>
     </div>
   </section>
 
   <section>
-    <h2>{T('options_ai_provider')}</h2>
+    <h2>{$t('options_ai_provider')}</h2>
     <div class="field">
-      <label for="ai-provider">{T('options_provider')}</label>
+      <label for="ai-provider">{$t('options_provider')}</label>
       <select id="ai-provider" value={currentSettings.aiProvider} onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value as AiProvider)}>
-        <option value="openrouter">{T('options_provider_openrouter')}</option>
-        <option value="openai">{T('options_provider_openai')}</option>
-        <option value="anthropic">{T('options_provider_anthropic')}</option>
-        <option value="google">{T('options_provider_google')}</option>
-        <option value="custom">{T('options_provider_custom')}</option>
+        <option value="openrouter">{$t('options_provider_openrouter')}</option>
+        <option value="openai">{$t('options_provider_openai')}</option>
+        <option value="anthropic">{$t('options_provider_anthropic')}</option>
+        <option value="google">{$t('options_provider_google')}</option>
+        <option value="custom">{$t('options_provider_custom')}</option>
       </select>
     </div>
-    <p class="info">{T(AI_PROVIDERS[currentSettings.aiProvider]?.keyHintKey as any)}</p>
+    <p class="info">{$t(AI_PROVIDERS[currentSettings.aiProvider]?.keyHintKey as any)}</p>
 
     {#if currentSettings.aiProvider === 'custom'}
       <div class="field">
-        <label for="custom-url">{T('options_custom_url')}</label>
+        <label for="custom-url">{$t('options_custom_url')}</label>
         <input
           id="custom-url"
           type="text"
@@ -244,7 +238,7 @@
     {/if}
 
     <div class="field">
-      <label for="api-key">{T('options_api_key')}</label>
+      <label for="api-key">{$t('options_api_key')}</label>
       <div class="api-key-row">
         <input
           id="api-key"
@@ -254,13 +248,13 @@
           class="api-key-input"
         />
         <Button size="sm" onclick={() => (showApiKey = !showApiKey)}>
-          {showApiKey ? T('common_hide') : T('common_show')}
+          {showApiKey ? $t('common_hide') : $t('common_show')}
         </Button>
       </div>
     </div>
 
     <div class="field">
-      <label for="ai-model">{T('options_model')}</label>
+      <label for="ai-model">{$t('options_model')}</label>
       {#if currentSettings.aiProvider === 'openrouter'}
         <select id="ai-model" bind:value={currentSettings.openaiModel}>
           {#each openrouterProviders as provider}
@@ -290,22 +284,22 @@
 
     <div class="field">
       <Button onclick={handleTestConnection} disabled={testingConnection || !currentSettings.openaiApiKey}>
-        {testingConnection ? T('options_testing') : T('options_test_connection')}
+        {testingConnection ? $t('options_testing') : $t('options_test_connection')}
       </Button>
     </div>
   </section>
 
   <section>
-    <h2>{T('options_data')}</h2>
-    <p class="info">{T('options_data_desc')}</p>
+    <h2>{$t('options_data')}</h2>
+    <p class="info">{$t('options_data_desc')}</p>
     <div class="data-actions">
-      <Button onclick={exportData}>{T('options_export_data')}</Button>
-      <Button onclick={importData}>{T('options_import_data')}</Button>
+      <Button onclick={exportData}>{$t('options_export_data')}</Button>
+      <Button onclick={importData}>{$t('options_import_data')}</Button>
     </div>
   </section>
 
   <div class="save-footer">
-    <Button variant="primary" onclick={saveSettings}>{T('common_save')}</Button>
+    <Button variant="primary" onclick={saveSettings}>{$t('common_save')}</Button>
   </div>
 
   <Toast message={toastMessage} type={toastType} show={showToast} ondismiss={() => (showToast = false)} />

@@ -2,7 +2,6 @@
   import type { Rule } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
 
   interface SearchResult {
     type: 'rule' | 'template' | 'log';
@@ -21,8 +20,6 @@
 
   let { rules, templates, activity, onnavigate }: Props = $props();
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   let query = $state('');
   let showResults = $state(false);
@@ -45,7 +42,7 @@
         items.push({
           type: 'rule', id: rule.id,
           title: rule.name,
-          subtitle: rule.enabled ? T('common_active') : T('common_inactive'),
+          subtitle: rule.enabled ? $t('common_active') : $t('common_inactive'),
           tabId: 'rules',
         });
         count++;
@@ -75,7 +72,7 @@
           (entry.ruleName || '').toLowerCase().includes(q)) {
         items.push({
           type: 'log', id: String(entry.timestamp),
-          title: entry.subject || T('editor_no_subject'),
+          title: entry.subject || $t('editor_no_subject'),
           subtitle: `${entry.ruleName} - ${entry.from}`,
           tabId: 'log',
         });
@@ -122,13 +119,13 @@
   <input
     type="text"
     class="search-input"
-    placeholder={T('search_placeholder')}
+    placeholder={$t('search_placeholder')}
     bind:value={query}
     bind:this={inputEl}
     onfocus={() => (showResults = true)}
     onblur={() => setTimeout(() => (showResults = false), 200)}
     onkeydown={handleKeydown}
-    aria-label={T('search_aria')}
+    aria-label={$t('search_aria')}
     role="combobox"
     aria-expanded={showResults && results.length > 0}
     aria-controls="global-search-listbox"
@@ -145,7 +142,7 @@
           aria-selected={i === selectedIndex}
         >
           <span class="result-type-badge result-type-{result.type}">
-            {result.type === 'rule' ? T('search_rule') : result.type === 'template' ? T('search_template') : T('search_log')}
+            {result.type === 'rule' ? $t('search_rule') : result.type === 'template' ? $t('search_template') : $t('search_log')}
           </span>
           <div class="result-text">
             <span class="result-title">{result.title}</span>

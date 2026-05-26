@@ -1,13 +1,10 @@
 <script lang="ts">
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
 
   declare const browser: any;
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   interface FolderNode {
     id: string;
@@ -70,7 +67,7 @@
       expandedIds = newExpanded;
       hasLoaded = true;
     } catch (err: any) {
-      error = err?.message || T('folder_tree_load_error');
+      error = err?.message || $t('folder_tree_load_error');
     } finally {
       loading = false;
     }
@@ -201,14 +198,14 @@
     try {
       const result = await browser.runtime.sendMessage({ type: 'DELETE_FOLDER', folderId: node.id });
       if (result.success) {
-        actionSuccess = T('folder_tree_deleted', { name: node.name });
+        actionSuccess = $t('folder_tree_deleted', { name: node.name });
         setTimeout(() => (actionSuccess = ''), 3000);
         await loadTree();
       } else {
-        actionError = result.error || T('folder_tree_delete_error');
+        actionError = result.error || $t('folder_tree_delete_error');
       }
     } catch (err: any) {
-      actionError = err.message || T('folder_tree_delete_error');
+      actionError = err.message || $t('folder_tree_delete_error');
     }
   }
 
@@ -220,15 +217,15 @@
         type: 'CREATE_FOLDER', parentFolderId: creatingIn.parentId, folderName: creatingIn.name.trim(),
       });
       if (result.success) {
-        actionSuccess = T('folder_tree_created', { name: creatingIn.name.trim() });
+        actionSuccess = $t('folder_tree_created', { name: creatingIn.name.trim() });
         setTimeout(() => (actionSuccess = ''), 3000);
         creatingIn = null;
         await loadTree();
       } else {
-        actionError = result.error || T('folder_tree_create_error');
+        actionError = result.error || $t('folder_tree_create_error');
       }
     } catch (err: any) {
-      actionError = err.message || T('folder_tree_create_error');
+      actionError = err.message || $t('folder_tree_create_error');
     }
   }
 
@@ -240,16 +237,16 @@
         type: 'RENAME_FOLDER', folderId: renamingId, newName: renameValue.trim(),
       });
       if (result.success) {
-        actionSuccess = T('folder_tree_renamed', { name: renameValue.trim() });
+        actionSuccess = $t('folder_tree_renamed', { name: renameValue.trim() });
         setTimeout(() => (actionSuccess = ''), 3000);
         renamingId = null;
         renameValue = '';
         await loadTree();
       } else {
-        actionError = result.error || T('folder_tree_rename_error');
+        actionError = result.error || $t('folder_tree_rename_error');
       }
     } catch (err: any) {
-      actionError = err.message || T('folder_tree_rename_error');
+      actionError = err.message || $t('folder_tree_rename_error');
     }
   }
 
@@ -269,10 +266,10 @@
 <div class="folder-tree">
   <div class="tree-header">
     <span class="tree-title">
-      {T('folder_tree_title')}
+      {$t('folder_tree_title')}
       {#if hasLoaded}
         <span class="tree-summary">
-          {totalMessages.toLocaleString()} {T('folder_tree_msgs')}
+          {totalMessages.toLocaleString()} {$t('folder_tree_msgs')}
           {#if totalUnread > 0}
             <span class="tree-summary-unread">{totalUnread}</span>
           {/if}
@@ -281,10 +278,10 @@
     </span>
     <div class="tree-actions">
       {#if hasLoaded && trees.length > 0}
-        <Button size="xs" onclick={expandAll} title={T('folder_tree_expand_all')}>+</Button>
-        <Button size="xs" onclick={collapseAll} title={T('folder_tree_collapse_all')}>&minus;</Button>
+        <Button size="xs" onclick={expandAll} title={$t('folder_tree_expand_all')}>+</Button>
+        <Button size="xs" onclick={collapseAll} title={$t('folder_tree_collapse_all')}>&minus;</Button>
       {/if}
-      <Button size="xs" onclick={loadTree} disabled={loading} title={T('folder_tree_refresh')}>
+      <Button size="xs" onclick={loadTree} disabled={loading} title={$t('folder_tree_refresh')}>
         {loading ? '...' : '\u21BB'}
       </Button>
     </div>
@@ -296,9 +293,9 @@
   {#if error}
     <div class="tree-error">{error}</div>
   {:else if loading && !hasLoaded}
-    <div class="tree-loading">{T('folder_tree_loading')}</div>
+    <div class="tree-loading">{$t('folder_tree_loading')}</div>
   {:else if !hasLoaded}
-    <div class="tree-loading tree-empty">{T('folder_tree_click_refresh')}</div>
+    <div class="tree-loading tree-empty">{$t('folder_tree_click_refresh')}</div>
   {:else}
     {#each trees as account}
       <div class="account-section">
@@ -314,19 +311,19 @@
 {#if contextMenu.show && contextMenu.node}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="context-menu" role="menu" tabindex="-1" style="left: {contextMenu.x}px; top: {contextMenu.y}px" onclick={(e) => e.stopPropagation()}>
-    <button onclick={startCreateSubfolder}>{T('folder_tree_create_subfolder')}</button>
+    <button onclick={startCreateSubfolder}>{$t('folder_tree_create_subfolder')}</button>
     {#if !SYSTEM_FOLDER_TYPES.includes(contextMenu.node.type)}
-      <button onclick={startRename}>{T('folder_tree_rename')}</button>
+      <button onclick={startRename}>{$t('folder_tree_rename')}</button>
       <div class="context-separator"></div>
-      <button class="danger" onclick={handleDelete}>{T('folder_tree_delete')}</button>
+      <button class="danger" onclick={handleDelete}>{$t('folder_tree_delete')}</button>
     {/if}
   </div>
 {/if}
 
 <ConfirmDialog
   show={confirmDeleteNode.show}
-  title={T('confirm_delete_folder_title')}
-  message={T('folder_tree_confirm_delete', { name: confirmDeleteNode.node?.name || '' })}
+  title={$t('confirm_delete_folder_title')}
+  message={$t('folder_tree_confirm_delete', { name: confirmDeleteNode.node?.name || '' })}
   onconfirm={confirmDeleteNodeAction}
   oncancel={() => (confirmDeleteNode = { show: false, node: null })}
 />
@@ -370,14 +367,14 @@
       <span class="folder-name">{node.name}</span>
       <span class="folder-counts">
         {#if hasChildren && expandedIds.has(node.id)}
-          <span class="msg-count" title={T('folder_tree_title_folder_msgs')}>{node.totalMessages}</span>
+          <span class="msg-count" title={$t('folder_tree_title_folder_msgs')}>{node.totalMessages}</span>
         {:else if hasChildren}
-          <span class="msg-count" title={T('folder_tree_title_subtree_total')}>{childTotal}</span>
+          <span class="msg-count" title={$t('folder_tree_title_subtree_total')}>{childTotal}</span>
         {:else}
-          <span class="msg-count" title={T('folder_tree_title_total_msgs')}>{node.totalMessages}</span>
+          <span class="msg-count" title={$t('folder_tree_title_total_msgs')}>{node.totalMessages}</span>
         {/if}
         {#if childUnread > 0}
-          <span class="unread-count" title={T('folder_tree_title_unread')}>{childUnread}</span>
+          <span class="unread-count" title={$t('folder_tree_title_unread')}>{childUnread}</span>
         {/if}
       </span>
     {/if}
@@ -392,7 +389,7 @@
           class="inline-input"
           bind:value={creatingIn.name}
           onkeydown={handleCreateKeydown}
-          placeholder={T('folder_tree_name_placeholder')}
+          placeholder={$t('folder_tree_name_placeholder')}
           autofocus
         />
         <Button size="xs" onclick={confirmCreate}>OK</Button>

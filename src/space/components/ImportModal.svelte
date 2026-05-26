@@ -3,8 +3,6 @@
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
-  import { onDestroy } from 'svelte';
 
   interface Props {
     show: boolean;
@@ -15,9 +13,6 @@
 
   let { show, validation, onimport, onclose }: Props = $props();
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  const unsubT = t.subscribe((fn) => (T = fn));
-  onDestroy(() => unsubT());
 
   let importRules = $state(true);
   let importTemplates = $state(true);
@@ -55,47 +50,47 @@
   );
 </script>
 
-<Modal title={T('import_title')} {show} {onclose}>
+<Modal title={$t('import_title')} {show} {onclose}>
   {#if validation}
     <div class="import-content">
       <div class="import-summary">
-        <h4>{T('import_file_summary')}</h4>
+        <h4>{$t('import_file_summary')}</h4>
         <div class="summary-row">
           <label class="checkbox-label">
             <input type="checkbox" bind:checked={importRules} />
-            <span>{validation.data?.rules.length || 0} {T('tab_rules').toLowerCase()}</span>
+            <span>{validation.data?.rules.length || 0} {$t('tab_rules').toLowerCase()}</span>
           </label>
         </div>
         <div class="summary-row">
           <label class="checkbox-label">
             <input type="checkbox" bind:checked={importTemplates} />
-            <span>{validation.data?.templates.length || 0} {T('tab_templates').toLowerCase()}</span>
+            <span>{validation.data?.templates.length || 0} {$t('tab_templates').toLowerCase()}</span>
           </label>
         </div>
         <div class="summary-row">
           <label class="checkbox-label">
             <input type="checkbox" bind:checked={importSettings} />
-            <span>{T('import_general_settings')}</span>
+            <span>{$t('import_general_settings')}</span>
           </label>
         </div>
         {#if totalNew > 0}
-          <p class="new-count">{T('import_new_items', { n: totalNew, s: totalNew !== 1 ? 's' : '' })}</p>
+          <p class="new-count">{$t('import_new_items', { n: totalNew, s: totalNew !== 1 ? 's' : '' })}</p>
         {/if}
       </div>
 
       {#if totalConflicts > 0}
         <div class="conflicts-section">
-          <h4>{T('import_conflicts_title', { n: totalConflicts })}</h4>
-          <p class="conflict-desc">{T('import_conflicts_desc')}</p>
+          <h4>{$t('import_conflicts_title', { n: totalConflicts })}</h4>
+          <p class="conflict-desc">{$t('import_conflicts_desc')}</p>
 
           {#if validation.conflicts.rules.length > 0 && importRules}
             {#each validation.conflicts.rules as conflict}
               <div class="conflict-item">
-                <span class="conflict-name">{T('import_conflict_rule', { name: conflict.imported.name })}</span>
+                <span class="conflict-name">{$t('import_conflict_rule', { name: conflict.imported.name })}</span>
                 <select bind:value={conflictResolutions[`rule:${conflict.imported.id}`]}>
-                  <option value="skip">{T('import_skip')}</option>
-                  <option value="replace">{T('import_replace')}</option>
-                  <option value="duplicate">{T('import_duplicate')}</option>
+                  <option value="skip">{$t('import_skip')}</option>
+                  <option value="replace">{$t('import_replace')}</option>
+                  <option value="duplicate">{$t('import_duplicate')}</option>
                 </select>
               </div>
             {/each}
@@ -104,11 +99,11 @@
           {#if validation.conflicts.templates.length > 0 && importTemplates}
             {#each validation.conflicts.templates as conflict}
               <div class="conflict-item">
-                <span class="conflict-name">{T('import_conflict_template', { name: conflict.imported.name })}</span>
+                <span class="conflict-name">{$t('import_conflict_template', { name: conflict.imported.name })}</span>
                 <select bind:value={conflictResolutions[`tmpl:${conflict.imported.id}`]}>
-                  <option value="skip">{T('import_skip')}</option>
-                  <option value="replace">{T('import_replace')}</option>
-                  <option value="duplicate">{T('import_duplicate')}</option>
+                  <option value="skip">{$t('import_skip')}</option>
+                  <option value="replace">{$t('import_replace')}</option>
+                  <option value="duplicate">{$t('import_duplicate')}</option>
                 </select>
               </div>
             {/each}
@@ -117,8 +112,8 @@
       {/if}
 
       <div class="import-actions">
-        <Button variant="primary" onclick={handleImport}>{T('import_btn')}</Button>
-        <Button onclick={onclose}>{T('common_cancel')}</Button>
+        <Button variant="primary" onclick={handleImport}>{$t('import_btn')}</Button>
+        <Button onclick={onclose}>{$t('common_cancel')}</Button>
       </div>
     </div>
   {/if}

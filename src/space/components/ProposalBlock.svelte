@@ -1,11 +1,8 @@
 <script lang="ts">
   import type { FolderProposal, MoveProposal, RuleProposal, TemplateProposal, RuleConsolidationProposal } from '../../lib/services/openai';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   interface Props {
     type: 'folders' | 'moves' | 'rules' | 'templates' | 'consolidateRules';
@@ -40,19 +37,19 @@
   <div class="proposals-block">
     <div class="proposals-header">
       <span class="proposals-title">
-        {type === 'folders' ? T('proposal_folders_title') :
-         type === 'moves' ? T('proposal_moves_title') :
-         type === 'templates' ? T('proposal_templates_title') :
-         type === 'consolidateRules' ? T('proposal_consolidate_rules_title') :
-         T('proposal_rules_title')} ({items.length})
+        {type === 'folders' ? $t('proposal_folders_title') :
+         type === 'moves' ? $t('proposal_moves_title') :
+         type === 'templates' ? $t('proposal_templates_title') :
+         type === 'consolidateRules' ? $t('proposal_consolidate_rules_title') :
+         $t('proposal_rules_title')} ({items.length})
       </span>
       {#if !allAccepted && onacceptall}
         <Button size="xs" variant="ghost" onclick={onacceptall}>
-          {type === 'folders' ? T('proposal_create_all') :
-           type === 'moves' ? T('proposal_consolidate_all') :
-           type === 'templates' ? T('proposal_template_create_all') :
-           type === 'consolidateRules' ? T('proposal_consolidate_rules_all') :
-           T('proposal_accept_all')}
+          {type === 'folders' ? $t('proposal_create_all') :
+           type === 'moves' ? $t('proposal_consolidate_all') :
+           type === 'templates' ? $t('proposal_template_create_all') :
+           type === 'consolidateRules' ? $t('proposal_consolidate_rules_all') :
+           $t('proposal_accept_all')}
         </Button>
       {/if}
     </div>
@@ -64,13 +61,13 @@
             <span class="proposal-icon">&#128193;</span>
             <div>
               <strong>{fp.name}</strong>
-              <small>{T('proposal_in_path')} {fp.parentPath} — {fp.description}</small>
+              <small>{$t('proposal_in_path')} {fp.parentPath} — {fp.description}</small>
             </div>
           </div>
           {#if acceptedSet.has(idx)}
-            <span class="accepted-badge">{T('proposal_badge_created')}</span>
+            <span class="accepted-badge">{$t('proposal_badge_created')}</span>
           {:else if onacceptfolder}
-            <Button size="sm" variant="primary" onclick={() => onacceptfolder(idx, fp)}>{T('proposal_create')}</Button>
+            <Button size="sm" variant="primary" onclick={() => onacceptfolder(idx, fp)}>{$t('proposal_create')}</Button>
           {/if}
         </div>
       {/each}
@@ -83,13 +80,13 @@
             <span class="proposal-icon">&#8618;</span>
             <div>
               <strong>{mp.sourceFolderPath} &rarr; {mp.destFolderPath}</strong>
-              <small>{mp.description}{mp.deleteSource ? ` ${T('proposal_move_and_delete')}` : ''}</small>
+              <small>{mp.description}{mp.deleteSource ? ` ${$t('proposal_move_and_delete')}` : ''}</small>
             </div>
           </div>
           {#if acceptedSet.has(idx)}
-            <span class="accepted-badge">{T('proposal_badge_consolidated')}</span>
+            <span class="accepted-badge">{$t('proposal_badge_consolidated')}</span>
           {:else if onacceptmove}
-            <Button size="sm" variant="primary" onclick={() => onacceptmove(idx, mp)}>{T('proposal_consolidate')}</Button>
+            <Button size="sm" variant="primary" onclick={() => onacceptmove(idx, mp)}>{$t('proposal_consolidate')}</Button>
           {/if}
         </div>
       {/each}
@@ -105,7 +102,7 @@
               <small>{rp.description}</small>
               <div class="rule-summary">
                 {#each rp.rule.conditions as cond}
-                  <span class="detail-chip">{cond.field} {cond.operator} "{cond.value || (cond.boolValue ? T('common_yes') : T('common_no'))}"</span>
+                  <span class="detail-chip">{cond.field} {cond.operator} "{cond.value || (cond.boolValue ? $t('common_yes') : $t('common_no'))}"</span>
                 {/each}
                 <span class="arrow-chip">&rarr;</span>
                 {#each rp.rule.actions as act}
@@ -115,14 +112,14 @@
             </div>
           </div>
           {#if acceptedSet.has(idx)}
-            <span class="accepted-badge">{T('proposal_badge_saved')}</span>
+            <span class="accepted-badge">{$t('proposal_badge_saved')}</span>
           {:else}
             <div class="proposal-actions">
               {#if onacceptrule}
-                <Button size="sm" variant="primary" onclick={() => onacceptrule(idx, rp)}>{T('common_accept')}</Button>
+                <Button size="sm" variant="primary" onclick={() => onacceptrule(idx, rp)}>{$t('common_accept')}</Button>
               {/if}
               {#if oneditrule}
-                <Button size="sm" onclick={() => oneditrule(rp)}>{T('common_edit')}</Button>
+                <Button size="sm" onclick={() => oneditrule(rp)}>{$t('common_edit')}</Button>
               {/if}
             </div>
           {/if}
@@ -139,8 +136,8 @@
               <strong>{tp.template.name}</strong>
               <small>{tp.description}</small>
               <div class="rule-summary">
-                <span class="detail-chip">{tp.template.sendMode === 'draft' ? T('templates_draft') : tp.template.sendMode === 'sendNow' ? T('templates_send_now') : T('templates_send_later')}</span>
-                <span class="detail-chip">{tp.template.replyType === 'replyToSender' ? T('templates_reply') : T('templates_reply_all')}</span>
+                <span class="detail-chip">{tp.template.sendMode === 'draft' ? $t('templates_draft') : tp.template.sendMode === 'sendNow' ? $t('templates_send_now') : $t('templates_send_later')}</span>
+                <span class="detail-chip">{tp.template.replyType === 'replyToSender' ? $t('templates_reply') : $t('templates_reply_all')}</span>
                 {#if tp.template.subject}
                   <span class="detail-chip action-chip">{tp.template.subject}</span>
                 {/if}
@@ -148,9 +145,9 @@
             </div>
           </div>
           {#if acceptedSet.has(idx)}
-            <span class="accepted-badge">{T('proposal_badge_template_created')}</span>
+            <span class="accepted-badge">{$t('proposal_badge_template_created')}</span>
           {:else if onaccepttemplate}
-            <Button size="sm" variant="primary" onclick={() => onaccepttemplate(idx, tp)}>{T('proposal_create')}</Button>
+            <Button size="sm" variant="primary" onclick={() => onaccepttemplate(idx, tp)}>{$t('proposal_create')}</Button>
           {/if}
         </div>
       {/each}
@@ -166,7 +163,7 @@
               <small>{rc.description}</small>
               <div class="rule-summary">
                 {#each rc.mergedRule.conditions as cond}
-                  <span class="detail-chip">{cond.field} {cond.operator} "{cond.value || (cond.boolValue ? T('common_yes') : T('common_no'))}"</span>
+                  <span class="detail-chip">{cond.field} {cond.operator} "{cond.value || (cond.boolValue ? $t('common_yes') : $t('common_no'))}"</span>
                 {/each}
                 <span class="arrow-chip">&rarr;</span>
                 {#each rc.mergedRule.actions as act}
@@ -176,9 +173,9 @@
             </div>
           </div>
           {#if acceptedSet.has(idx)}
-            <span class="accepted-badge">{T('proposal_badge_rules_consolidated')}</span>
+            <span class="accepted-badge">{$t('proposal_badge_rules_consolidated')}</span>
           {:else if onacceptconsolidation}
-            <Button size="sm" variant="primary" onclick={() => onacceptconsolidation(idx, rc)}>{T('proposal_consolidate')}</Button>
+            <Button size="sm" variant="primary" onclick={() => onacceptconsolidation(idx, rc)}>{$t('proposal_consolidate')}</Button>
           {/if}
         </div>
       {/each}

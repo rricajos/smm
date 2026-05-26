@@ -1,11 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { t } from '../i18n';
-  import type { Translations } from '../i18n/types';
   import Button from './Button.svelte';
-
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   interface Props {
     title: string;
@@ -70,7 +66,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" bind:this={modalEl}>
       <div class="modal-header">
         <h2 id="modal-title">{title}</h2>
-        <Button size="sm" onclick={onclose} aria-label={T('common_close')}>&#10005;</Button>
+        <Button size="sm" onclick={onclose} aria-label={$t('common_close')}>&#10005;</Button>
       </div>
       <div class="modal-body">
         {#if children}{@render children()}{/if}

@@ -2,7 +2,6 @@
   import type { Action } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
 
   interface Props {
@@ -16,23 +15,21 @@
 
   let { action, folders, tags, templates, onchange, onremove }: Props = $props();
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   let actionTypes = $derived([
-    { value: 'moveToFolder', label: T('action_move_to_folder') },
-    { value: 'addTag', label: T('action_add_tag') },
-    { value: 'setPriority', label: T('action_set_priority') },
-    { value: 'markRead', label: T('action_mark_read') },
-    { value: 'autoRespond', label: T('action_auto_respond') },
+    { value: 'moveToFolder', label: $t('action_move_to_folder') },
+    { value: 'addTag', label: $t('action_add_tag') },
+    { value: 'setPriority', label: $t('action_set_priority') },
+    { value: 'markRead', label: $t('action_mark_read') },
+    { value: 'autoRespond', label: $t('action_auto_respond') },
   ]);
 
   let priorities = $derived([
-    { value: 'highest', label: T('action_priority_highest') },
-    { value: 'high', label: T('action_priority_high') },
-    { value: 'normal', label: T('action_priority_normal') },
-    { value: 'low', label: T('action_priority_low') },
-    { value: 'lowest', label: T('action_priority_lowest') },
+    { value: 'highest', label: $t('action_priority_highest') },
+    { value: 'high', label: $t('action_priority_high') },
+    { value: 'normal', label: $t('action_priority_normal') },
+    { value: 'low', label: $t('action_priority_low') },
+    { value: 'lowest', label: $t('action_priority_lowest') },
   ]);
 
   function updateType(type: string) {
@@ -74,7 +71,7 @@
         <option value={folder.id}>{folder.accountName} / {folder.path}</option>
       {/each}
       {#if folders.length === 0}
-        <option value="">{T('action_no_folders')}</option>
+        <option value="">{$t('action_no_folders')}</option>
       {/if}
     </select>
   {:else if action.type === 'addTag'}
@@ -104,12 +101,12 @@
         <option value={tmpl.id}>{tmpl.name}</option>
       {/each}
       {#if templates.length === 0}
-        <option value="">{T('action_create_template_first')}</option>
+        <option value="">{$t('action_create_template_first')}</option>
       {/if}
     </select>
   {/if}
 
-  <Button size="sm" variant="danger" onclick={onremove} aria-label={T('a11y_remove_action')}>x</Button>
+  <Button size="sm" variant="danger" onclick={onremove} aria-label={$t('a11y_remove_action')}>x</Button>
 </div>
 
 <style>

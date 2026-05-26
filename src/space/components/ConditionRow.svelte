@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Condition } from '../../types/rules';
   import { t } from '../../lib/i18n';
-  import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
 
   interface Props {
@@ -12,23 +11,21 @@
 
   let { condition, onchange, onremove }: Props = $props();
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
   let fieldOptions = $derived([
-    { value: 'from', label: T('cond_from') },
-    { value: 'to', label: T('cond_to') },
-    { value: 'subject', label: T('cond_subject') },
-    { value: 'body', label: T('cond_body') },
-    { value: 'hasAttachments', label: T('cond_attachments') },
+    { value: 'from', label: $t('cond_from') },
+    { value: 'to', label: $t('cond_to') },
+    { value: 'subject', label: $t('cond_subject') },
+    { value: 'body', label: $t('cond_body') },
+    { value: 'hasAttachments', label: $t('cond_attachments') },
   ]);
 
   let textOperators = $derived([
-    { value: 'contains', label: T('cond_contains') },
-    { value: 'equals', label: T('cond_equals') },
-    { value: 'startsWith', label: T('cond_starts_with') },
-    { value: 'endsWith', label: T('cond_ends_with') },
-    { value: 'matches', label: T('cond_matches_regex') },
+    { value: 'contains', label: $t('cond_contains') },
+    { value: 'equals', label: $t('cond_equals') },
+    { value: 'startsWith', label: $t('cond_starts_with') },
+    { value: 'endsWith', label: $t('cond_ends_with') },
+    { value: 'matches', label: $t('cond_matches_regex') },
   ]);
 
   let isBoolean = $derived(condition.field === 'hasAttachments');
@@ -57,8 +54,8 @@
       value={condition.boolValue ? 'true' : 'false'}
       onchange={(e) => onchange({ ...condition, boolValue: (e.target as HTMLSelectElement).value === 'true' })}
     >
-      <option value="true">{T('cond_has_attachments')}</option>
-      <option value="false">{T('cond_no_attachments')}</option>
+      <option value="true">{$t('cond_has_attachments')}</option>
+      <option value="false">{$t('cond_no_attachments')}</option>
     </select>
   {:else}
     <select
@@ -73,22 +70,22 @@
     <input
       type="text"
       value={condition.value}
-      placeholder={T('cond_value_placeholder')}
+      placeholder={$t('cond_value_placeholder')}
       oninput={(e) => onchange({ ...condition, value: (e.target as HTMLInputElement).value })}
     />
 
-    <label class="case-toggle" title={T('a11y_case_sensitive')}>
+    <label class="case-toggle" title={$t('a11y_case_sensitive')}>
       <input
         type="checkbox"
         checked={condition.caseSensitive}
         onchange={(e) => onchange({ ...condition, caseSensitive: (e.target as HTMLInputElement).checked })}
-        aria-label={T('a11y_case_sensitive')}
+        aria-label={$t('a11y_case_sensitive')}
       />
       Aa
     </label>
   {/if}
 
-  <Button size="sm" variant="danger" onclick={onremove} aria-label={T('a11y_remove_condition')}>x</Button>
+  <Button size="sm" variant="danger" onclick={onremove} aria-label={$t('a11y_remove_condition')}>x</Button>
 </div>
 
 <style>

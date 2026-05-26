@@ -10,26 +10,16 @@
 
   declare const browser: any;
 
-  let T = $state<(key: keyof Translations, params?: Record<string, string | number>) => string>((k) => k);
-  t.subscribe((fn) => (T = fn));
 
-  let currentRules = $state<any[]>([]);
-  let currentActivity = $state<any[]>([]);
-  let currentSettings = $state<any>({});
-
-  rules.subscribe((v) => (currentRules = v));
-  activity.subscribe((v) => (currentActivity = v));
-  settings.subscribe((v) => (currentSettings = v));
-
-  let activeRules = $derived(currentRules.filter((r) => r.enabled).length);
+  let activeRules = $derived($rules.filter((r) => r.enabled).length);
   let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
   let todayClassifications = $derived(
-    currentActivity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
+    $activity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
   );
   let todayAutoResponses = $derived(
-    currentActivity.filter((a) => a.type === 'autoResponse' && a.timestamp >= todayStart).length,
+    $activity.filter((a) => a.type === 'autoResponse' && a.timestamp >= todayStart).length,
   );
-  let recentActivity = $derived(currentActivity.slice(0, 20));
+  let recentActivity = $derived($activity.slice(0, 20));
 
   // 7-day activity chart
   let weeklyData = $derived(() => {
@@ -41,9 +31,9 @@
       const start = new Date(d).setHours(0, 0, 0, 0);
       const end = new Date(d).setHours(23, 59, 59, 999);
       days.push({
-        label: T(dayKeys[d.getDay()]),
-        classifications: currentActivity.filter(a => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end).length,
-        responses: currentActivity.filter(a => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end).length,
+        label: $t(dayKeys[d.getDay()]),
+        classifications: $activity.filter(a => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end).length,
+        responses: $activity.filter(a => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end).length,
       });
     }
     return days;
@@ -58,7 +48,7 @@
     : 0
   );
   let filteredForStats = $derived(
-    currentActivity.filter(a => a.type === 'classification' && a.timestamp >= statsStart)
+    $activity.filter(a => a.type === 'classification' && a.timestamp >= statsStart)
   );
 
   // Per-rule stats
@@ -104,11 +94,11 @@
   } | null>(null);
 
   function toggleClassification() {
-    settings.update({ classificationEnabled: !currentSettings.classificationEnabled });
+    settings.update({ classificationEnabled: !$settings.classificationEnabled });
   }
 
   function toggleAutoResponse() {
-    settings.update({ autoResponseEnabled: !currentSettings.autoResponseEnabled });
+    settings.update({ autoResponseEnabled: !$settings.autoResponseEnabled });
   }
 
   function formatTime(ts: number): string {
@@ -170,16 +160,16 @@
         type: 'RENAME_FOLDER', folderId: renamingId, newName: renameValue.trim(),
       });
       if (result.success) {
-        folderSuccess = T('dashboard_folder_renamed', { name: renameValue.trim() });
+        folderSuccess = $t('dashboard_folder_renamed', { name: renameValue.trim() });
         setTimeout(() => (folderSuccess = ''), 3000);
         renamingId = null;
         renameValue = '';
         await loadFolders();
       } else {
-        folderError = result.error || T('dashboard_rename_error');
+        folderError = result.error || $t('dashboard_rename_error');
       }
     } catch (err: any) {
-      folderError = err.message || T('dashboard_rename_error');
+      folderError = err.message || $t('dashboard_rename_error');
     }
   }
 
@@ -197,14 +187,14 @@
         type: 'DELETE_FOLDER', folderId: folder.id,
       });
       if (result.success) {
-        folderSuccess = T('dashboard_folder_deleted', { name: folder.name });
+        folderSuccess = $t('dashboard_folder_deleted', { name: folder.name });
         setTimeout(() => (folderSuccess = ''), 3000);
         await loadFolders();
       } else {
-        folderError = result.error || T('dashboard_delete_error');
+        folderError = result.error || $t('dashboard_delete_error');
       }
     } catch (err: any) {
-      folderError = err.message || T('dashboard_delete_error');
+      folderError = err.message || $t('dashboard_delete_error');
     }
   }
 
@@ -221,8 +211,8 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </div>
       <div class="card-data">
-        <div class="card-value">{currentRules.length}</div>
-        <div class="card-label">{T('dashboard_total_rules')}</div>
+        <div class="card-value">{$rules.length}</div>
+        <div class="card-label">{$t('dashboard_total_rules')}</div>
       </div>
     </div>
     <div class="card card-active">
@@ -231,7 +221,7 @@
       </div>
       <div class="card-data">
         <div class="card-value">{activeRules}</div>
-        <div class="card-label">{T('dashboard_active_rules')}</div>
+        <div class="card-label">{$t('dashboard_active_rules')}</div>
       </div>
     </div>
     <div class="card card-classified">
@@ -240,7 +230,7 @@
       </div>
       <div class="card-data">
         <div class="card-value">{todayClassifications}</div>
-        <div class="card-label">{T('dashboard_classified_today')}</div>
+        <div class="card-label">{$t('dashboard_classified_today')}</div>
       </div>
     </div>
     <div class="card card-responses">
@@ -249,30 +239,30 @@
       </div>
       <div class="card-data">
         <div class="card-value">{todayAutoResponses}</div>
-        <div class="card-label">{T('dashboard_responses_today')}</div>
+        <div class="card-label">{$t('dashboard_responses_today')}</div>
       </div>
     </div>
   </div>
 
   <div class="toggles">
     <Button
-      variant={currentSettings.classificationEnabled ? 'primary' : 'secondary'}
+      variant={$settings.classificationEnabled ? 'primary' : 'secondary'}
       onclick={toggleClassification}
     >
-      {T('dashboard_classification')}: {currentSettings.classificationEnabled ? T('common_on') : T('common_off')}
+      {$t('dashboard_classification')}: {$settings.classificationEnabled ? $t('common_on') : $t('common_off')}
     </Button>
     <Button
-      variant={currentSettings.autoResponseEnabled ? 'primary' : 'secondary'}
+      variant={$settings.autoResponseEnabled ? 'primary' : 'secondary'}
       onclick={toggleAutoResponse}
     >
-      {T('dashboard_auto_response')}: {currentSettings.autoResponseEnabled ? T('common_on') : T('common_off')}
+      {$t('dashboard_auto_response')}: {$settings.autoResponseEnabled ? $t('common_on') : $t('common_off')}
     </Button>
   </div>
 
   <!-- Weekly mini-chart -->
-  {#if currentActivity.length > 0}
+  {#if $activity.length > 0}
     <div class="weekly-chart">
-      <h3>{T('dashboard_weekly_activity')}</h3>
+      <h3>{$t('dashboard_weekly_activity')}</h3>
       <div class="chart-bars">
         {#each weeklyData() as day}
           <div class="chart-col">
@@ -292,8 +282,8 @@
         {/each}
       </div>
       <div class="chart-legend">
-        <span class="legend-item"><span class="legend-dot dot-classification"></span> {T('dashboard_classification')}</span>
-        <span class="legend-item"><span class="legend-dot dot-response"></span> {T('dashboard_auto_response')}</span>
+        <span class="legend-item"><span class="legend-dot dot-classification"></span> {$t('dashboard_classification')}</span>
+        <span class="legend-item"><span class="legend-dot dot-response"></span> {$t('dashboard_auto_response')}</span>
       </div>
     </div>
   {/if}
@@ -302,11 +292,11 @@
   {#if ruleStats().length > 0}
     <div class="stats-section">
       <div class="stats-header">
-        <h3>{T('dashboard_rule_ranking')}</h3>
+        <h3>{$t('dashboard_rule_ranking')}</h3>
         <select class="stats-range" bind:value={statsRange}>
-          <option value="7d">{T('dashboard_7days')}</option>
-          <option value="30d">{T('dashboard_30days')}</option>
-          <option value="all">{T('dashboard_all')}</option>
+          <option value="7d">{$t('dashboard_7days')}</option>
+          <option value="30d">{$t('dashboard_30days')}</option>
+          <option value="all">{$t('dashboard_all')}</option>
         </select>
       </div>
       <div class="stats-list">
@@ -331,7 +321,7 @@
   {#if topSenders().length > 0}
     <div class="stats-section">
       <div class="stats-header">
-        <h3>{T('dashboard_top_senders')}</h3>
+        <h3>{$t('dashboard_top_senders')}</h3>
       </div>
       <div class="stats-list">
         {#each topSenders() as sender, i}
@@ -355,18 +345,18 @@
   <div class="process-section">
     <div class="process-header">
       <div>
-        <h3>{T('dashboard_process_existing')}</h3>
-        <p class="process-desc">{T('dashboard_process_existing_desc')}</p>
+        <h3>{$t('dashboard_process_existing')}</h3>
+        <p class="process-desc">{$t('dashboard_process_existing_desc')}</p>
       </div>
       <Button variant="primary" onclick={processExisting} disabled={processing || activeRules === 0}>
-        {processing ? T('dashboard_processing') : T('dashboard_run_rules')}
+        {processing ? $t('dashboard_processing') : $t('dashboard_run_rules')}
       </Button>
     </div>
 
     {#if processing}
       <div class="process-loading">
         <div class="spinner"></div>
-        <span>{T('dashboard_analyzing')}</span>
+        <span>{$t('dashboard_analyzing')}</span>
       </div>
     {/if}
 
@@ -375,33 +365,33 @@
         <div class="result-stats">
           <div class="stat">
             <span class="stat-value">{processResult.processed}</span>
-            <span class="stat-label">{T('dashboard_analyzed')}</span>
+            <span class="stat-label">{$t('dashboard_analyzed')}</span>
           </div>
           <div class="stat match">
             <span class="stat-value">{processResult.matched}</span>
-            <span class="stat-label">{T('dashboard_matches')}</span>
+            <span class="stat-label">{$t('dashboard_matches')}</span>
           </div>
           <div class="stat">
             <span class="stat-value">{processResult.processed - processResult.matched}</span>
-            <span class="stat-label">{T('dashboard_no_rule')}</span>
+            <span class="stat-label">{$t('dashboard_no_rule')}</span>
           </div>
           {#if processResult.errors > 0}
             <div class="stat error">
               <span class="stat-value">{processResult.errors}</span>
-              <span class="stat-label">{T('dashboard_errors')}</span>
+              <span class="stat-label">{$t('dashboard_errors')}</span>
             </div>
           {/if}
         </div>
 
         {#if processResult.details && processResult.details.length > 0}
           <div class="result-details">
-            <h4>{T('dashboard_classified_emails')}</h4>
+            <h4>{$t('dashboard_classified_emails')}</h4>
             <table class="result-table">
               <thead>
                 <tr>
-                  <th>{T('common_subject')}</th>
-                  <th>{T('common_from')}</th>
-                  <th>{T('dashboard_rules_applied')}</th>
+                  <th>{$t('common_subject')}</th>
+                  <th>{$t('common_from')}</th>
+                  <th>{$t('dashboard_rules_applied')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -420,7 +410,7 @@
             </table>
           </div>
         {:else if processResult.matched === 0}
-          <p class="no-matches">{T('dashboard_no_matches_desc')}</p>
+          <p class="no-matches">{$t('dashboard_no_matches_desc')}</p>
         {/if}
       </div>
     {/if}
@@ -429,8 +419,8 @@
   <!-- Folder management -->
   <div class="folder-section">
     <div class="folder-header">
-      <h3>{T('dashboard_manage_folders')}</h3>
-      <Button size="sm" onclick={toggleFolders}>{showFolders ? T('common_hide') : T('common_show')}</Button>
+      <h3>{$t('dashboard_manage_folders')}</h3>
+      <Button size="sm" onclick={toggleFolders}>{showFolders ? $t('common_hide') : $t('common_show')}</Button>
     </div>
 
     {#if showFolders}
@@ -438,7 +428,7 @@
       {#if folderSuccess}<div class="folder-msg success">{folderSuccess}</div>{/if}
 
       {#if allFolders.length === 0}
-        <p class="empty">{T('dashboard_loading_folders')}</p>
+        <p class="empty">{$t('dashboard_loading_folders')}</p>
       {:else}
         <div class="folder-list">
           {#each allFolders as folder}
@@ -458,8 +448,8 @@
                   {folder.path || folder.name}
                 </span>
                 <div class="folder-actions">
-                  <Button size="xs" onclick={() => startRename(folder)} title={T('common_edit')}>&#9998;</Button>
-                  <Button size="xs" variant="danger" onclick={() => deleteFolder(folder)} title={T('common_delete')}>&#10005;</Button>
+                  <Button size="xs" onclick={() => startRename(folder)} title={$t('common_edit')}>&#9998;</Button>
+                  <Button size="xs" variant="danger" onclick={() => deleteFolder(folder)} title={$t('common_delete')}>&#10005;</Button>
                 </div>
               {/if}
             </div>
@@ -470,18 +460,18 @@
   </div>
 
   <div class="recent">
-    <h3>{T('dashboard_recent_activity')}</h3>
+    <h3>{$t('dashboard_recent_activity')}</h3>
     {#if recentActivity.length === 0}
-      <p class="empty">{T('dashboard_no_recent_activity')}</p>
+      <p class="empty">{$t('dashboard_no_recent_activity')}</p>
     {:else}
       <table>
         <thead>
           <tr>
-            <th>{T('dashboard_date')}</th>
-            <th>{T('dashboard_type')}</th>
-            <th>{T('dashboard_rule')}</th>
-            <th>{T('common_subject')}</th>
-            <th>{T('common_from')}</th>
+            <th>{$t('dashboard_date')}</th>
+            <th>{$t('dashboard_type')}</th>
+            <th>{$t('dashboard_rule')}</th>
+            <th>{$t('common_subject')}</th>
+            <th>{$t('common_from')}</th>
           </tr>
         </thead>
         <tbody>
@@ -490,7 +480,7 @@
               <td>{formatTime(entry.timestamp)}</td>
               <td>
                 <span class="badge badge-{entry.type}">
-                  {entry.type === 'classification' ? T('log_type_classification') : entry.type === 'autoResponse' ? T('log_type_response') : T('log_type_error')}
+                  {entry.type === 'classification' ? $t('log_type_classification') : entry.type === 'autoResponse' ? $t('log_type_response') : $t('log_type_error')}
                 </span>
               </td>
               <td>{entry.ruleName}</td>
@@ -507,23 +497,23 @@
   <div class="status-footer">
     <div class="status-item">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span>{T('dashboard_version')} 1.5</span>
+      <span>{$t('dashboard_version')} 1.5</span>
     </div>
     <div class="status-item">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
-      <span>{T('dashboard_ai_status')}: {currentSettings.openaiApiKey ? T('dashboard_ai_configured') : T('dashboard_ai_not_configured')}</span>
-      <span class="status-dot" class:status-ok={currentSettings.openaiApiKey} class:status-off={!currentSettings.openaiApiKey}></span>
+      <span>{$t('dashboard_ai_status')}: {$settings.openaiApiKey ? $t('dashboard_ai_configured') : $t('dashboard_ai_not_configured')}</span>
+      <span class="status-dot" class:status-ok={$settings.openaiApiKey} class:status-off={!$settings.openaiApiKey}></span>
     </div>
     <div class="status-item status-shortcuts">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <span>{T('dashboard_shortcuts_hint')}</span>
+      <span>{$t('dashboard_shortcuts_hint')}</span>
     </div>
   </div>
 
   <ConfirmDialog
     show={confirmDeleteFolder.show}
-    title={T('confirm_delete_folder_title')}
-    message={T('dashboard_confirm_delete_folder', { name: confirmDeleteFolder.folder?.name || '' })}
+    title={$t('confirm_delete_folder_title')}
+    message={$t('dashboard_confirm_delete_folder', { name: confirmDeleteFolder.folder?.name || '' })}
     onconfirm={confirmDeleteFolderAction}
     oncancel={() => (confirmDeleteFolder = { show: false, folder: null })}
   />
