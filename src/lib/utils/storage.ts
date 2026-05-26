@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Rule } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
 import type { Settings, ActivityEntry } from '../../types/settings';

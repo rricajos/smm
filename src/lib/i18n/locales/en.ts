@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Translations } from '../types';
 
 export const en: Translations = {
@@ -617,4 +619,31 @@ export const en: Translations = {
   a11y_case_sensitive: 'Case sensitive',
   a11y_remove_condition: 'Remove condition',
   a11y_remove_action: 'Remove action',
+
+  // AI consent
+  ai_consent_title: 'Privacy Notice — AI Features',
+  ai_consent_message: 'AI features send data from your emails (sender, subject, body snippets) to external artificial intelligence services ({provider}). This data is transmitted only to the provider you configure and only on your request. By continuing, you accept this data transmission.',
+  ai_consent_accept: 'Understood, continue',
+  ai_consent_decline: 'Cancel',
+
+  // API key notice
+  options_api_key_notice: 'API keys are stored locally in your Thunderbird profile. They are not shared with third parties.',
+
+  // AI prompt language
+  ai_lang_name: 'English',
+  ai_prompt_analyze_emails: 'Analyze these recent emails and suggest classification rules based on patterns you detect (frequent senders, common topics, newsletters, etc.).\n\nEMAILS:\n{emailList}\n\nGenerate between 1 and 5 useful rules. Prioritize clear and frequent patterns. Do not repeat rules that already exist.',
+  ai_prompt_generate_from_desc: 'The user wants this email rule: "{description}"\n\nGenerate 1 or 2 rules that match exactly what the user is asking for. If the description is ambiguous, generate the most likely interpretation. Consider existing rules to avoid duplication.',
+  ai_prompt_respond_ok: 'Reply only "ok"',
+
+  // AI error messages (background)
+  ai_error_json_parse: 'Could not parse response as JSON',
+  ai_error_empty_anthropic: 'Empty response from Anthropic',
+  ai_error_empty_provider: 'Empty response from provider',
+
+  // Tag
+  tag_analyzed: '✓ Analyzed (SMM)',
+
+  // Background errors
+  bg_error_create_folder: 'Error creating folder',
+  bg_error_rename_folder: 'Error renaming folder',
 };

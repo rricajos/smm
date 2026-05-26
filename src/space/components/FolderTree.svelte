@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import { t } from '../../lib/i18n';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
@@ -346,7 +347,7 @@
     oncontextmenu={(e) => handleContextMenu(e, node, accountId)}
   >
     {#if hasChildren}
-      <button class="expand-btn" onclick={() => toggleExpand(node.id)}>
+      <button class="expand-btn" aria-label={expandedIds.has(node.id) ? $t('folder_tree_collapse_all') : $t('folder_tree_expand_all')} onclick={() => toggleExpand(node.id)}>
         {expandedIds.has(node.id) ? '\u25BC' : '\u25B6'}
       </button>
     {:else}

@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import { describe, it, expect } from 'vitest';
 import { exportConfiguration, validateImportData, detectConflicts } from './config-io';
 import type { Rule } from '../../types/rules';
@@ -38,6 +40,7 @@ const sampleSettings: Settings = {
   openaiApiKey: 'sk-test',
   openaiModel: 'gpt-4o-mini',
   customBaseUrl: '',
+  aiConsentAccepted: true,
 };
 
 describe('exportConfiguration', () => {
@@ -62,6 +65,13 @@ describe('exportConfiguration', () => {
     const result = exportConfiguration([], [], sampleSettings);
     expect(result.rules).toEqual([]);
     expect(result.templates).toEqual([]);
+  });
+
+  it('excludes API key from exported settings', () => {
+    const settingsWithKey = { ...sampleSettings, openaiApiKey: 'sk-secret-key-12345' };
+    const result = exportConfiguration([sampleRule], [sampleTemplate], settingsWithKey);
+    expect(result.settings.openaiApiKey).toBe('');
+    expect(result.settings.aiProvider).toBe('openrouter');
   });
 });
 

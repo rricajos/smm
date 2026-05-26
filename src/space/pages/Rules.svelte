@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Rule, Condition } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
   import { rules } from '../../lib/stores/rules';

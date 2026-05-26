@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Settings } from '../types/settings';
   import { settings } from '../lib/stores/settings';
   import { rules } from '../lib/stores/rules';
@@ -25,6 +26,7 @@
     openaiApiKey: '',
     openaiModel: 'openai/gpt-4o-mini',
     customBaseUrl: '',
+    aiConsentAccepted: false,
   });
 
   function getModelsForProvider(provider: AiProvider) {
@@ -251,6 +253,7 @@
           {showApiKey ? $t('common_hide') : $t('common_show')}
         </Button>
       </div>
+      <span class="field-hint api-key-notice">{$t('options_api_key_notice')}</span>
     </div>
 
     <div class="field">
@@ -422,6 +425,13 @@
     margin-top: 4px;
     font-size: 11px;
     color: #5b5b66;
+  }
+  .api-key-notice {
+    color: #2e7d32;
+    font-style: italic;
+  }
+  @media (prefers-color-scheme: dark) {
+    .api-key-notice { color: #81c784; }
   }
   .field select {
     padding: 6px 10px;

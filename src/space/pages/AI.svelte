@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Rule } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
   import { rules } from '../../lib/stores/rules';
@@ -21,7 +22,7 @@
     TemplateProposal,
     RuleConsolidationProposal,
   } from '../../lib/services/openai';
-  import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS } from '../../lib/utils/constants';
+  import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS, AI_PROVIDERS } from '../../lib/utils/constants';
   import type { AiProvider } from '../../types/settings';
   import { t, locale } from '../../lib/i18n';
   import { chatStore, activeConversation, allConversations, storeReady, type ChatConversation } from '../../lib/stores/chat';
@@ -513,6 +514,14 @@
     suggestions = suggestions.filter(s => s !== suggestion);
   }
 
+  function acceptConsent() {
+    settings.update({ aiConsentAccepted: true });
+  }
+
+  let providerName = $derived(
+    AI_PROVIDERS[$settings.aiProvider || 'openrouter']?.name || $settings.aiProvider || 'OpenRouter'
+  );
+
   function handleEditorSave(rule: Rule) {
     rules.addRule(rule);
     showEditor = false;
@@ -523,6 +532,20 @@
 </script>
 
 <div class="ai-page">
+  {#if !$settings.aiConsentAccepted}
+    <div class="consent-screen">
+      <div class="consent-card">
+        <div class="consent-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>{$t('ai_consent_title')}</h3>
+        <p>{$t('ai_consent_message', { provider: providerName })}</p>
+        <div class="consent-actions">
+          <Button variant="primary" onclick={acceptConsent}>{$t('ai_consent_accept')}</Button>
+        </div>
+      </div>
+    </div>
+  {:else}
   <div class="header">
     <h3>{$t('ai_title')}</h3>
     <div class="model-selector">
@@ -640,6 +663,7 @@
     ondismiss={() => { if (undoToast.timerId) clearTimeout(undoToast.timerId); undoToast = { show: false, message: '', undoFn: null, timerId: null }; }}
     duration={UNDO_DURATION}
   />
+  {/if}
 </div>
 
 <style>
@@ -681,6 +705,19 @@
   .message { padding: 10px 14px; border-radius: 6px; font-size: 13px; }
   .message.error { background: #ffeef0; border: 1px solid #ffa4a2; color: #c62828; }
   .message.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+
+  /* Consent screen */
+  .consent-screen {
+    display: flex; align-items: center; justify-content: center; flex: 1; padding: 40px 20px;
+  }
+  .consent-card {
+    max-width: 440px; text-align: center; padding: 32px; border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 12px; background: var(--bg-primary, white);
+  }
+  .consent-icon { color: var(--primary-color, #0060df); margin-bottom: 16px; }
+  .consent-card h3 { margin: 0 0 12px 0; font-size: 16px; }
+  .consent-card p { margin: 0 0 20px 0; font-size: 13px; color: var(--text-secondary, #666); line-height: 1.6; }
+  .consent-actions { display: flex; justify-content: center; gap: 10px; }
 
   @media (prefers-color-scheme: dark) {
     .warning { background: #332d00; border-color: #8d6e00; color: #ffb74d; }

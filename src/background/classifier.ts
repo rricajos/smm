@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Rule, Condition } from '../types/rules';
 import type { ActivityEntry } from '../types/settings';
 import { getRules } from '../lib/utils/storage';
@@ -12,6 +14,7 @@ export interface ClassificationResult {
 }
 
 // Cache fullMessage per message ID to avoid re-downloading for each rule
+const MAX_CACHE_SIZE = 200;
 const fullMessageCache = new Map<number, any>();
 
 export async function classifyMessage(
@@ -48,6 +51,11 @@ async function getFullMessage(messageId: number): Promise<any | null> {
   }
   try {
     const full = await messenger.messages.getFull(messageId);
+    // Evict oldest entries when cache exceeds size limit
+    if (fullMessageCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = fullMessageCache.keys().next().value;
+      if (firstKey !== undefined) fullMessageCache.delete(firstKey);
+    }
     fullMessageCache.set(messageId, full);
     return full;
   } catch {
@@ -105,7 +113,7 @@ async function evaluateSingleCondition(
   return matchString(fieldValue, condition.operator, condition.value, condition.caseSensitive);
 }
 
-function matchString(
+export function matchString(
   haystack: string,
   operator: string,
   needle: string,
@@ -139,7 +147,7 @@ function matchString(
 }
 
 /** Detect regex patterns with nested quantifiers that cause catastrophic backtracking */
-function hasNestedQuantifiers(pattern: string): boolean {
+export function hasNestedQuantifiers(pattern: string): boolean {
   // Matches patterns like (a+)+, (a*)+, (a{2})+, etc.
   return /([+*}])\)([+*{])/.test(pattern) || /([+*])\][+*]/.test(pattern);
 }

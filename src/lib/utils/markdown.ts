@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 /**
  * Lightweight markdown-to-HTML renderer for AI chat responses.
  * Supports: headers (# ## ###), **bold**, *italic*, `inline code`,

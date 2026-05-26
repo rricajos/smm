@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import { t, locale } from '../../lib/i18n';
   import type {
     FolderProposal,

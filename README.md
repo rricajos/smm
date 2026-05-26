@@ -394,4 +394,27 @@ Ricard Penin Honrubia — [ricard.penin.honrubia@gmail.com](mailto:ricard.penin.
 
 ## Licencia
 
-Todos los derechos reservados. © Ricard Penin Honrubia
+Este proyecto está licenciado bajo la [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/).
+Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+Copyright © 2025 Ricard Penin Honrubia
+
+## Aviso de privacidad
+
+Smart Mail Manager procesa contenido de correos electrónicos (remitente, asunto, fragmentos del cuerpo) y lo envía a servicios externos de inteligencia artificial (OpenRouter, OpenAI, Anthropic, Google) cuando el usuario utiliza las funcionalidades de IA. Esta comunicación se realiza exclusivamente bajo demanda del usuario y nunca de forma automática en segundo plano sin su consentimiento.
+
+- Los datos se transmiten únicamente al proveedor de IA configurado por el usuario.
+- No se almacenan datos en servidores propios; toda la persistencia es local (`browser.storage.local`).
+- Las claves API son proporcionadas y gestionadas por el usuario.
+- El usuario es responsable de revisar las políticas de privacidad del proveedor de IA que elija.
+
+## Descargo de responsabilidad
+
+Este software se proporciona "tal cual", sin garantías de ningún tipo, expresas o implícitas. En ningún caso el autor será responsable de daños derivados del uso de este software, incluyendo pero no limitado a:
+
+- Pérdida o clasificación incorrecta de correos electrónicos.
+- Envío de respuestas automáticas no deseadas.
+- Costes derivados del uso de APIs de terceros (OpenRouter, OpenAI, Anthropic, Google).
+- Pérdida de datos o interrupciones del servicio.
+
+El usuario asume la totalidad del riesgo en cuanto a la calidad y rendimiento del software.

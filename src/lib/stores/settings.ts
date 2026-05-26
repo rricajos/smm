@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import { writable } from 'svelte/store';
 import type { Settings } from '../../types/settings';
 import { DEFAULT_SETTINGS } from '../utils/constants';
@@ -44,6 +46,7 @@ function createSettingsStore() {
         openaiApiKey: newSettings.openaiApiKey,
         openaiModel: newSettings.openaiModel,
         customBaseUrl: newSettings.customBaseUrl,
+        aiConsentAccepted: newSettings.aiConsentAccepted,
       };
       set(plain);
       await browser.storage.local.set({ [STORAGE_KEY]: plain });

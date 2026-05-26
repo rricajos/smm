@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Rule } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
 import type { Settings } from '../../types/settings';
@@ -46,7 +48,7 @@ export function exportConfiguration(
     exportedAt: new Date().toISOString(),
     rules: JSON.parse(JSON.stringify(rules)),
     templates: JSON.parse(JSON.stringify(templates)),
-    settings: JSON.parse(JSON.stringify(settings)),
+    settings: { ...JSON.parse(JSON.stringify(settings)), openaiApiKey: '' },
   };
 }
 

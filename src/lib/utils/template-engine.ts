@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 export function renderTemplate(
   template: string,
   variables: Record<string, string>,

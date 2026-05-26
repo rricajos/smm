@@ -1,6 +1,8 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Rule, Condition, Action } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
-import { getLocaleFromStorage, translate } from '../i18n';
+import { getLocaleFromStorage, translate, type SupportedLocale } from '../i18n';
 
 export interface EmailSummary {
   from: string;
@@ -40,7 +42,7 @@ const INJECTION_PATTERNS = [
   /do\s+not\s+follow\s+(the\s+)?(above|previous|prior)/gi,
 ];
 
-function sanitizeEmailContent(text: string): string {
+export function sanitizeEmailContent(text: string): string {
   let sanitized = text;
   for (const pattern of INJECTION_PATTERNS) {
     sanitized = sanitized.replace(pattern, '[FILTERED]');
@@ -95,15 +97,16 @@ function summarizeExistingRules(existingRules: Rule[]): string {
   }).join('\n');
 }
 
-function buildSystemPrompt(folders: FolderInfo[], tags: TagInfo[], existingRules: Rule[]): string {
+function buildSystemPrompt(folders: FolderInfo[], tags: TagInfo[], existingRules: Rule[], loc: SupportedLocale = 'es'): string {
   const folderList = folders.map(f => `  - ID: "${f.id}" → ${f.path}`).join('\n');
   const tagList = tags.length > 0
     ? tags.map(t => `  - Key: "${t.key}" → ${t.tag}`).join('\n')
     : '  (no hay tags configurados)';
   const rulesSummary = summarizeExistingRules(existingRules);
 
+  const langName = translate(loc, 'ai_lang_name');
   return `Eres un asistente que genera reglas de clasificación de correo electrónico.
-Responde SIEMPRE en JSON válido con el schema indicado. Responde en español.
+Responde SIEMPRE en JSON válido con el schema indicado. Responde en ${langName}.
 
 CARPETAS DISPONIBLES (usa el ID exacto para moveToFolder):
 ${folderList}
@@ -136,7 +139,7 @@ import { AI_PROVIDERS } from '../utils/constants';
  * Robustly extract JSON from AI response text.
  * Handles cases where the model wraps JSON in markdown code blocks or adds surrounding text.
  */
-function extractJSON(text: string): any {
+export function extractJSON(text: string, loc: SupportedLocale = 'es'): any {
   // 1. Direct parse
   try {
     return JSON.parse(text);
@@ -159,7 +162,7 @@ function extractJSON(text: string): any {
     } catch { /* continue */ }
   }
 
-  throw new Error('No se pudo interpretar la respuesta como JSON');
+  throw new Error(translate(loc, 'ai_error_json_parse'));
 }
 
 interface CallOptions {
@@ -176,6 +179,26 @@ function getBaseUrl(provider: AiProvider, customBaseUrl?: string): string {
   return AI_PROVIDERS[provider].baseUrl;
 }
 
+async function ensureCustomPermission(provider: AiProvider, baseUrl: string): Promise<void> {
+  if (provider !== 'custom') return;
+  try {
+    const url = new URL(baseUrl);
+    // Require HTTPS for non-local endpoints to protect API keys in transit
+    const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
+    if (!isLocal && url.protocol !== 'https:') {
+      throw new Error('HTTPS required for remote API endpoints');
+    }
+    const origin = `${url.protocol}//${url.host}/*`;
+    const granted = await browser.permissions.request({ origins: [origin] });
+    if (!granted) throw new Error(`Permission denied for ${url.host}`);
+  } catch (e: any) {
+    if (e.message?.includes('Permission denied') || e.message?.includes('HTTPS required')) throw e;
+    // permissions API may not be available in all contexts — proceed anyway
+  }
+}
+
+declare const browser: any;
+
 async function callAnthropicAPI(
   baseUrl: string,
   apiKey: string,
@@ -184,6 +207,7 @@ async function callAnthropicAPI(
   messages: Array<{ role: string; content: string }>,
   temperature: number,
   maxTokens: number,
+  loc: SupportedLocale = 'es',
 ): Promise<any> {
   const response = await fetch(baseUrl, {
     method: 'POST',
@@ -209,8 +233,8 @@ async function callAnthropicAPI(
 
   const data = await response.json();
   const content = data.content?.[0]?.text;
-  if (!content) throw new Error('Respuesta vacía de Anthropic');
-  return extractJSON(content);
+  if (!content) throw new Error(translate(loc, 'ai_error_empty_anthropic'));
+  return extractJSON(content, loc);
 }
 
 async function callOpenAICompatibleAPI(
@@ -221,13 +245,14 @@ async function callOpenAICompatibleAPI(
   messages: Array<{ role: string; content: string }>,
   temperature: number,
   maxTokens: number,
+  loc: SupportedLocale = 'es',
 ): Promise<any> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${apiKey}`,
   };
   if (provider === 'openrouter') {
-    headers['HTTP-Referer'] = 'https://conexiatec.com';
+    headers['HTTP-Referer'] = 'https://addons.thunderbird.net';
     headers['X-Title'] = 'Smart Mail Manager';
   }
 
@@ -256,16 +281,18 @@ async function callOpenAICompatibleAPI(
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Respuesta vacía del proveedor');
-  return extractJSON(content);
+  if (!content) throw new Error(translate(loc, 'ai_error_empty_provider'));
+  return extractJSON(content, loc);
 }
 
 async function callAI(
   opts: CallOptions,
   systemPrompt: string,
   userPrompt: string,
+  loc: SupportedLocale = 'es',
 ): Promise<any> {
   const baseUrl = getBaseUrl(opts.provider, opts.customBaseUrl);
+  await ensureCustomPermission(opts.provider, baseUrl);
   const temperature = opts.temperature ?? 0.3;
   const maxTokens = opts.maxTokens ?? 2000;
   const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
@@ -274,7 +301,7 @@ async function callAI(
     return callAnthropicAPI(
       baseUrl, opts.apiKey, opts.model, systemPrompt,
       [{ role: 'user', content: userPrompt }],
-      temperature, maxTokens,
+      temperature, maxTokens, loc,
     );
   }
 
@@ -284,7 +311,7 @@ async function callAI(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
-    temperature, maxTokens,
+    temperature, maxTokens, loc,
   );
 }
 
@@ -292,8 +319,10 @@ async function callAIChat(
   opts: CallOptions,
   systemPrompt: string,
   chatMessages: Array<{ role: string; content: string }>,
+  loc: SupportedLocale = 'es',
 ): Promise<any> {
   const baseUrl = getBaseUrl(opts.provider, opts.customBaseUrl);
+  await ensureCustomPermission(opts.provider, baseUrl);
   const temperature = opts.temperature ?? 0.5;
   const maxTokens = opts.maxTokens ?? 4000;
   const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
@@ -301,25 +330,25 @@ async function callAIChat(
   if (format === 'anthropic') {
     return callAnthropicAPI(
       baseUrl, opts.apiKey, opts.model, systemPrompt,
-      chatMessages, temperature, maxTokens,
+      chatMessages, temperature, maxTokens, loc,
     );
   }
 
   return callOpenAICompatibleAPI(
     baseUrl, opts.apiKey, opts.model, opts.provider,
     [{ role: 'system', content: systemPrompt }, ...chatMessages],
-    temperature, maxTokens,
+    temperature, maxTokens, loc,
   );
 }
 
-function parseRuleSuggestions(data: any): RuleSuggestion[] {
+function parseRuleSuggestions(data: any, loc: SupportedLocale = 'es'): RuleSuggestion[] {
   const rawRules = data.rules || [];
   const now = Date.now();
 
   return rawRules.map((r: any, i: number): RuleSuggestion => ({
     rule: {
       id: crypto.randomUUID(),
-      name: r.name || `Regla IA ${i + 1}`,
+      name: r.name || `${translate(loc, 'ai_fallback_rule_name')} ${i + 1}`,
       enabled: true,
       conditions: (r.conditions || []).map((c: any): Condition => ({
         field: c.field || 'subject',
@@ -355,21 +384,17 @@ export async function generateRulesFromEmails(
   provider: AiProvider = 'openrouter',
   customBaseUrl?: string,
 ): Promise<RuleSuggestion[]> {
-  const systemPrompt = buildSystemPrompt(folders, tags, existingRules);
+  const loc = await getLocaleFromStorage();
+  const systemPrompt = buildSystemPrompt(folders, tags, existingRules, loc);
 
   const emailList = emails.map((e, i) =>
     `${i + 1}. De: ${sanitizeEmailContent(e.from)}\n   Asunto: ${sanitizeEmailContent(e.subject)}\n   Snippet: ${sanitizeEmailContent(e.snippet).substring(0, 150)}`
   ).join('\n\n');
 
-  const userPrompt = `Analiza estos correos recientes y sugiere reglas de clasificación basándote en patrones que detectes (remitentes frecuentes, temas comunes, newsletters, etc.).
+  const userPrompt = translate(loc, 'ai_prompt_analyze_emails', { emailList });
 
-CORREOS:
-${emailList}
-
-Genera entre 1 y 5 reglas útiles. Prioriza patrones claros y frecuentes. No repitas reglas que ya existan.`;
-
-  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt);
-  return parseRuleSuggestions(data);
+  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt, loc);
+  return parseRuleSuggestions(data, loc);
 }
 
 export async function generateRuleFromDescription(
@@ -382,14 +407,12 @@ export async function generateRuleFromDescription(
   provider: AiProvider = 'openrouter',
   customBaseUrl?: string,
 ): Promise<RuleSuggestion[]> {
-  const systemPrompt = buildSystemPrompt(folders, tags, existingRules);
+  const loc = await getLocaleFromStorage();
+  const systemPrompt = buildSystemPrompt(folders, tags, existingRules, loc);
+  const userPrompt = translate(loc, 'ai_prompt_generate_from_desc', { description });
 
-  const userPrompt = `El usuario quiere esta regla de correo: "${description}"
-
-Genera 1 o 2 reglas que cumplan exactamente lo que el usuario pide. Si la descripción es ambigua, genera la interpretación más probable. Ten en cuenta las reglas existentes para no duplicar.`;
-
-  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt);
-  return parseRuleSuggestions(data);
+  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt, loc);
+  return parseRuleSuggestions(data, loc);
 }
 
 // --- Chat Assistant (Conversational AI Consultant) ---
@@ -447,6 +470,7 @@ function buildConsultantSystemPrompt(
   existingRules: Rule[],
   emails: EmailSummary[],
   existingTemplates: ResponseTemplate[] = [],
+  loc: SupportedLocale = 'es',
 ): string {
   const folderList = folders.map(f => `  - ID: "${f.id}" → ${f.path}`).join('\n');
   const tagList = tags.length > 0
@@ -464,9 +488,10 @@ function buildConsultantSystemPrompt(
     ? existingTemplates.map(t => `  - ID: "${t.id}" → "${t.name}" [${t.sendMode}, ${t.replyType}]`).join('\n')
     : '  (no hay plantillas configuradas)';
 
+  const langName = translate(loc, 'ai_lang_name');
   return `Eres un consultor experto en organización de correo electrónico. Tu trabajo es ayudar al usuario a tener un buzón perfectamente organizado. Eres PROACTIVO y no tienes miedo de proponer cambios grandes.
 
-RESPONDE SIEMPRE EN JSON con este schema:
+RESPONDE SIEMPRE EN JSON con este schema. Genera todo el texto (message, descriptions, nombres) en ${langName}.
 {
   "message": "string - tu mensaje conversacional en español con formato markdown: usa **negrita** para énfasis, ### para títulos de sección, - para listas con viñetas, 1. para listas numeradas. Usa \\n para saltos de línea.",
   "folder_proposals": [
@@ -594,7 +619,7 @@ TU PERSONALIDAD:
 - Si ves newsletters, servicios, notificaciones automáticas, propón separarlos
 - Si ves correos de trabajo, propón subcarpetas por proyecto o cliente
 - Piensa en grande: una estructura que escale y se mantenga limpia
-- Responde en español casual pero profesional
+- Responde en ${langName} casual pero profesional
 - Si el usuario te dice "analiza" o similar en el primer mensaje, haz un análisis completo y propón una estructura desde cero
 - Puedes proponer carpetas Y reglas juntas en la misma respuesta
 - Si propones carpetas nuevas, propón también las reglas que las usen
@@ -650,15 +675,15 @@ export async function chatWithAssistant(
   customBaseUrl?: string,
   existingTemplates: ResponseTemplate[] = [],
 ): Promise<AssistantResponse> {
-  const systemPrompt = buildConsultantSystemPrompt(folders, tags, existingRules, emails, existingTemplates);
+  const loc = await getLocaleFromStorage();
+  const systemPrompt = buildConsultantSystemPrompt(folders, tags, existingRules, emails, existingTemplates, loc);
   const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
   const parsed = await callAIChat(
     { apiKey, model, provider, customBaseUrl, temperature: 0.5, maxTokens: 4000 },
-    systemPrompt, chatMessages,
+    systemPrompt, chatMessages, loc,
   );
   const now = Date.now();
-  const loc = await getLocaleFromStorage();
 
   const result = {
     message: parsed.message || '',
@@ -787,6 +812,9 @@ export async function testConnection(
   customBaseUrl?: string,
 ): Promise<boolean> {
   const baseUrl = getBaseUrl(provider, customBaseUrl);
+  await ensureCustomPermission(provider, baseUrl);
+  const loc = await getLocaleFromStorage();
+  const testPrompt = translate(loc, 'ai_prompt_respond_ok');
   const format = AI_PROVIDERS[provider]?.format || 'openai';
 
   if (format === 'anthropic') {
@@ -800,7 +828,7 @@ export async function testConnection(
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: 'Responde solo "ok"' }],
+        messages: [{ role: 'user', content: testPrompt }],
         max_tokens: 5,
       }),
     });
@@ -816,7 +844,7 @@ export async function testConnection(
     'Authorization': `Bearer ${apiKey}`,
   };
   if (provider === 'openrouter') {
-    headers['HTTP-Referer'] = 'https://conexiatec.com';
+    headers['HTTP-Referer'] = 'https://addons.thunderbird.net';
     headers['X-Title'] = 'Smart Mail Manager';
   }
 
@@ -825,7 +853,7 @@ export async function testConnection(
     headers,
     body: JSON.stringify({
       model,
-      messages: [{ role: 'user', content: 'Responde solo "ok"' }],
+      messages: [{ role: 'user', content: testPrompt }],
       max_tokens: 5,
     }),
   });

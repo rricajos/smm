@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 export interface Translations {
   // Common
   common_save: string;
@@ -619,4 +621,31 @@ export interface Translations {
   a11y_case_sensitive: string;
   a11y_remove_condition: string;
   a11y_remove_action: string;
+
+  // AI consent
+  ai_consent_title: string;
+  ai_consent_message: string;
+  ai_consent_accept: string;
+  ai_consent_decline: string;
+
+  // API key notice
+  options_api_key_notice: string;
+
+  // AI prompt language
+  ai_lang_name: string;
+  ai_prompt_analyze_emails: string;
+  ai_prompt_generate_from_desc: string;
+  ai_prompt_respond_ok: string;
+
+  // AI error messages (background)
+  ai_error_json_parse: string;
+  ai_error_empty_anthropic: string;
+  ai_error_empty_provider: string;
+
+  // Tag
+  tag_analyzed: string;
+
+  // Background errors
+  bg_error_create_folder: string;
+  bg_error_rename_folder: string;
 }

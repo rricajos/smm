@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Settings } from '../../types/settings';
 
 export const STORAGE_KEYS = {
@@ -23,6 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   openaiApiKey: '',
   openaiModel: 'openai/gpt-4o-mini',
   customBaseUrl: '',
+  aiConsentAccepted: false,
 };
 
 export const MAX_ACTIVITY_LOG_ENTRIES = 500;

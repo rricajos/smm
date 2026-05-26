@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import type { Translations } from '../types';
 
 export const es: Translations = {
@@ -617,4 +619,31 @@ export const es: Translations = {
   a11y_case_sensitive: 'Distinguir mayúsculas/minúsculas',
   a11y_remove_condition: 'Eliminar condición',
   a11y_remove_action: 'Eliminar acción',
+
+  // AI consent
+  ai_consent_title: 'Aviso de privacidad — Funciones de IA',
+  ai_consent_message: 'Las funciones de IA envían datos de tus correos electrónicos (remitente, asunto, fragmentos del cuerpo) a servicios externos de inteligencia artificial ({provider}). Estos datos se transmiten únicamente al proveedor que configures y solo bajo tu demanda. Al continuar, aceptas esta transmisión de datos.',
+  ai_consent_accept: 'Entendido, continuar',
+  ai_consent_decline: 'Cancelar',
+
+  // API key notice
+  options_api_key_notice: 'Las claves API se almacenan localmente en el perfil de Thunderbird. No se comparten con terceros.',
+
+  // AI prompt language
+  ai_lang_name: 'español',
+  ai_prompt_analyze_emails: 'Analiza estos correos recientes y sugiere reglas de clasificación basándote en patrones que detectes (remitentes frecuentes, temas comunes, newsletters, etc.).\n\nCORREOS:\n{emailList}\n\nGenera entre 1 y 5 reglas útiles. Prioriza patrones claros y frecuentes. No repitas reglas que ya existan.',
+  ai_prompt_generate_from_desc: 'El usuario quiere esta regla de correo: "{description}"\n\nGenera 1 o 2 reglas que cumplan exactamente lo que el usuario pide. Si la descripción es ambigua, genera la interpretación más probable. Ten en cuenta las reglas existentes para no duplicar.',
+  ai_prompt_respond_ok: 'Responde solo "ok"',
+
+  // AI error messages (background)
+  ai_error_json_parse: 'No se pudo interpretar la respuesta como JSON',
+  ai_error_empty_anthropic: 'Respuesta vacía de Anthropic',
+  ai_error_empty_provider: 'Respuesta vacía del proveedor',
+
+  // Tag
+  tag_analyzed: '✓ Analizado (SMM)',
+
+  // Background errors
+  bg_error_create_folder: 'Error al crear carpeta',
+  bg_error_rename_folder: 'Error al renombrar carpeta',
 };

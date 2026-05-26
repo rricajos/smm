@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import { writable, derived } from 'svelte/store';
 import type { Translations } from './types';
 import { es } from './locales/es';

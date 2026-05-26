@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import Dashboard from './pages/Dashboard.svelte';
   import Rules from './pages/Rules.svelte';
   import Templates from './pages/Templates.svelte';
@@ -172,7 +173,7 @@
     <div class="shortcuts-modal" onclick={(e) => e.stopPropagation()}>
       <div class="shortcuts-header">
         <h3>{$t('shortcuts_title')}</h3>
-        <button class="shortcuts-close" onclick={() => (showShortcuts = false)}>&times;</button>
+        <button class="shortcuts-close" aria-label={$t('shortcuts_close')} onclick={() => (showShortcuts = false)}>&times;</button>
       </div>
       <div class="shortcuts-body">
         <div class="shortcut-group">

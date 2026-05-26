@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 export type AiProvider = 'openrouter' | 'openai' | 'anthropic' | 'google' | 'custom';
 
 export interface Settings {
@@ -12,6 +14,7 @@ export interface Settings {
   openaiApiKey: string;
   openaiModel: string;
   customBaseUrl: string;
+  aiConsentAccepted: boolean;
 }
 
 export interface ActivityEntry {

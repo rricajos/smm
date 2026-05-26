@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 declare const messenger: any;
 
 export function extractBodyText(messagePart: any): string {

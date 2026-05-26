@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import { classifyMessage, executeActions, clearMessageCache } from './classifier';
 import { triggerAutoResponse } from './autoresponder';
 import { getSettings, cleanupOldActivityEntries } from '../lib/utils/storage';
@@ -37,7 +39,8 @@ messenger.spacesToolbar.addButton('smartMailManager', {
     const existingTags = await messenger.messages.tags.list();
     const found = existingTags.find((t: any) => t.key === SMM_ANALYZED_TAG);
     if (!found) {
-      await messenger.messages.tags.create(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
+      const tagLoc = await getLocaleFromStorage();
+      await messenger.messages.tags.create(SMM_ANALYZED_TAG, translate(tagLoc, 'tag_analyzed'), '#90CAF9');
       console.debug('[SMM] Created analyzed tag');
     }
   } catch (err) {
@@ -366,7 +369,8 @@ messenger.runtime.onMessage.addListener(
           };
         } catch (err: any) {
           console.error('[SMM] Error creating folder:', err);
-          return { success: false, error: err?.message || 'Error al crear carpeta' };
+          const cfLoc = await getLocaleFromStorage();
+          return { success: false, error: err?.message || translate(cfLoc, 'bg_error_create_folder') };
         }
       }
 
@@ -376,7 +380,8 @@ messenger.runtime.onMessage.addListener(
           return { success: true };
         } catch (err: any) {
           console.error('[SMM] Error deleting folder:', err);
-          return { success: false, error: err?.message || 'Error al eliminar carpeta' };
+          const dfLoc = await getLocaleFromStorage();
+          return { success: false, error: err?.message || translate(dfLoc, 'bg_error_create_folder') };
         }
       }
 
@@ -499,7 +504,8 @@ messenger.runtime.onMessage.addListener(
           };
         } catch (err: any) {
           console.error('[SMM] Error renaming folder:', err);
-          return { success: false, error: err?.message || 'Error al renombrar carpeta' };
+          const rfLoc = await getLocaleFromStorage();
+          return { success: false, error: err?.message || translate(rfLoc, 'bg_error_rename_folder') };
         }
       }
 
@@ -508,7 +514,8 @@ messenger.runtime.onMessage.addListener(
           // Ensure the tag exists
           const existingTags = await messenger.messages.tags.list();
           if (!existingTags.find((t: any) => t.key === SMM_ANALYZED_TAG)) {
-            await messenger.messages.tags.create(SMM_ANALYZED_TAG, '✓ Analizado (SMM)', '#90CAF9');
+            const tagLoc = await getLocaleFromStorage();
+      await messenger.messages.tags.create(SMM_ANALYZED_TAG, translate(tagLoc, 'tag_analyzed'), '#90CAF9');
           }
 
           let marked = 0;

@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 import { writable, derived } from 'svelte/store';
 import type { FolderProposal, MoveProposal, RuleProposal, TemplateProposal, RuleConsolidationProposal, ChatMessage } from '../services/openai';
 import { STORAGE_KEYS } from '../utils/constants';

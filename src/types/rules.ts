@@ -1,3 +1,5 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+
 export interface Condition {
   field: 'from' | 'to' | 'subject' | 'body' | 'hasAttachments';
   operator: 'contains' | 'equals' | 'startsWith' | 'endsWith' | 'matches' | 'is';

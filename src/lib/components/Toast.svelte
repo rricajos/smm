@@ -1,4 +1,6 @@
 <script lang="ts">
+  /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
+  import { t } from '../i18n';
   interface Props {
     message: string;
     type?: 'success' | 'error' | 'info';
@@ -27,7 +29,7 @@
       <button class="toast-action" onclick={onaction}>{actionLabel}</button>
     {/if}
     {#if ondismiss}
-      <button class="toast-close" onclick={ondismiss} aria-label="Dismiss">&times;</button>
+      <button class="toast-close" onclick={ondismiss} aria-label={$t('toast_dismiss')}>&times;</button>
     {/if}
     {#if duration}
       <div class="toast-progress" style="--toast-duration: {duration}ms"></div>
