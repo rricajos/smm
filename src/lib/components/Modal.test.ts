@@ -7,7 +7,12 @@ import { createRawSnippet } from 'svelte';
 
 // Mock i18n to avoid browser.storage dependency
 function mockReadable<T>(value: T) {
-  return { subscribe: (fn: (v: T) => void) => { fn(value); return () => {}; } };
+  return {
+    subscribe: (fn: (v: T) => void) => {
+      fn(value);
+      return () => {};
+    },
+  };
 }
 
 vi.mock('../i18n', () => ({

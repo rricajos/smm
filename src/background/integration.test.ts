@@ -104,7 +104,9 @@ function makeRule(overrides: Partial<Rule> = {}): Rule {
     id: 'rule-1',
     name: 'Invoice Rule',
     enabled: true,
-    conditions: [{ field: 'subject', operator: 'contains', value: 'Invoice', caseSensitive: false }],
+    conditions: [
+      { field: 'subject', operator: 'contains', value: 'Invoice', caseSensitive: false },
+    ],
     conditionLogic: 'all',
     actions: [{ type: 'moveToFolder', folderId: 'folder-invoices' }, { type: 'markRead' }],
     stopProcessing: false,

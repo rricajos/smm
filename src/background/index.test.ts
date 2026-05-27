@@ -24,9 +24,9 @@ vi.mock('../lib/i18n', () => ({
   translate: vi.fn((_loc: string, key: string) => key),
 }));
 vi.mock('./message-utils', () => ({
-  getAllFolders: vi.fn().mockResolvedValue([
-    { id: 'f1', accountId: 'a1', name: 'Inbox', path: 'Inbox' },
-  ]),
+  getAllFolders: vi
+    .fn()
+    .mockResolvedValue([{ id: 'f1', accountId: 'a1', name: 'Inbox', path: 'Inbox' }]),
 }));
 vi.mock('../lib/utils/logger', () => ({
   logger: {
@@ -119,10 +119,7 @@ describe('background message handler', () => {
 
   it('TEST_RULE dispatches to testRule with correct args', async () => {
     const { testRule } = await import('./rule-testing');
-    const result = await onMessageCallback(
-      { type: 'TEST_RULE', messageId: 42, ruleId: 'r1' },
-      {},
-    );
+    const result = await onMessageCallback({ type: 'TEST_RULE', messageId: 42, ruleId: 'r1' }, {});
     expect(testRule).toHaveBeenCalledWith(42, 'r1');
     expect(result).toEqual({ matched: true, results: ['Rule A'] });
   });
@@ -141,10 +138,7 @@ describe('background message handler', () => {
 
   it('CREATE_FOLDER dispatches correctly', async () => {
     const { createFolder } = await import('./folder-ops');
-    await onMessageCallback(
-      { type: 'CREATE_FOLDER', parentFolderId: 'p1', folderName: 'New' },
-      {},
-    );
+    await onMessageCallback({ type: 'CREATE_FOLDER', parentFolderId: 'p1', folderName: 'New' }, {});
     expect(createFolder).toHaveBeenCalledWith('p1', 'New');
   });
 
@@ -157,6 +151,131 @@ describe('background message handler', () => {
   it('CLASSIFY_MESSAGE calls processMessage flow', async () => {
     const result = await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
     expect(messenger.messages.get).toHaveBeenCalledWith(1);
+    expect(result).toEqual({ success: true });
+  });
+
+  it('GET_TAGS returns list of tags', async () => {
+    const result = await onMessageCallback({ type: 'GET_TAGS' }, {});
+    expect(messenger.messages.tags.list).toHaveBeenCalled();
+    expect(result).toEqual([]);
+  });
+
+  it('GET_DISPLAYED_MESSAGE returns message when tab has messages', async () => {
+    const mockMsg = { id: 99, subject: 'Displayed' };
+    (messenger.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([{ id: 1 }]);
+    (
+      messenger.messageDisplay.getDisplayedMessages as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce([mockMsg]);
+    const result = await onMessageCallback({ type: 'GET_DISPLAYED_MESSAGE' }, {});
+    expect(result).toEqual(mockMsg);
+  });
+
+  it('GET_DISPLAYED_MESSAGE returns null when no tabs', async () => {
+    (messenger.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+    const result = await onMessageCallback({ type: 'GET_DISPLAYED_MESSAGE' }, {});
+    expect(result).toBeNull();
+  });
+
+  it('GET_RECENT_EMAILS dispatches to getRecentEmails', async () => {
+    const { getRecentEmails } = await import('./email-queries');
+    const result = await onMessageCallback({ type: 'GET_RECENT_EMAILS' }, {});
+    expect(getRecentEmails).toHaveBeenCalled();
+    expect(result).toEqual([]);
+  });
+
+  it('GET_FOLDERS_AND_TAGS returns combined folders and tags', async () => {
+    const { getAllFolders } = await import('./message-utils');
+    const result = await onMessageCallback({ type: 'GET_FOLDERS_AND_TAGS' }, {});
+    expect(getAllFolders).toHaveBeenCalled();
+    expect(result).toHaveProperty('folders');
+    expect(result).toHaveProperty('tags');
+  });
+
+  it('GET_ACCOUNT_INFO returns account list with identities', async () => {
+    (messenger.accounts.list as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { id: 'a1', name: 'Acct', identities: [{ name: 'User', email: 'u@test.com' }] },
+    ]);
+    const result = await onMessageCallback({ type: 'GET_ACCOUNT_INFO' }, {});
+    expect(result).toEqual([{ name: 'User', email: 'u@test.com', accountId: 'a1' }]);
+  });
+
+  it('GET_ACCOUNT_INFO returns empty array when no accounts', async () => {
+    (messenger.accounts.list as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+    const result = await onMessageCallback({ type: 'GET_ACCOUNT_INFO' }, {});
+    expect(result).toEqual([]);
+  });
+
+  it('TEST_SINGLE_RULE dispatches with rule and default limit', async () => {
+    const { testSingleRule } = await import('./rule-testing');
+    const fakeRule = { id: 'r1', name: 'Test', conditions: [], actions: [] };
+    await onMessageCallback({ type: 'TEST_SINGLE_RULE', rule: fakeRule }, {});
+    expect(testSingleRule).toHaveBeenCalledWith(fakeRule, 50);
+  });
+
+  it('GET_FOLDER_TREE dispatches to getFolderTree', async () => {
+    const { getFolderTree } = await import('./folder-ops');
+    const result = await onMessageCallback({ type: 'GET_FOLDER_TREE' }, {});
+    expect(getFolderTree).toHaveBeenCalled();
+    expect(result).toEqual([]);
+  });
+
+  it('GET_ALL_EMAILS_HEADERS dispatches with options', async () => {
+    const { getAllEmailHeaders } = await import('./email-queries');
+    await onMessageCallback(
+      { type: 'GET_ALL_EMAILS_HEADERS', limit: 10, accountId: 'a1', skipAnalyzed: true },
+      {},
+    );
+    expect(getAllEmailHeaders).toHaveBeenCalledWith({
+      limit: 10,
+      accountId: 'a1',
+      skipAnalyzed: true,
+    });
+  });
+
+  it('RENAME_FOLDER dispatches correctly', async () => {
+    const { renameFolder } = await import('./folder-ops');
+    await onMessageCallback({ type: 'RENAME_FOLDER', folderId: 'f1', newName: 'Renamed' }, {});
+    expect(renameFolder).toHaveBeenCalledWith('f1', 'Renamed');
+  });
+
+  it('MARK_EMAILS_ANALYZED dispatches with messageIds', async () => {
+    const { markEmailsAnalyzed } = await import('./email-queries');
+    await onMessageCallback({ type: 'MARK_EMAILS_ANALYZED', messageIds: [1, 2, 3] }, {});
+    expect(markEmailsAnalyzed).toHaveBeenCalledWith([1, 2, 3]);
+  });
+
+  it('MARK_EMAILS_ANALYZED defaults to empty array', async () => {
+    const { markEmailsAnalyzed } = await import('./email-queries');
+    await onMessageCallback({ type: 'MARK_EMAILS_ANALYZED' }, {});
+    expect(markEmailsAnalyzed).toHaveBeenCalledWith([]);
+  });
+
+  it('MOVE_FOLDER_CONTENTS dispatches with all params', async () => {
+    const { moveFolderContents } = await import('./folder-ops');
+    await onMessageCallback(
+      {
+        type: 'MOVE_FOLDER_CONTENTS',
+        sourceFolderId: 's1',
+        destFolderId: 'd1',
+        deleteSource: true,
+      },
+      {},
+    );
+    expect(moveFolderContents).toHaveBeenCalledWith('s1', 'd1', true);
+  });
+
+  it('MOVE_FOLDER_CONTENTS defaults deleteSource to false', async () => {
+    const { moveFolderContents } = await import('./folder-ops');
+    await onMessageCallback(
+      { type: 'MOVE_FOLDER_CONTENTS', sourceFolderId: 's1', destFolderId: 'd1' },
+      {},
+    );
+    expect(moveFolderContents).toHaveBeenCalledWith('s1', 'd1', false);
+  });
+
+  it('OPEN_SPACE clicks the space button', async () => {
+    const result = await onMessageCallback({ type: 'OPEN_SPACE' }, {});
+    expect(messenger.spacesToolbar.clickButton).toHaveBeenCalledWith('smartMailManager');
     expect(result).toEqual({ success: true });
   });
 

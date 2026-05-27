@@ -3,26 +3,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
 
-let mockStorage: Record<string, unknown> = {};
+// vi.hoisted runs BEFORE imports, ensuring browser global is set when settings.ts initializes
+const { capturedListeners, state } = vi.hoisted(() => {
+  const state = { storage: {} as Record<string, unknown> };
 
-const mockBrowser = {
-  storage: {
-    local: {
-      get: vi.fn(async (key: string) => (key in mockStorage ? { [key]: mockStorage[key] } : {})),
-      set: vi.fn(async (data: Record<string, unknown>) => Object.assign(mockStorage, data)),
+  const capturedListeners: Array<
+    (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => void
+  > = [];
+
+  const mockBrowser = {
+    storage: {
+      local: {
+        get: vi.fn(async (key: string) =>
+          key in state.storage ? { [key]: state.storage[key] } : {},
+        ),
+        set: vi.fn(async (data: Record<string, unknown>) => Object.assign(state.storage, data)),
+      },
+      onChanged: {
+        addListener: vi.fn((cb: (...args: unknown[]) => void) => {
+          capturedListeners.push(cb as (typeof capturedListeners)[0]);
+        }),
+      },
     },
-    onChanged: { addListener: vi.fn() },
-  },
-};
+  };
 
-vi.stubGlobal('browser', mockBrowser);
+  (globalThis as any).browser = mockBrowser;
+
+  return { capturedListeners, state };
+});
 
 import { settings } from './settings';
 import { DEFAULT_SETTINGS } from '../utils/constants';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockStorage = {};
+  state.storage = {};
 });
 
 describe('settings store', () => {
@@ -40,8 +55,8 @@ describe('settings store', () => {
       openaiApiKey: 'sk-test',
     };
     await settings.save(newSettings);
-    expect(mockStorage['smm_settings']).toBeDefined();
-    const saved = mockStorage['smm_settings'] as any;
+    expect(state.storage['smm_settings']).toBeDefined();
+    const saved = state.storage['smm_settings'] as any;
     expect(saved.classificationEnabled).toBe(false);
     expect(saved.openaiApiKey).toBe('sk-test');
   });
@@ -52,27 +67,58 @@ describe('settings store', () => {
   });
 
   it('update() merges partial settings', async () => {
-    // Set initial in storage
-    mockStorage['smm_settings'] = { ...DEFAULT_SETTINGS };
+    state.storage['smm_settings'] = { ...DEFAULT_SETTINGS };
     await settings.update({ logRetentionDays: 90 });
-    const saved = mockStorage['smm_settings'] as any;
+    const saved = state.storage['smm_settings'] as any;
     expect(saved.logRetentionDays).toBe(90);
-    // Other fields preserved
     expect(saved.classificationEnabled).toBe(DEFAULT_SETTINGS.classificationEnabled);
   });
 
   it('update() preserves unmodified fields', async () => {
-    mockStorage['smm_settings'] = { ...DEFAULT_SETTINGS, openaiApiKey: 'existing-key' };
+    state.storage['smm_settings'] = { ...DEFAULT_SETTINGS, openaiApiKey: 'existing-key' };
     await settings.update({ notifyOnClassification: true });
-    const saved = mockStorage['smm_settings'] as any;
+    const saved = state.storage['smm_settings'] as any;
     expect(saved.openaiApiKey).toBe('existing-key');
     expect(saved.notifyOnClassification).toBe(true);
   });
 
   it('update() applies defaults when storage is empty', async () => {
     await settings.update({ logRetentionDays: 7 });
-    const saved = mockStorage['smm_settings'] as any;
+    const saved = state.storage['smm_settings'] as any;
     expect(saved.logRetentionDays).toBe(7);
     expect(saved.classificationEnabled).toBe(DEFAULT_SETTINGS.classificationEnabled);
+  });
+
+  it('registers onChanged listener during initialization', () => {
+    expect(capturedListeners.length).toBeGreaterThan(0);
+    expect(typeof capturedListeners[0]).toBe('function');
+  });
+
+  it('onChanged listener updates store when settings change externally', () => {
+    const listener = capturedListeners[0];
+    expect(listener).toBeDefined();
+    const newSettings = { ...DEFAULT_SETTINGS, logRetentionDays: 99 };
+    listener({ smm_settings: { newValue: newSettings } }, 'local');
+
+    const current = get(settings);
+    expect(current.logRetentionDays).toBe(99);
+  });
+
+  it('onChanged listener ignores changes to other keys', () => {
+    const listener = capturedListeners[0];
+    expect(listener).toBeDefined();
+    const before = get(settings);
+    listener({ other_key: { newValue: 'something' } }, 'local');
+    const after = get(settings);
+    expect(after).toEqual(before);
+  });
+
+  it('onChanged listener ignores non-local area changes', () => {
+    const listener = capturedListeners[0];
+    expect(listener).toBeDefined();
+    const before = get(settings);
+    listener({ smm_settings: { newValue: { ...DEFAULT_SETTINGS, logRetentionDays: 1 } } }, 'sync');
+    const after = get(settings);
+    expect(after).toEqual(before);
   });
 });
