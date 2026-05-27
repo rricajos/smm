@@ -1,0 +1,94 @@
+site_name: Smart Mail Manager
+site_url: https://rricajos.github.io/smm/
+site_description: Clasificación automática de correos y respuestas para Thunderbird
+site_author: Ricard Penin Honrubia
+repo_url: https://github.com/rricajos/smm
+repo_name: rricajos/smm
+
+theme:
+  name: material
+  language: es
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Modo oscuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Modo claro
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+
+plugins:
+  - search
+  - i18n:
+      languages:
+        - locale: es
+          name: Español
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+
+nav:
+  - Inicio: index.md
+  - Guía:
+    - Instalación: guia/instalacion.md
+    - Reglas: guia/reglas.md
+    - Plantillas: guia/plantillas.md
+    - Asistente IA: guia/asistente-ia.md
+    - Panel de control: guia/panel.md
+  - Desarrollo:
+    - Arquitectura: desarrollo/arquitectura.md
+    - Build: desarrollo/build.md
+    - Testing: desarrollo/testing.md
+  - Referencia:
+    - Tipos: referencia/tipos.md
+    - Stores: referencia/stores.md
+    - Servicios AI: referencia/servicios.md
+    - Utilidades: referencia/utilidades.md
+  - Privacidad: privacidad.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  alternate:
+    - name: Español
+      link: /smm/
+      lang: es
+    - name: English
+      link: /smm/en/
+      lang: en
