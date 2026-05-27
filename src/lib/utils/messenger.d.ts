@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
-// Type declarations for Thunderbird's messenger WebExtension APIs
+// Type declarations for Thunderbird's messenger WebExtension APIs (TB 128+)
 declare namespace messenger {
   namespace messages {
     interface MessageHeader {
@@ -38,9 +38,18 @@ declare namespace messenger {
       partName: string;
     }
 
+    interface MessageTag {
+      key: string;
+      tag: string;
+      color: string;
+      ordinal: string;
+    }
+
     function get(messageId: number): Promise<MessageHeader>;
     function getFull(messageId: number): Promise<MessagePart>;
-    function query(queryInfo: Record<string, any>): Promise<MessageList>;
+    function query(queryInfo: Record<string, unknown>): Promise<MessageList>;
+    function list(folderId: string): Promise<MessageList>;
+    function continueList(listId: string): Promise<MessageList>;
     function move(messageIds: number[], destination: string): Promise<void>;
     function update(messageId: number, newProperties: Partial<{
       read: boolean;
@@ -48,6 +57,13 @@ declare namespace messenger {
       tags: string[];
     }>): Promise<void>;
     function listAttachments(messageId: number): Promise<Attachment[]>;
+
+    namespace tags {
+      function list(): Promise<MessageTag[]>;
+      function create(key: string, tag: string, color: string): Promise<void>;
+      function update(key: string, updateProperties: { tag?: string; color?: string }): Promise<void>;
+      // 'delete' is a reserved word, declared via interface
+    }
 
     const onNewMailReceived: {
       addListener(callback: (folder: folders.MailFolder, messages: MessageList) => void): void;
@@ -61,10 +77,26 @@ declare namespace messenger {
       name: string;
       path: string;
       type?: string;
-      id?: string;
+      id: string;
+      totalMessageCount?: number;
+      unreadMessageCount?: number;
     }
 
-    function getSubFolders(folderOrAccount: MailFolder | accounts.MailAccount): Promise<MailFolder[]>;
+    interface MailFolderInfo {
+      totalMessageCount: number;
+      unreadMessageCount: number;
+    }
+
+    function getSubFolders(folderIdOrAccount: string): Promise<MailFolder[]>;
+    function create(parentFolderId: string, childName: string): Promise<MailFolder>;
+    function rename(folderId: string, newName: string): Promise<MailFolder>;
+    function getFolderInfo(folderId: string): Promise<MailFolderInfo>;
+  }
+
+  // folders.delete is a reserved word — use bracket syntax at call sites
+  // Declared via interface merge
+  interface FoldersNamespace {
+    delete(folderId: string): Promise<void>;
   }
 
   namespace accounts {
@@ -74,6 +106,7 @@ declare namespace messenger {
       type: string;
       identities: MailIdentity[];
       folders: folders.MailFolder[];
+      rootFolder: { id: string };
     }
 
     interface MailIdentity {
@@ -116,6 +149,7 @@ declare namespace messenger {
         defaultIcons?: string | Record<string, string>;
       },
     ): Promise<void>;
+    function clickButton(id: string): Promise<void>;
   }
 
   namespace messageDisplay {
@@ -124,24 +158,24 @@ declare namespace messenger {
 
   namespace tabs {
     function remove(tabId: number): Promise<void>;
-    function query(queryInfo: Record<string, any>): Promise<{ id: number }[]>;
+    function query(queryInfo: Record<string, unknown>): Promise<{ id: number }[]>;
   }
 
   namespace runtime {
-    function sendMessage(message: any): Promise<any>;
+    function sendMessage(message: unknown): Promise<unknown>;
     const onMessage: {
-      addListener(callback: (message: any, sender: any, sendResponse: Function) => boolean | void | Promise<any>): void;
+      addListener(callback: (message: unknown, sender: unknown, sendResponse: Function) => boolean | void | Promise<unknown>): void;
     };
   }
 
   namespace storage {
     const local: {
-      get(keys: string | string[]): Promise<Record<string, any>>;
-      set(items: Record<string, any>): Promise<void>;
+      get(keys: string | string[]): Promise<Record<string, unknown>>;
+      set(items: Record<string, unknown>): Promise<void>;
       remove(keys: string | string[]): Promise<void>;
     };
     const onChanged: {
-      addListener(callback: (changes: Record<string, { oldValue?: any; newValue?: any }>, areaName: string) => void): void;
+      addListener(callback: (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, areaName: string) => void): void;
     };
   }
 
@@ -163,6 +197,9 @@ declare const browser: typeof messenger & {
   storage: typeof messenger.storage;
   runtime: typeof messenger.runtime;
   notifications: typeof messenger.notifications;
+  permissions: {
+    request(permissions: { origins?: string[] }): Promise<boolean>;
+  };
 };
 
 declare const messenger: typeof messenger;

@@ -4,7 +4,9 @@ import { writable, derived } from 'svelte/store';
 import type { FolderProposal, MoveProposal, RuleProposal, TemplateProposal, RuleConsolidationProposal, ChatMessage } from '../services/openai';
 import { STORAGE_KEYS } from '../utils/constants';
 
-declare const browser: any;
+/// <reference path="../utils/messenger.d.ts" />
+
+const MAX_CONVERSATIONS = 50;
 
 export interface StoredDisplayMessage {
   role: 'user' | 'assistant';
@@ -65,8 +67,8 @@ function createChatStore() {
   // Load from storage (backward compatible with old single-conversation format)
   try {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
-      browser.storage.local.get(STORAGE_KEYS.CHAT_HISTORY).then((result: any) => {
-        const saved = result[STORAGE_KEYS.CHAT_HISTORY];
+      browser.storage.local.get(STORAGE_KEYS.CHAT_HISTORY).then((result: Record<string, unknown>) => {
+        const saved = result[STORAGE_KEYS.CHAT_HISTORY] as any;
         if (saved) {
           if (saved.conversations && saved.activeId) {
             // Ensure createdFolderMap exists on each conversation
@@ -93,7 +95,8 @@ function createChatStore() {
       loaded = true;
       storeReady.set(true);
     }
-  } catch {
+  } catch (e) {
+    console.error('[SMM] chat store load error:', e);
     loaded = true;
     storeReady.set(true);
   }
@@ -128,6 +131,12 @@ function createChatStore() {
       update(state => {
         const conv = createEmptyConversation();
         state.conversations = [...state.conversations, conv];
+        // Prune oldest conversations when limit is exceeded
+        if (state.conversations.length > MAX_CONVERSATIONS) {
+          const sorted = [...state.conversations].sort((a, b) => a.createdAt - b.createdAt);
+          const toRemove = new Set(sorted.slice(0, state.conversations.length - MAX_CONVERSATIONS).map(c => c.id));
+          state.conversations = state.conversations.filter(c => !toRemove.has(c.id));
+        }
         state.activeId = conv.id;
         persist(state);
         return state;

@@ -3,6 +3,7 @@
   import type { Rule, Condition, Action } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
   import { detectRuleConflicts } from '../../lib/utils/rule-conflicts';
+  import { validateRule } from '../../lib/utils/rule-validation';
   import { t } from '../../lib/i18n';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
@@ -139,49 +140,8 @@
 
   let validationErrors = $state<string[]>([]);
 
-  function validateRule(): string[] {
-    const errs: string[] = [];
-
-    if (!name.trim()) errs.push($t('editor_name_required'));
-    if (conditions.length === 0) errs.push($t('editor_min_condition'));
-    if (actions.length === 0) errs.push($t('editor_min_action'));
-
-    // Validate conditions
-    for (let i = 0; i < conditions.length; i++) {
-      const c = conditions[i];
-      if (c.field !== 'hasAttachments') {
-        if (!c.value.trim()) {
-          errs.push($t('editor_condition_empty', { n: i + 1 }));
-        }
-        if (c.operator === 'matches') {
-          try {
-            new RegExp(c.value);
-          } catch {
-            errs.push($t('editor_regex_invalid', { n: i + 1, value: c.value }));
-          }
-        }
-      }
-    }
-
-    // Validate actions
-    for (let i = 0; i < actions.length; i++) {
-      const a = actions[i];
-      if (a.type === 'moveToFolder' && !a.folderId) {
-        errs.push($t('editor_action_select_folder', { n: i + 1 }));
-      }
-      if (a.type === 'addTag' && !a.tagKey) {
-        errs.push($t('editor_action_select_tag', { n: i + 1 }));
-      }
-      if (a.type === 'autoRespond' && !a.templateId) {
-        errs.push($t('editor_action_select_template', { n: i + 1 }));
-      }
-    }
-
-    return errs;
-  }
-
   function handleSave() {
-    validationErrors = validateRule();
+    validationErrors = validateRule(name, conditions, actions, $t);
     if (validationErrors.length > 0) return;
 
     const now = Date.now();

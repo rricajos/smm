@@ -1,38 +1,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
-import { writable } from 'svelte/store';
 import type { Rule } from '../../types/rules';
-
-declare const browser: any;
+import { createSyncedStore } from './synced-store';
 
 const STORAGE_KEY = 'smm_rules';
 
 function createRulesStore() {
-  const { subscribe, set, update } = writable<Rule[]>([]);
-
-  try {
-    if (typeof browser !== 'undefined' && browser?.storage?.local) {
-      browser.storage.local.get(STORAGE_KEY).then((result: any) => {
-        set(result[STORAGE_KEY] || []);
-      }).catch((e: any) => console.error('[SMM] rules load error:', e));
-
-      browser.storage.onChanged.addListener(
-        (changes: Record<string, any>, area: string) => {
-          if (area === 'local' && changes[STORAGE_KEY]) {
-            set(changes[STORAGE_KEY].newValue || []);
-          }
-        },
-      );
-    }
-  } catch (e) {
-    console.error('[SMM] rules store init error:', e);
-  }
-
-  async function persist(rules: Rule[]) {
-    // Deep clone to strip Svelte 5 Proxy objects before structured clone
-    const plain = JSON.parse(JSON.stringify(rules));
-    await browser.storage.local.set({ [STORAGE_KEY]: plain });
-  }
+  const { subscribe, set, update, persist } = createSyncedStore<Rule[]>(STORAGE_KEY, [], 'rules');
 
   return {
     subscribe,

@@ -464,8 +464,6 @@ export const en: Translations = {
   day_saturday: 'Saturday',
 
   // Rules summary labels
-  cond_has_attachments: 'has attachments',
-  cond_no_attachments: 'no attachments',
   action_move: 'Move',
   action_tag: 'Tag',
   action_priority: 'Priority',
@@ -645,5 +643,6 @@ export const en: Translations = {
 
   // Background errors
   bg_error_create_folder: 'Error creating folder',
+  bg_error_delete_folder: 'Error deleting folder',
   bg_error_rename_folder: 'Error renaming folder',
 };

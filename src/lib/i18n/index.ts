@@ -6,7 +6,7 @@ import { es } from './locales/es';
 import { en } from './locales/en';
 import { STORAGE_KEYS } from '../utils/constants';
 
-declare const browser: any;
+/// <reference path="../utils/messenger.d.ts" />
 
 export type SupportedLocale = 'es' | 'en';
 
@@ -16,7 +16,7 @@ export const locale = writable<SupportedLocale>('es');
 
 // Load persisted locale
 try {
-  browser.storage.local.get(STORAGE_KEYS.LOCALE).then((result: any) => {
+  browser.storage.local.get(STORAGE_KEYS.LOCALE).then((result: Record<string, unknown>) => {
     const stored = result[STORAGE_KEYS.LOCALE];
     if (stored && (stored === 'es' || stored === 'en')) {
       locale.set(stored);
@@ -28,7 +28,7 @@ try {
 
 // Sync across contexts via storage.onChanged
 try {
-  browser.storage.onChanged.addListener((changes: any, area: string) => {
+  browser.storage.onChanged.addListener((changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
     if (area === 'local' && changes[STORAGE_KEYS.LOCALE]) {
       const newVal = changes[STORAGE_KEYS.LOCALE].newValue;
       if (newVal === 'es' || newVal === 'en') {

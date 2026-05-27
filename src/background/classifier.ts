@@ -1,12 +1,14 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
+/// <reference path="../lib/utils/messenger.d.ts" />
+
 import type { Rule, Condition } from '../types/rules';
 import type { ActivityEntry } from '../types/settings';
 import { getRules } from '../lib/utils/storage';
 import { appendActivityLog } from '../lib/utils/storage';
 import { extractBodyText, hasAttachments } from './message-utils';
-
-declare const messenger: any;
+import { logger } from '../lib/utils/logger';
+import { REGEX_MAX_INPUT_LENGTH } from '../lib/utils/constants';
 
 export interface ClassificationResult {
   rule: Rule;
@@ -15,11 +17,28 @@ export interface ClassificationResult {
 
 // Cache fullMessage per message ID to avoid re-downloading for each rule
 const MAX_CACHE_SIZE = 200;
-const fullMessageCache = new Map<number, any>();
+const fullMessageCache = new Map<number, messenger.messages.MessagePart>();
+
+// Cache compiled regex patterns to avoid recompilation on every match
+const MAX_REGEX_CACHE_SIZE = 100;
+const regexCache = new Map<string, RegExp>();
+
+function getCachedRegex(pattern: string, flags: string): RegExp {
+  const key = `${pattern}\0${flags}`;
+  const cached = regexCache.get(key);
+  if (cached) return cached;
+  const re = new RegExp(pattern, flags);
+  if (regexCache.size >= MAX_REGEX_CACHE_SIZE) {
+    const firstKey = regexCache.keys().next().value;
+    if (firstKey !== undefined) regexCache.delete(firstKey);
+  }
+  regexCache.set(key, re);
+  return re;
+}
 
 export async function classifyMessage(
-  header: any,
-  fullMessage?: any,
+  header: messenger.messages.MessageHeader,
+  fullMessage?: messenger.messages.MessagePart | null,
 ): Promise<ClassificationResult[]> {
   const rules = await getRules();
   const matched: ClassificationResult[] = [];
@@ -45,9 +64,9 @@ export function clearMessageCache(): void {
   fullMessageCache.clear();
 }
 
-async function getFullMessage(messageId: number): Promise<any | null> {
+async function getFullMessage(messageId: number): Promise<messenger.messages.MessagePart | null> {
   if (fullMessageCache.has(messageId)) {
-    return fullMessageCache.get(messageId);
+    return fullMessageCache.get(messageId)!;
   }
   try {
     const full = await messenger.messages.getFull(messageId);
@@ -65,7 +84,7 @@ async function getFullMessage(messageId: number): Promise<any | null> {
 
 async function evaluateConditions(
   rule: Rule,
-  header: any,
+  header: messenger.messages.MessageHeader,
 ): Promise<boolean> {
   const results: boolean[] = [];
 
@@ -81,7 +100,7 @@ async function evaluateConditions(
 
 async function evaluateSingleCondition(
   condition: Condition,
-  header: any,
+  header: messenger.messages.MessageHeader,
 ): Promise<boolean> {
   if (condition.field === 'hasAttachments') {
     const has = await hasAttachments(header.id);
@@ -136,9 +155,10 @@ export function matchString(
         // Guard against catastrophic backtracking (nested quantifiers like (a+)+)
         if (hasNestedQuantifiers(needle)) return false;
         // Limit input length to prevent DoS on complex patterns
-        const safeHaystack = haystack.length > 10000 ? haystack.substring(0, 10000) : haystack;
-        return new RegExp(needle, caseSensitive ? '' : 'i').test(safeHaystack);
-      } catch {
+        const safeHaystack = haystack.length > REGEX_MAX_INPUT_LENGTH ? haystack.substring(0, REGEX_MAX_INPUT_LENGTH) : haystack;
+        return getCachedRegex(needle, caseSensitive ? '' : 'i').test(safeHaystack);
+      } catch (e) {
+        logger.warn(`Invalid regex pattern: "${needle}"`, e);
         return false;
       }
     default:
@@ -153,7 +173,7 @@ export function hasNestedQuantifiers(pattern: string): boolean {
 }
 
 export async function executeActions(
-  header: any,
+  header: messenger.messages.MessageHeader,
   results: ClassificationResult[],
 ): Promise<void> {
   for (const { rule } of results) {
@@ -188,7 +208,7 @@ export async function executeActions(
             break;
         }
       } catch (err) {
-        console.error(`[SMM] Error executing action ${action.type}:`, err);
+        logger.error(`Error executing action ${action.type}`, err);
       }
     }
 

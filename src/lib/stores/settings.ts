@@ -3,8 +3,9 @@
 import { writable } from 'svelte/store';
 import type { Settings } from '../../types/settings';
 import { DEFAULT_SETTINGS } from '../utils/constants';
+import { logger } from '../utils/logger';
 
-declare const browser: any;
+/// <reference path="../utils/messenger.d.ts" />
 
 const STORAGE_KEY = 'smm_settings';
 
@@ -13,20 +14,20 @@ function createSettingsStore() {
 
   try {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
-      browser.storage.local.get(STORAGE_KEY).then((result: any) => {
-        set({ ...DEFAULT_SETTINGS, ...(result[STORAGE_KEY] || {}) });
-      }).catch((e: any) => console.error('[SMM] settings load error:', e));
+      browser.storage.local.get(STORAGE_KEY).then((result: Record<string, unknown>) => {
+        set({ ...DEFAULT_SETTINGS, ...((result[STORAGE_KEY] as Partial<Settings>) || {}) });
+      }).catch((e: unknown) => logger.error('settings load error', e));
 
       browser.storage.onChanged.addListener(
-        (changes: Record<string, any>, area: string) => {
+        (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
           if (area === 'local' && changes[STORAGE_KEY]) {
-            set({ ...DEFAULT_SETTINGS, ...(changes[STORAGE_KEY].newValue || {}) });
+            set({ ...DEFAULT_SETTINGS, ...((changes[STORAGE_KEY].newValue as Partial<Settings>) || {}) });
           }
         },
       );
     }
   } catch (e) {
-    console.error('[SMM] settings store init error:', e);
+    logger.error('settings store init error', e);
   }
 
   return {

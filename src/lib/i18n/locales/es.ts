@@ -464,8 +464,6 @@ export const es: Translations = {
   day_saturday: 'Sábado',
 
   // Rules summary labels
-  cond_has_attachments: 'tiene adjuntos',
-  cond_no_attachments: 'sin adjuntos',
   action_move: 'Mover',
   action_tag: 'Etiquetar',
   action_priority: 'Prioridad',
@@ -645,5 +643,6 @@ export const es: Translations = {
 
   // Background errors
   bg_error_create_folder: 'Error al crear carpeta',
+  bg_error_delete_folder: 'Error al eliminar carpeta',
   bg_error_rename_folder: 'Error al renombrar carpeta',
 };

@@ -1,8 +1,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
-declare const messenger: any;
+/// <reference path="../lib/utils/messenger.d.ts" />
 
-export function extractBodyText(messagePart: any): string {
+export interface FolderWithAccount extends messenger.folders.MailFolder {
+  accountName: string;
+}
+
+export function extractBodyText(messagePart: messenger.messages.MessagePart | null | undefined): string {
   if (!messagePart) return '';
 
   if (messagePart.body && messagePart.contentType === 'text/plain') {
@@ -16,7 +20,7 @@ export function extractBodyText(messagePart: any): string {
 
   if (messagePart.parts) {
     // Prefer text/plain, fall back to text/html
-    const plainPart = messagePart.parts.find((p: any) => p.contentType === 'text/plain');
+    const plainPart = messagePart.parts.find((p) => p.contentType === 'text/plain');
     if (plainPart?.body) return plainPart.body;
 
     for (const part of messagePart.parts) {
@@ -37,13 +41,13 @@ export async function hasAttachments(messageId: number): Promise<boolean> {
   }
 }
 
-export function getHeaderValue(messagePart: any, headerName: string): string | undefined {
+export function getHeaderValue(messagePart: messenger.messages.MessagePart | null | undefined, headerName: string): string | undefined {
   if (!messagePart?.headers) return undefined;
   const values = messagePart.headers[headerName.toLowerCase()];
   return values?.[0];
 }
 
-export function isAutoSubmitted(messagePart: any): boolean {
+export function isAutoSubmitted(messagePart: messenger.messages.MessagePart | null | undefined): boolean {
   const autoSubmitted = getHeaderValue(messagePart, 'auto-submitted');
   if (autoSubmitted && autoSubmitted !== 'no') return true;
 
@@ -53,7 +57,7 @@ export function isAutoSubmitted(messagePart: any): boolean {
   return false;
 }
 
-export function isMailingList(messagePart: any): boolean {
+export function isMailingList(messagePart: messenger.messages.MessagePart | null | undefined): boolean {
   return !!getHeaderValue(messagePart, 'list-unsubscribe');
 }
 
@@ -74,13 +78,13 @@ export async function getOwnAddresses(): Promise<string[]> {
   }
 }
 
-export async function getAllFolders(): Promise<any[]> {
+export async function getAllFolders(): Promise<FolderWithAccount[]> {
   const accounts = await messenger.accounts.list();
-  const allFolders: any[] = [];
+  const allFolders: FolderWithAccount[] = [];
 
   for (const account of accounts) {
     const folders = await collectFolders(account);
-    allFolders.push(...folders.map((f: any) => ({
+    allFolders.push(...folders.map((f) => ({
       ...f,
       accountName: account.name,
     })));
@@ -89,11 +93,11 @@ export async function getAllFolders(): Promise<any[]> {
   return allFolders;
 }
 
-async function collectFolders(folderOrAccount: any): Promise<any[]> {
-  // Use rootFolder.id for accounts, .id for folders (TB 121+ requires MailFolderId)
-  const folderId = folderOrAccount.rootFolder?.id ?? folderOrAccount.id;
+async function collectFolders(folderOrAccount: messenger.folders.MailFolder | messenger.accounts.MailAccount): Promise<messenger.folders.MailFolder[]> {
+  // Use rootFolder.id for accounts, .id for folders (TB 128+ requires MailFolderId)
+  const folderId = ('rootFolder' in folderOrAccount) ? folderOrAccount.rootFolder.id : folderOrAccount.id!;
   const subFolders = await messenger.folders.getSubFolders(folderId);
-  const result: any[] = [];
+  const result: messenger.folders.MailFolder[] = [];
 
   for (const folder of subFolders) {
     result.push(folder);

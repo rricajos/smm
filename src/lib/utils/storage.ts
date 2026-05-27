@@ -4,12 +4,13 @@ import type { Rule } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
 import type { Settings, ActivityEntry } from '../../types/settings';
 import { STORAGE_KEYS, DEFAULT_SETTINGS, MAX_ACTIVITY_LOG_ENTRIES } from './constants';
+import { sanitizeRules, sanitizeTemplates, sanitizeSettings, sanitizeActivityLog } from './validators';
 
-declare const browser: any;
+/// <reference path="./messenger.d.ts" />
 
 export async function getRules(): Promise<Rule[]> {
   const result = await browser.storage.local.get(STORAGE_KEYS.RULES);
-  return result[STORAGE_KEYS.RULES] || [];
+  return sanitizeRules(result[STORAGE_KEYS.RULES]);
 }
 
 export async function saveRules(rules: Rule[]): Promise<void> {
@@ -18,7 +19,7 @@ export async function saveRules(rules: Rule[]): Promise<void> {
 
 export async function getTemplates(): Promise<ResponseTemplate[]> {
   const result = await browser.storage.local.get(STORAGE_KEYS.TEMPLATES);
-  return result[STORAGE_KEYS.TEMPLATES] || [];
+  return sanitizeTemplates(result[STORAGE_KEYS.TEMPLATES]);
 }
 
 export async function saveTemplates(templates: ResponseTemplate[]): Promise<void> {
@@ -27,7 +28,7 @@ export async function saveTemplates(templates: ResponseTemplate[]): Promise<void
 
 export async function getSettings(): Promise<Settings> {
   const result = await browser.storage.local.get(STORAGE_KEYS.SETTINGS);
-  return { ...DEFAULT_SETTINGS, ...(result[STORAGE_KEYS.SETTINGS] || {}) };
+  return sanitizeSettings(result[STORAGE_KEYS.SETTINGS]);
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
@@ -36,7 +37,7 @@ export async function saveSettings(settings: Settings): Promise<void> {
 
 export async function getActivityLog(): Promise<ActivityEntry[]> {
   const result = await browser.storage.local.get(STORAGE_KEYS.ACTIVITY_LOG);
-  return result[STORAGE_KEYS.ACTIVITY_LOG] || [];
+  return sanitizeActivityLog(result[STORAGE_KEYS.ACTIVITY_LOG]);
 }
 
 let pendingLogEntries: ActivityEntry[] = [];
@@ -58,8 +59,15 @@ async function flushActivityLog(): Promise<void> {
   await browser.storage.local.set({ [STORAGE_KEYS.ACTIVITY_LOG]: log });
 }
 
+const MAX_PENDING_LOG_ENTRIES = 100;
+
 export async function appendActivityLog(entry: ActivityEntry): Promise<void> {
   pendingLogEntries.push(entry);
+
+  // Hard cap: drop oldest entries if buffer grows beyond limit (safety net)
+  if (pendingLogEntries.length > MAX_PENDING_LOG_ENTRIES) {
+    pendingLogEntries = pendingLogEntries.slice(-MAX_PENDING_LOG_ENTRIES);
+  }
 
   // Batch writes: flush after 500ms of inactivity, or immediately if 10+ pending
   if (pendingLogEntries.length >= 10) {
@@ -88,7 +96,7 @@ export async function cleanupOldActivityEntries(retentionDays: number): Promise<
 
 export async function getAutoResponseCount(): Promise<{ hour: number; count: number }> {
   const result = await browser.storage.local.get(STORAGE_KEYS.AUTO_RESPONSE_COUNT);
-  return result[STORAGE_KEYS.AUTO_RESPONSE_COUNT] || { hour: 0, count: 0 };
+  return (result[STORAGE_KEYS.AUTO_RESPONSE_COUNT] as { hour: number; count: number }) || { hour: 0, count: 0 };
 }
 
 export async function incrementAutoResponseCount(): Promise<void> {

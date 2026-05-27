@@ -11,12 +11,13 @@ import {
 import { renderTemplate, extractName, extractEmail } from '../lib/utils/template-engine';
 import { isAutoSubmitted, isMailingList, getOwnAddresses } from './message-utils';
 import { getLocaleFromStorage, translate } from '../lib/i18n';
+import { logger } from '../lib/utils/logger';
 
-declare const messenger: any;
+/// <reference path="../lib/utils/messenger.d.ts" />
 
 export async function triggerAutoResponse(
-  header: any,
-  fullMessage: any,
+  header: messenger.messages.MessageHeader,
+  fullMessage: messenger.messages.MessagePart | null,
   templateId: string,
 ): Promise<void> {
   const settings = await getSettings();
@@ -25,11 +26,11 @@ export async function triggerAutoResponse(
   // Safety checks
   if (fullMessage) {
     if (isAutoSubmitted(fullMessage)) {
-      console.debug('[SMM] Skipping auto-response: auto-submitted message');
+      logger.debug('Skipping auto-response: auto-submitted message');
       return;
     }
     if (isMailingList(fullMessage)) {
-      console.debug('[SMM] Skipping auto-response: mailing list message');
+      logger.debug('Skipping auto-response: mailing list message');
       return;
     }
   }
@@ -38,14 +39,14 @@ export async function triggerAutoResponse(
   const ownAddresses = await getOwnAddresses();
   const senderEmail = extractEmail(header.author || '').toLowerCase();
   if (ownAddresses.includes(senderEmail)) {
-    console.debug('[SMM] Skipping auto-response: message from own account');
+    logger.debug('Skipping auto-response: message from own account');
     return;
   }
 
   // Don't respond to messages in Sent/Drafts/Trash
   const folderType = header.folder?.type;
   if (folderType === 'sent' || folderType === 'drafts' || folderType === 'trash') {
-    console.debug('[SMM] Skipping auto-response: message in excluded folder');
+    logger.debug('Skipping auto-response: message in excluded folder');
     return;
   }
 
@@ -71,7 +72,7 @@ export async function triggerAutoResponse(
   const templates = await getTemplates();
   const template = templates.find((t) => t.id === templateId);
   if (!template) {
-    console.error(`[SMM] Template not found: ${templateId}`);
+    logger.error(`Template not found: ${templateId}`);
     return;
   }
 
@@ -94,12 +95,12 @@ export async function triggerAutoResponse(
   try {
     const accounts = await messenger.accounts.list();
     if (accounts.length > 0) {
-      const msgAccount = accounts.find((a: any) => a.id === header.folder?.accountId) || accounts[0];
+      const msgAccount = accounts.find((a) => a.id === header.folder?.accountId) || accounts[0];
       const identity = msgAccount.identities?.[0];
       myName = identity?.name || msgAccount.name || '';
       myEmail = identity?.email || '';
     }
-  } catch { /* continue without account info */ }
+  } catch (err) { logger.warn('Could not fetch account info for auto-response', err); }
 
   const variables: Record<string, string> = {
     // Legacy keys (backwards compatible)
@@ -125,7 +126,7 @@ export async function triggerAutoResponse(
 
   try {
     // Create the reply
-    const composeDetails: any = {
+    const composeDetails: messenger.compose.ComposeDetails = {
       subject: renderedSubject,
     };
 
@@ -180,7 +181,7 @@ export async function triggerAutoResponse(
       });
     }
   } catch (err) {
-    console.error('[SMM] Error sending auto-response:', err);
+    logger.error('Error sending auto-response', err);
     const logEntry: ActivityEntry = {
       timestamp: Date.now(),
       ruleId: '',

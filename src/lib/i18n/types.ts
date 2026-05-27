@@ -466,8 +466,6 @@ export interface Translations {
   day_saturday: string;
 
   // Rules summary labels
-  cond_has_attachments: string;
-  cond_no_attachments: string;
   action_move: string;
   action_tag: string;
   action_priority: string;
@@ -647,5 +645,6 @@ export interface Translations {
 
   // Background errors
   bg_error_create_folder: string;
+  bg_error_delete_folder: string;
   bg_error_rename_folder: string;
 }

@@ -29,6 +29,10 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const MAX_ACTIVITY_LOG_ENTRIES = 500;
+export const MAX_EMAIL_SNIPPET_LENGTH = 150;
+export const MAX_SANITIZED_CONTENT_LENGTH = 500;
+export const MAX_CHAT_EMAILS = 30;
+export const REGEX_MAX_INPUT_LENGTH = 10_000;
 
 // Models available via OpenRouter (all providers)
 export const OPENAI_MODELS = [

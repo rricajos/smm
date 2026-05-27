@@ -58,7 +58,7 @@ export function validateImportData(raw: unknown): { valid: boolean; errors: stri
     return { valid: false, errors: ['El archivo no contiene JSON valido.'], data: null };
   }
 
-  const obj = raw as any;
+  const obj = raw as Record<string, unknown>;
 
   if (!Array.isArray(obj.rules)) {
     errors.push('Falta el campo "rules" o no es un array.');
@@ -90,11 +90,11 @@ export function validateImportData(raw: unknown): { valid: boolean; errors: stri
     valid: true,
     errors: [],
     data: {
-      version: obj.version || 1,
-      exportedAt: obj.exportedAt || '',
-      rules: obj.rules,
-      templates: obj.templates,
-      settings: obj.settings || {},
+      version: ((obj.version as number) || 1) as ExportData['version'],
+      exportedAt: (obj.exportedAt as string) || '',
+      rules: obj.rules as Rule[],
+      templates: obj.templates as ResponseTemplate[],
+      settings: (obj.settings || {}) as Settings,
     },
   };
 }
