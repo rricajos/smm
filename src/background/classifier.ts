@@ -93,9 +93,7 @@ async function evaluateConditions(
     results.push(result);
   }
 
-  return rule.conditionLogic === 'all'
-    ? results.every(Boolean)
-    : results.some(Boolean);
+  return rule.conditionLogic === 'all' ? results.every(Boolean) : results.some(Boolean);
 }
 
 async function evaluateSingleCondition(
@@ -155,7 +153,10 @@ export function matchString(
         // Guard against catastrophic backtracking (nested quantifiers like (a+)+)
         if (hasNestedQuantifiers(needle)) return false;
         // Limit input length to prevent DoS on complex patterns
-        const safeHaystack = haystack.length > REGEX_MAX_INPUT_LENGTH ? haystack.substring(0, REGEX_MAX_INPUT_LENGTH) : haystack;
+        const safeHaystack =
+          haystack.length > REGEX_MAX_INPUT_LENGTH
+            ? haystack.substring(0, REGEX_MAX_INPUT_LENGTH)
+            : haystack;
         return getCachedRegex(needle, caseSensitive ? '' : 'i').test(safeHaystack);
       } catch (e) {
         logger.warn(`Invalid regex pattern: "${needle}"`, e);

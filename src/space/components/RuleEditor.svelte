@@ -9,22 +9,31 @@
   import Button from '../../lib/components/Button.svelte';
   import ConditionRow from './ConditionRow.svelte';
   import ActionRow from './ActionRow.svelte';
+  import type { FolderInfo, TagInfo } from '../../lib/services/openai';
 
-  declare const browser: any;
+  /// <reference path="../../lib/utils/messenger.d.ts" />
 
   interface Props {
     show: boolean;
     rule: Rule | null;
-    folders: any[];
-    tags: any[];
+    folders: FolderInfo[];
+    tags: TagInfo[];
     templates: ResponseTemplate[];
     existingRules?: Rule[];
     onsave: (rule: Rule) => void;
     onclose: () => void;
   }
 
-  let { show, rule, folders, tags, templates, existingRules = [], onsave, onclose }: Props = $props();
-
+  let {
+    show,
+    rule,
+    folders,
+    tags,
+    templates,
+    existingRules = [],
+    onsave,
+    onclose,
+  }: Props = $props();
 
   let name = $state('');
   let conditions = $state<Condition[]>([]);
@@ -34,7 +43,11 @@
 
   // Test/preview state
   let testing = $state(false);
-  let testResult = $state<{ processed: number; matched: number; details: Array<{ subject: string; from: string }> } | null>(null);
+  let testResult = $state<{
+    processed: number;
+    matched: number;
+    details: Array<{ subject: string; from: string }>;
+  } | null>(null);
   let showTestResults = $state(false);
 
   // Reset test results when conditions change
@@ -115,7 +128,10 @@
   });
 
   function addCondition() {
-    conditions = [...conditions, { field: 'from', operator: 'contains', value: '', caseSensitive: false }];
+    conditions = [
+      ...conditions,
+      { field: 'from', operator: 'contains', value: '', caseSensitive: false },
+    ];
   }
 
   function updateCondition(index: number, updated: Condition) {
@@ -164,7 +180,12 @@
   <div class="form">
     <div class="field">
       <label for="rule-name">{$t('editor_rule_name')}</label>
-      <input id="rule-name" type="text" bind:value={name} placeholder={$t('editor_rule_name_placeholder')} />
+      <input
+        id="rule-name"
+        type="text"
+        bind:value={name}
+        placeholder={$t('editor_rule_name_placeholder')}
+      />
     </div>
 
     <div class="section">
@@ -172,10 +193,12 @@
         <h3>{$t('editor_conditions')}</h3>
         <div class="logic-toggle">
           <label>
-            <input type="radio" bind:group={conditionLogic} value="all" /> {$t('editor_all_and')}
+            <input type="radio" bind:group={conditionLogic} value="all" />
+            {$t('editor_all_and')}
           </label>
           <label>
-            <input type="radio" bind:group={conditionLogic} value="any" /> {$t('editor_any_or')}
+            <input type="radio" bind:group={conditionLogic} value="any" />
+            {$t('editor_any_or')}
           </label>
         </div>
       </div>
@@ -230,8 +253,12 @@
         {:else if testResult}
           <div class="test-results-inline">
             <div class="test-stats-row">
-              <span class="test-stat-item">{$t('editor_test_analyzed', { n: testResult.processed })}</span>
-              <span class="test-stat-item match">{$t('editor_test_matches', { n: testResult.matched })}</span>
+              <span class="test-stat-item"
+                >{$t('editor_test_analyzed', { n: testResult.processed })}</span
+              >
+              <span class="test-stat-item match"
+                >{$t('editor_test_matches', { n: testResult.matched })}</span
+              >
             </div>
             {#if testResult.details.length > 0}
               <div class="test-match-list">
@@ -242,7 +269,9 @@
                   </div>
                 {/each}
                 {#if testResult.details.length > 10}
-                  <div class="test-match-more">{$t('editor_test_more', { n: testResult.details.length - 10 })}</div>
+                  <div class="test-match-more">
+                    {$t('editor_test_more', { n: testResult.details.length - 10 })}
+                  </div>
                 {/if}
               </div>
             {:else}
@@ -260,7 +289,9 @@
         <div class="editor-conflicts-list">
           {#each editorConflicts() as conflict}
             <span class="editor-conflict-text">
-              Conflicto con "{conflict.ruleA.id === (rule?.id || '__temp__') ? conflict.ruleB.name : conflict.ruleA.name}": {conflict.description}
+              Conflicto con "{conflict.ruleA.id === (rule?.id || '__temp__')
+                ? conflict.ruleB.name
+                : conflict.ruleA.name}": {conflict.description}
             </span>
           {/each}
         </div>
@@ -297,7 +328,7 @@
     font-weight: 500;
     color: var(--text-secondary, #555);
   }
-  .field input[type="text"] {
+  .field input[type='text'] {
     width: 100%;
     padding: 6px 10px;
     border: 1px solid var(--border-color, #ccc);
@@ -387,7 +418,9 @@
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
   .test-results-inline {
     margin-top: 10px;
@@ -479,9 +512,18 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .test-stat-item.match { color: #66bb6a; }
-    .test-match-item { background: var(--bg-secondary, #2b2a33); }
-    .editor-conflicts { background: #332d00; border-color: #8d6e00; }
-    .editor-conflict-text { color: #ffb74d; }
+    .test-stat-item.match {
+      color: #66bb6a;
+    }
+    .test-match-item {
+      background: var(--bg-secondary, #2b2a33);
+    }
+    .editor-conflicts {
+      background: #332d00;
+      border-color: #8d6e00;
+    }
+    .editor-conflict-text {
+      color: #ffb74d;
+    }
   }
 </style>

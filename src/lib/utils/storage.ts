@@ -3,8 +3,13 @@
 import type { Rule } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
 import type { Settings, ActivityEntry } from '../../types/settings';
-import { STORAGE_KEYS, DEFAULT_SETTINGS, MAX_ACTIVITY_LOG_ENTRIES } from './constants';
-import { sanitizeRules, sanitizeTemplates, sanitizeSettings, sanitizeActivityLog } from './validators';
+import { STORAGE_KEYS, MAX_ACTIVITY_LOG_ENTRIES } from './constants';
+import {
+  sanitizeRules,
+  sanitizeTemplates,
+  sanitizeSettings,
+  sanitizeActivityLog,
+} from './validators';
 
 /// <reference path="./messenger.d.ts" />
 
@@ -96,7 +101,12 @@ export async function cleanupOldActivityEntries(retentionDays: number): Promise<
 
 export async function getAutoResponseCount(): Promise<{ hour: number; count: number }> {
   const result = await browser.storage.local.get(STORAGE_KEYS.AUTO_RESPONSE_COUNT);
-  return (result[STORAGE_KEYS.AUTO_RESPONSE_COUNT] as { hour: number; count: number }) || { hour: 0, count: 0 };
+  return (
+    (result[STORAGE_KEYS.AUTO_RESPONSE_COUNT] as { hour: number; count: number }) || {
+      hour: 0,
+      count: 0,
+    }
+  );
 }
 
 export async function incrementAutoResponseCount(): Promise<void> {

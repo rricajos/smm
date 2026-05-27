@@ -101,7 +101,7 @@ describe('rules store', () => {
     await rules.addRule(makeRule({ id: 'b', name: 'B' }));
     await rules.addRule(makeRule({ id: 'c', name: 'C' }));
     await rules.reorderRules(['c', 'a', 'b']);
-    const names = get(rules).map(r => r.name);
+    const names = get(rules).map((r) => r.name);
     expect(names).toEqual(['C', 'A', 'B']);
   });
 

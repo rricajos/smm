@@ -8,9 +8,10 @@
   import Button from '../../lib/components/Button.svelte';
   import Modal from '../../lib/components/Modal.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
+  import { getErrorMessage } from '../../lib/utils/error';
+  import type { FolderInfo } from '../../lib/services/openai';
 
-  declare const browser: any;
-
+  /// <reference path="../../lib/utils/messenger.d.ts" />
 
   let activeRules = $derived($rules.filter((r) => r.enabled).length);
   let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
@@ -25,7 +26,15 @@
   // 7-day activity chart
   let weeklyData = $derived(() => {
     const days: { label: string; classifications: number; responses: number }[] = [];
-    const dayKeys: Array<keyof Translations> = ['day_abbr_sun', 'day_abbr_mon', 'day_abbr_tue', 'day_abbr_wed', 'day_abbr_thu', 'day_abbr_fri', 'day_abbr_sat'];
+    const dayKeys: Array<keyof Translations> = [
+      'day_abbr_sun',
+      'day_abbr_mon',
+      'day_abbr_tue',
+      'day_abbr_wed',
+      'day_abbr_thu',
+      'day_abbr_fri',
+      'day_abbr_sat',
+    ];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -33,23 +42,31 @@
       const end = new Date(d).setHours(23, 59, 59, 999);
       days.push({
         label: $t(dayKeys[d.getDay()]),
-        classifications: $activity.filter(a => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end).length,
-        responses: $activity.filter(a => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end).length,
+        classifications: $activity.filter(
+          (a) => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end,
+        ).length,
+        responses: $activity.filter(
+          (a) => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end,
+        ).length,
       });
     }
     return days;
   });
-  let weeklyMax = $derived(Math.max(1, ...weeklyData().map(d => d.classifications + d.responses)));
+  let weeklyMax = $derived(
+    Math.max(1, ...weeklyData().map((d) => d.classifications + d.responses)),
+  );
 
   // Stats time range
   let statsRange = $state<'7d' | '30d' | 'all'>('30d');
   let statsStart = $derived(
-    statsRange === '7d' ? Date.now() - 7 * 86400000
-    : statsRange === '30d' ? Date.now() - 30 * 86400000
-    : 0
+    statsRange === '7d'
+      ? Date.now() - 7 * 86400000
+      : statsRange === '30d'
+        ? Date.now() - 30 * 86400000
+        : 0,
   );
   let filteredForStats = $derived(
-    $activity.filter(a => a.type === 'classification' && a.timestamp >= statsStart)
+    $activity.filter((a) => a.type === 'classification' && a.timestamp >= statsStart),
   );
 
   // Per-rule stats
@@ -115,7 +132,7 @@
         limit: 100,
       });
       processResult = result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       processResult = { processed: 0, matched: 0, errors: 1, details: [] };
     } finally {
       processing = false;
@@ -123,18 +140,23 @@
   }
 
   // Folder management
-  let allFolders = $state<any[]>([]);
+  let allFolders = $state<FolderInfo[]>([]);
   let showFolders = $state(false);
   let folderError = $state('');
   let folderSuccess = $state('');
   let renamingId = $state<string | null>(null);
   let renameValue = $state('');
-  let confirmDeleteFolder = $state<{ show: boolean; folder: any }>({ show: false, folder: null });
+  let confirmDeleteFolder = $state<{ show: boolean; folder: FolderInfo | null }>({
+    show: false,
+    folder: null,
+  });
 
   async function loadFolders() {
     try {
       allFolders = await browser.runtime.sendMessage({ type: 'GET_FOLDERS' });
-    } catch { allFolders = []; }
+    } catch {
+      allFolders = [];
+    }
   }
 
   function toggleFolders() {
@@ -142,7 +164,7 @@
     if (showFolders) loadFolders();
   }
 
-  function startRename(folder: any) {
+  function startRename(folder: FolderInfo) {
     renamingId = folder.id;
     renameValue = folder.name;
     folderError = '';
@@ -158,7 +180,9 @@
     folderError = '';
     try {
       const result = await browser.runtime.sendMessage({
-        type: 'RENAME_FOLDER', folderId: renamingId, newName: renameValue.trim(),
+        type: 'RENAME_FOLDER',
+        folderId: renamingId,
+        newName: renameValue.trim(),
       });
       if (result.success) {
         folderSuccess = $t('dashboard_folder_renamed', { name: renameValue.trim() });
@@ -169,12 +193,12 @@
       } else {
         folderError = result.error || $t('dashboard_rename_error');
       }
-    } catch (err: any) {
-      folderError = err.message || $t('dashboard_rename_error');
+    } catch (err: unknown) {
+      folderError = getErrorMessage(err) || $t('dashboard_rename_error');
     }
   }
 
-  function deleteFolder(folder: any) {
+  function deleteFolder(folder: FolderInfo) {
     confirmDeleteFolder = { show: true, folder };
   }
 
@@ -185,7 +209,8 @@
     folderError = '';
     try {
       const result = await browser.runtime.sendMessage({
-        type: 'DELETE_FOLDER', folderId: folder.id,
+        type: 'DELETE_FOLDER',
+        folderId: folder.id,
       });
       if (result.success) {
         folderSuccess = $t('dashboard_folder_deleted', { name: folder.name });
@@ -194,8 +219,8 @@
       } else {
         folderError = result.error || $t('dashboard_delete_error');
       }
-    } catch (err: any) {
-      folderError = err.message || $t('dashboard_delete_error');
+    } catch (err: unknown) {
+      folderError = getErrorMessage(err) || $t('dashboard_delete_error');
     }
   }
 
@@ -209,7 +234,19 @@
   <div class="cards">
     <div class="card card-rules">
       <div class="card-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline
+            points="14 2 14 8 20 8"
+          /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg
+        >
       </div>
       <div class="card-data">
         <div class="card-value">{$rules.length}</div>
@@ -218,7 +255,19 @@
     </div>
     <div class="card card-active">
       <div class="card-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline
+            points="22 4 12 14.01 9 11.01"
+          /></svg
+        >
       </div>
       <div class="card-data">
         <div class="card-value">{activeRules}</div>
@@ -227,7 +276,19 @@
     </div>
     <div class="card card-classified">
       <div class="card-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path
+            d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+          /></svg
+        >
       </div>
       <div class="card-data">
         <div class="card-value">{todayClassifications}</div>
@@ -236,7 +297,17 @@
     </div>
     <div class="card card-responses">
       <div class="card-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg
+        >
       </div>
       <div class="card-data">
         <div class="card-value">{todayAutoResponses}</div>
@@ -250,13 +321,17 @@
       variant={$settings.classificationEnabled ? 'primary' : 'secondary'}
       onclick={toggleClassification}
     >
-      {$t('dashboard_classification')}: {$settings.classificationEnabled ? $t('common_on') : $t('common_off')}
+      {$t('dashboard_classification')}: {$settings.classificationEnabled
+        ? $t('common_on')
+        : $t('common_off')}
     </Button>
     <Button
       variant={$settings.autoResponseEnabled ? 'primary' : 'secondary'}
       onclick={toggleAutoResponse}
     >
-      {$t('dashboard_auto_response')}: {$settings.autoResponseEnabled ? $t('common_on') : $t('common_off')}
+      {$t('dashboard_auto_response')}: {$settings.autoResponseEnabled
+        ? $t('common_on')
+        : $t('common_off')}
     </Button>
   </div>
 
@@ -269,10 +344,21 @@
           <div class="chart-col">
             <div class="chart-bar-wrapper">
               {#if day.responses > 0}
-                <div class="chart-bar bar-response" style="height: {Math.max(3, Math.round((day.responses / weeklyMax) * 100))}%" title="{day.responses} responses"></div>
+                <div
+                  class="chart-bar bar-response"
+                  style="height: {Math.max(3, Math.round((day.responses / weeklyMax) * 100))}%"
+                  title="{day.responses} responses"
+                ></div>
               {/if}
               {#if day.classifications > 0}
-                <div class="chart-bar bar-classification" style="height: {Math.max(3, Math.round((day.classifications / weeklyMax) * 100))}%" title="{day.classifications} classifications"></div>
+                <div
+                  class="chart-bar bar-classification"
+                  style="height: {Math.max(
+                    3,
+                    Math.round((day.classifications / weeklyMax) * 100),
+                  )}%"
+                  title="{day.classifications} classifications"
+                ></div>
               {/if}
               {#if day.classifications === 0 && day.responses === 0}
                 <div class="chart-bar bar-empty"></div>
@@ -283,8 +369,13 @@
         {/each}
       </div>
       <div class="chart-legend">
-        <span class="legend-item"><span class="legend-dot dot-classification"></span> {$t('dashboard_classification')}</span>
-        <span class="legend-item"><span class="legend-dot dot-response"></span> {$t('dashboard_auto_response')}</span>
+        <span class="legend-item"
+          ><span class="legend-dot dot-classification"></span>
+          {$t('dashboard_classification')}</span
+        >
+        <span class="legend-item"
+          ><span class="legend-dot dot-response"></span> {$t('dashboard_auto_response')}</span
+        >
       </div>
     </div>
   {/if}
@@ -349,7 +440,11 @@
         <h3>{$t('dashboard_process_existing')}</h3>
         <p class="process-desc">{$t('dashboard_process_existing_desc')}</p>
       </div>
-      <Button variant="primary" onclick={processExisting} disabled={processing || activeRules === 0}>
+      <Button
+        variant="primary"
+        onclick={processExisting}
+        disabled={processing || activeRules === 0}
+      >
         {processing ? $t('dashboard_processing') : $t('dashboard_run_rules')}
       </Button>
     </div>
@@ -421,7 +516,9 @@
   <div class="folder-section">
     <div class="folder-header">
       <h3>{$t('dashboard_manage_folders')}</h3>
-      <Button size="sm" onclick={toggleFolders}>{showFolders ? $t('common_hide') : $t('common_show')}</Button>
+      <Button size="sm" onclick={toggleFolders}
+        >{showFolders ? $t('common_hide') : $t('common_show')}</Button
+      >
     </div>
 
     {#if showFolders}
@@ -449,8 +546,15 @@
                   {folder.path || folder.name}
                 </span>
                 <div class="folder-actions">
-                  <Button size="xs" onclick={() => startRename(folder)} title={$t('common_edit')}>&#9998;</Button>
-                  <Button size="xs" variant="danger" onclick={() => deleteFolder(folder)} title={$t('common_delete')}>&#10005;</Button>
+                  <Button size="xs" onclick={() => startRename(folder)} title={$t('common_edit')}
+                    >&#9998;</Button
+                  >
+                  <Button
+                    size="xs"
+                    variant="danger"
+                    onclick={() => deleteFolder(folder)}
+                    title={$t('common_delete')}>&#10005;</Button
+                  >
                 </div>
               {/if}
             </div>
@@ -481,7 +585,11 @@
               <td>{formatTime(entry.timestamp)}</td>
               <td>
                 <span class="badge badge-{entry.type}">
-                  {entry.type === 'classification' ? $t('log_type_classification') : entry.type === 'autoResponse' ? $t('log_type_response') : $t('log_type_error')}
+                  {entry.type === 'classification'
+                    ? $t('log_type_classification')
+                    : entry.type === 'autoResponse'
+                      ? $t('log_type_response')
+                      : $t('log_type_error')}
                 </span>
               </td>
               <td>{entry.ruleName}</td>
@@ -497,16 +605,74 @@
   <!-- Status footer -->
   <div class="status-footer">
     <div class="status-item">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line
+          x1="12"
+          y1="8"
+          x2="12.01"
+          y2="8"
+        /></svg
+      >
       <span>{$t('dashboard_version')} 1.5</span>
     </div>
     <div class="status-item">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
-      <span>{$t('dashboard_ai_status')}: {$settings.openaiApiKey ? $t('dashboard_ai_configured') : $t('dashboard_ai_not_configured')}</span>
-      <span class="status-dot" class:status-ok={$settings.openaiApiKey} class:status-off={!$settings.openaiApiKey}></span>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" /><line
+          x1="10"
+          y1="16"
+          x2="14"
+          y2="16"
+        /><line x1="10" y1="19" x2="14" y2="19" /></svg
+      >
+      <span
+        >{$t('dashboard_ai_status')}: {$settings.openaiApiKey
+          ? $t('dashboard_ai_configured')
+          : $t('dashboard_ai_not_configured')}</span
+      >
+      <span
+        class="status-dot"
+        class:status-ok={$settings.openaiApiKey}
+        class:status-off={!$settings.openaiApiKey}
+      ></span>
     </div>
     <div class="status-item status-shortcuts">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><rect x="2" y="4" width="20" height="16" rx="2" /><line
+          x1="6"
+          y1="8"
+          x2="6.01"
+          y2="8"
+        /><line x1="10" y1="8" x2="10.01" y2="8" /><line x1="14" y1="8" x2="14.01" y2="8" /><line
+          x1="18"
+          y1="8"
+          x2="18.01"
+          y2="8"
+        /><line x1="8" y1="12" x2="16" y2="12" /></svg
+      >
       <span>{$t('dashboard_shortcuts_hint')}</span>
     </div>
   </div>
@@ -514,7 +680,9 @@
   <ConfirmDialog
     show={confirmDeleteFolder.show}
     title={$t('confirm_delete_folder_title')}
-    message={$t('dashboard_confirm_delete_folder', { name: confirmDeleteFolder.folder?.name || '' })}
+    message={$t('dashboard_confirm_delete_folder', {
+      name: confirmDeleteFolder.folder?.name || '',
+    })}
     onconfirm={confirmDeleteFolderAction}
     oncancel={() => (confirmDeleteFolder = { show: false, folder: null })}
   />
@@ -540,15 +708,25 @@
     border-radius: 10px;
     padding: 14px 16px;
     border-left: 4px solid transparent;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
   }
   .card:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
-  .card-rules { border-left-color: #0060df; }
-  .card-active { border-left-color: #2e7d32; }
-  .card-classified { border-left-color: #e65100; }
-  .card-responses { border-left-color: #6a1b9a; }
+  .card-rules {
+    border-left-color: #0060df;
+  }
+  .card-active {
+    border-left-color: #2e7d32;
+  }
+  .card-classified {
+    border-left-color: #e65100;
+  }
+  .card-responses {
+    border-left-color: #6a1b9a;
+  }
   .card-icon {
     display: flex;
     align-items: center;
@@ -558,10 +736,22 @@
     border-radius: 10px;
     flex-shrink: 0;
   }
-  .card-rules .card-icon { background: rgba(0, 96, 223, 0.1); color: #0060df; }
-  .card-active .card-icon { background: rgba(46, 125, 50, 0.1); color: #2e7d32; }
-  .card-classified .card-icon { background: rgba(230, 81, 0, 0.1); color: #e65100; }
-  .card-responses .card-icon { background: rgba(106, 27, 154, 0.1); color: #6a1b9a; }
+  .card-rules .card-icon {
+    background: rgba(0, 96, 223, 0.1);
+    color: #0060df;
+  }
+  .card-active .card-icon {
+    background: rgba(46, 125, 50, 0.1);
+    color: #2e7d32;
+  }
+  .card-classified .card-icon {
+    background: rgba(230, 81, 0, 0.1);
+    color: #e65100;
+  }
+  .card-responses .card-icon {
+    background: rgba(106, 27, 154, 0.1);
+    color: #6a1b9a;
+  }
   .card-data {
     display: flex;
     flex-direction: column;
@@ -658,8 +848,12 @@
     height: 8px;
     border-radius: 2px;
   }
-  .dot-classification { background: #0060df; }
-  .dot-response { background: #6a1b9a; }
+  .dot-classification {
+    background: #0060df;
+  }
+  .dot-response {
+    background: #6a1b9a;
+  }
 
   /* Status footer */
   .status-footer {
@@ -686,8 +880,12 @@
     height: 7px;
     border-radius: 50%;
   }
-  .status-ok { background: #2e7d32; }
-  .status-off { background: #bbb; }
+  .status-ok {
+    background: #2e7d32;
+  }
+  .status-off {
+    background: #bbb;
+  }
 
   /* Folder management */
   .folder-section {
@@ -701,15 +899,24 @@
     justify-content: space-between;
     align-items: center;
   }
-  .folder-header h3 { margin: 0; font-size: 15px; }
+  .folder-header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
   .folder-msg {
     padding: 6px 10px;
     border-radius: 4px;
     font-size: 12px;
     margin-top: 10px;
   }
-  .folder-msg.error { background: #fce4ec; color: #c62828; }
-  .folder-msg.success { background: #e8f5e9; color: #2e7d32; }
+  .folder-msg.error {
+    background: #fce4ec;
+    color: #c62828;
+  }
+  .folder-msg.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
   .folder-list {
     display: flex;
     flex-direction: column;
@@ -726,7 +933,9 @@
     border-radius: 4px;
     font-size: 12px;
   }
-  .folder-item:hover { background: var(--bg-secondary, #f0f0f4); }
+  .folder-item:hover {
+    background: var(--bg-secondary, #f0f0f4);
+  }
   .folder-path {
     flex: 1;
     overflow: hidden;
@@ -740,7 +949,9 @@
     opacity: 0;
     transition: opacity 0.15s;
   }
-  .folder-item:hover .folder-actions { opacity: 1; }
+  .folder-item:hover .folder-actions {
+    opacity: 1;
+  }
   .folder-actions :global(.btn) {
     font-size: 12px;
   }
@@ -794,7 +1005,9 @@
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
   .process-result {
     margin-top: 16px;
@@ -993,31 +1206,95 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
-    .card-rules .card-icon { background: rgba(69, 161, 255, 0.15); color: #45a1ff; }
-    .card-active .card-icon { background: rgba(102, 187, 106, 0.15); color: #66bb6a; }
-    .card-classified .card-icon { background: rgba(255, 183, 77, 0.15); color: #ffb74d; }
-    .card-responses .card-icon { background: rgba(186, 104, 200, 0.15); color: #ba68c8; }
-    .card-rules { border-left-color: #45a1ff; }
-    .card-active { border-left-color: #66bb6a; }
-    .card-classified { border-left-color: #ffb74d; }
-    .card-responses { border-left-color: #ba68c8; }
-    .bar-classification { background: linear-gradient(180deg, #45a1ff, #3b8fe6); }
-    .bar-response { background: linear-gradient(180deg, #ba68c8, #9c4dcc); }
-    .dot-classification { background: #45a1ff; }
-    .dot-response { background: #ba68c8; }
-    .status-ok { background: #66bb6a; }
-    .status-off { background: #666; }
-    .badge-classification { background: #1b4332; color: #95d5b2; }
-    .badge-autoResponse { background: #1a3a5c; color: #90caf9; }
-    .badge-error { background: #4a1c1c; color: #ef9a9a; }
-    .rule-badge { background: #1b4332; color: #95d5b2; }
-    .stat.match .stat-value { color: #66bb6a; }
-    .stat.error .stat-value { color: #ef5350; }
-    .stat-bar-sender { background: #ffb74d; }
-    .stats-range { background: #1c1b22; border-color: #4a4a5a; }
-    .folder-msg.error { background: #4a1c1c; color: #ef9a9a; }
-    .folder-msg.success { background: #1b3320; color: #81c784; }
-    .rename-input { background: #1c1b22; border-color: #45a1ff; }
+    .card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .card-rules .card-icon {
+      background: rgba(69, 161, 255, 0.15);
+      color: #45a1ff;
+    }
+    .card-active .card-icon {
+      background: rgba(102, 187, 106, 0.15);
+      color: #66bb6a;
+    }
+    .card-classified .card-icon {
+      background: rgba(255, 183, 77, 0.15);
+      color: #ffb74d;
+    }
+    .card-responses .card-icon {
+      background: rgba(186, 104, 200, 0.15);
+      color: #ba68c8;
+    }
+    .card-rules {
+      border-left-color: #45a1ff;
+    }
+    .card-active {
+      border-left-color: #66bb6a;
+    }
+    .card-classified {
+      border-left-color: #ffb74d;
+    }
+    .card-responses {
+      border-left-color: #ba68c8;
+    }
+    .bar-classification {
+      background: linear-gradient(180deg, #45a1ff, #3b8fe6);
+    }
+    .bar-response {
+      background: linear-gradient(180deg, #ba68c8, #9c4dcc);
+    }
+    .dot-classification {
+      background: #45a1ff;
+    }
+    .dot-response {
+      background: #ba68c8;
+    }
+    .status-ok {
+      background: #66bb6a;
+    }
+    .status-off {
+      background: #666;
+    }
+    .badge-classification {
+      background: #1b4332;
+      color: #95d5b2;
+    }
+    .badge-autoResponse {
+      background: #1a3a5c;
+      color: #90caf9;
+    }
+    .badge-error {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
+    .rule-badge {
+      background: #1b4332;
+      color: #95d5b2;
+    }
+    .stat.match .stat-value {
+      color: #66bb6a;
+    }
+    .stat.error .stat-value {
+      color: #ef5350;
+    }
+    .stat-bar-sender {
+      background: #ffb74d;
+    }
+    .stats-range {
+      background: #1c1b22;
+      border-color: #4a4a5a;
+    }
+    .folder-msg.error {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
+    .folder-msg.success {
+      background: #1b3320;
+      color: #81c784;
+    }
+    .rename-input {
+      background: #1c1b22;
+      border-color: #45a1ff;
+    }
   }
 </style>

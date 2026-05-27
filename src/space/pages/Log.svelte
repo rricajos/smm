@@ -24,7 +24,9 @@
   function handleSearchInput(value: string) {
     searchInput = value;
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => { searchQuery = value; }, 250);
+    debounceTimer = setTimeout(() => {
+      searchQuery = value;
+    }, 250);
   }
 
   type SortColumn = 'timestamp' | 'type' | 'ruleName' | 'subject' | 'from';
@@ -64,7 +66,7 @@
     });
     const col = sortColumn;
     const dir = sortDir === 'asc' ? 1 : -1;
-    list.sort((a: any, b: any) => {
+    list.sort((a: ActivityEntry, b: ActivityEntry) => {
       if (col === 'timestamp') return (a.timestamp - b.timestamp) * dir;
       const va = (a[col] || '').toLowerCase();
       const vb = (b[col] || '').toLowerCase();
@@ -79,7 +81,8 @@
   // Reset page when filter changes
   $effect(() => {
     // Track filter deps
-    filterType; searchQuery;
+    filterType;
+    searchQuery;
     page = 1;
   });
 
@@ -97,17 +100,29 @@
   }
 
   function exportCSV() {
-    const headers = [$t('log_col_date'), $t('log_col_type'), $t('log_col_rule'), $t('log_col_subject'), $t('log_col_from'), $t('log_col_actions'), $t('log_col_details')];
+    const headers = [
+      $t('log_col_date'),
+      $t('log_col_type'),
+      $t('log_col_rule'),
+      $t('log_col_subject'),
+      $t('log_col_from'),
+      $t('log_col_actions'),
+      $t('log_col_details'),
+    ];
     const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
-    const rows = filtered().map(e => [
-      new Date(e.timestamp).toISOString(),
-      e.type,
-      e.ruleName,
-      e.subject,
-      e.from,
-      e.actions.join('; '),
-      e.details || '',
-    ].map(escape).join(','));
+    const rows = filtered().map((e) =>
+      [
+        new Date(e.timestamp).toISOString(),
+        e.type,
+        e.ruleName,
+        e.subject,
+        e.from,
+        e.actions.join('; '),
+        e.details || '',
+      ]
+        .map(escape)
+        .join(','),
+    );
     const csv = [headers.join(','), ...rows].join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -156,7 +171,17 @@
   {#if filtered().length === 0}
     <div class="empty-state">
       <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg
+        >
       </div>
       <p class="empty-title">{$t('empty_log_title')}</p>
       <p class="empty-desc">{$t('empty_log_desc')}</p>
@@ -165,25 +190,97 @@
     <table>
       <thead>
         <tr>
-          <th class="sortable" class:sorted={sortColumn === 'timestamp'} onclick={() => toggleSort('timestamp')} aria-sort={sortColumn === 'timestamp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
+          <th
+            class="sortable"
+            class:sorted={sortColumn === 'timestamp'}
+            onclick={() => toggleSort('timestamp')}
+            aria-sort={sortColumn === 'timestamp'
+              ? sortDir === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : 'none'}
+            scope="col"
+          >
             {$t('log_col_date')}
-            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'timestamp' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true"
+              >{sortColumn === 'timestamp'
+                ? sortDir === 'asc'
+                  ? '\u25B2'
+                  : '\u25BC'
+                : '\u25BD'}</span
+            >
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'type'} onclick={() => toggleSort('type')} aria-sort={sortColumn === 'type' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
+          <th
+            class="sortable"
+            class:sorted={sortColumn === 'type'}
+            onclick={() => toggleSort('type')}
+            aria-sort={sortColumn === 'type'
+              ? sortDir === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : 'none'}
+            scope="col"
+          >
             {$t('log_col_type')}
-            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'type' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true"
+              >{sortColumn === 'type' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span
+            >
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'ruleName'} onclick={() => toggleSort('ruleName')} aria-sort={sortColumn === 'ruleName' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
+          <th
+            class="sortable"
+            class:sorted={sortColumn === 'ruleName'}
+            onclick={() => toggleSort('ruleName')}
+            aria-sort={sortColumn === 'ruleName'
+              ? sortDir === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : 'none'}
+            scope="col"
+          >
             {$t('log_col_rule')}
-            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'ruleName' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true"
+              >{sortColumn === 'ruleName'
+                ? sortDir === 'asc'
+                  ? '\u25B2'
+                  : '\u25BC'
+                : '\u25BD'}</span
+            >
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'subject'} onclick={() => toggleSort('subject')} aria-sort={sortColumn === 'subject' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
+          <th
+            class="sortable"
+            class:sorted={sortColumn === 'subject'}
+            onclick={() => toggleSort('subject')}
+            aria-sort={sortColumn === 'subject'
+              ? sortDir === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : 'none'}
+            scope="col"
+          >
             {$t('log_col_subject')}
-            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'subject' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true"
+              >{sortColumn === 'subject'
+                ? sortDir === 'asc'
+                  ? '\u25B2'
+                  : '\u25BC'
+                : '\u25BD'}</span
+            >
           </th>
-          <th class="sortable" class:sorted={sortColumn === 'from'} onclick={() => toggleSort('from')} aria-sort={sortColumn === 'from' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} scope="col">
+          <th
+            class="sortable"
+            class:sorted={sortColumn === 'from'}
+            onclick={() => toggleSort('from')}
+            aria-sort={sortColumn === 'from'
+              ? sortDir === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : 'none'}
+            scope="col"
+          >
             {$t('log_col_from')}
-            <span class="sort-arrow" aria-hidden="true">{sortColumn === 'from' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span>
+            <span class="sort-arrow" aria-hidden="true"
+              >{sortColumn === 'from' ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BD'}</span
+            >
           </th>
           <th scope="col">{$t('log_col_actions')}</th>
           <th scope="col">{$t('log_col_details')}</th>
@@ -191,7 +288,12 @@
       </thead>
       <tbody>
         {#each paginated as entry, i}
-          <tr class="clickable-row" class:expanded-row={expandedRow === i} onclick={() => (expandedRow = expandedRow === i ? null : i)} aria-expanded={expandedRow === i}>
+          <tr
+            class="clickable-row"
+            class:expanded-row={expandedRow === i}
+            onclick={() => (expandedRow = expandedRow === i ? null : i)}
+            aria-expanded={expandedRow === i}
+          >
             <td>{formatTime(entry.timestamp)}</td>
             <td>
               <span class="badge badge-{entry.type}">
@@ -208,12 +310,27 @@
             <tr class="detail-row">
               <td colspan="7">
                 <div class="detail-content">
-                  <div class="detail-field"><strong>{$t('log_col_subject')}:</strong> {entry.subject}</div>
-                  <div class="detail-field"><strong>{$t('log_col_from')}:</strong> {entry.from}</div>
-                  <div class="detail-field"><strong>{$t('log_col_rule')}:</strong> {entry.ruleName}</div>
-                  <div class="detail-field"><strong>{$t('log_col_actions')}:</strong> {entry.actions.join(', ')}</div>
+                  <div class="detail-field">
+                    <strong>{$t('log_col_subject')}:</strong>
+                    {entry.subject}
+                  </div>
+                  <div class="detail-field">
+                    <strong>{$t('log_col_from')}:</strong>
+                    {entry.from}
+                  </div>
+                  <div class="detail-field">
+                    <strong>{$t('log_col_rule')}:</strong>
+                    {entry.ruleName}
+                  </div>
+                  <div class="detail-field">
+                    <strong>{$t('log_col_actions')}:</strong>
+                    {entry.actions.join(', ')}
+                  </div>
                   {#if entry.details}
-                    <div class="detail-field"><strong>{$t('log_col_details')}:</strong> {entry.details}</div>
+                    <div class="detail-field">
+                      <strong>{$t('log_col_details')}:</strong>
+                      {entry.details}
+                    </div>
                   {/if}
                 </div>
               </td>
@@ -223,12 +340,26 @@
       </tbody>
     </table>
     <div class="pagination-row">
-      <p class="count">{$t('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}</p>
+      <p class="count">
+        {$t('log_entries_count', { n: filtered().length, s: filtered().length !== 1 ? 's' : '' })}
+      </p>
       {#if totalPages > 1}
         <div class="pagination">
-          <Button size="sm" disabled={page <= 1} onclick={() => (page = page - 1)} aria-label={$t('log_page_prev')}>{$t('log_page_prev')}</Button>
-          <span class="page-info" aria-live="polite">{$t('log_page_of', { current: page, total: totalPages })}</span>
-          <Button size="sm" disabled={page >= totalPages} onclick={() => (page = page + 1)} aria-label={$t('log_page_next')}>{$t('log_page_next')}</Button>
+          <Button
+            size="sm"
+            disabled={page <= 1}
+            onclick={() => (page = page - 1)}
+            aria-label={$t('log_page_prev')}>{$t('log_page_prev')}</Button
+          >
+          <span class="page-info" aria-live="polite"
+            >{$t('log_page_of', { current: page, total: totalPages })}</span
+          >
+          <Button
+            size="sm"
+            disabled={page >= totalPages}
+            onclick={() => (page = page + 1)}
+            aria-label={$t('log_page_next')}>{$t('log_page_next')}</Button
+          >
         </div>
       {/if}
     </div>
@@ -368,9 +499,18 @@
     font-size: 11px;
     font-weight: 500;
   }
-  .badge-classification { background: #d4edda; color: #155724; }
-  .badge-autoResponse { background: #cce5ff; color: #004085; }
-  .badge-error { background: #f8d7da; color: #721c24; }
+  .badge-classification {
+    background: #d4edda;
+    color: #155724;
+  }
+  .badge-autoResponse {
+    background: #cce5ff;
+    color: #004085;
+  }
+  .badge-error {
+    background: #f8d7da;
+    color: #721c24;
+  }
   .clickable-row {
     cursor: pointer;
     transition: background 0.1s;
@@ -395,8 +535,14 @@
     animation: expandIn 0.15s ease;
   }
   @keyframes expandIn {
-    from { opacity: 0; max-height: 0; }
-    to { opacity: 1; max-height: 200px; }
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 200px;
+    }
   }
   .detail-field {
     line-height: 1.4;
@@ -408,12 +554,30 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .badge-classification { background: #1b4332; color: #95d5b2; }
-    .badge-autoResponse { background: #1a3a5c; color: #90caf9; }
-    .badge-error { background: #4a1c1c; color: #ef9a9a; }
-    .filters input, .filters select { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
-    .clickable-row:hover, .expanded-row { background: #2b2a33; }
-    .detail-content { background: #2b2a33; }
+    .badge-classification {
+      background: #1b4332;
+      color: #95d5b2;
+    }
+    .badge-autoResponse {
+      background: #1a3a5c;
+      color: #90caf9;
+    }
+    .badge-error {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
+    .filters input,
+    .filters select {
+      background: var(--bg-secondary, #2b2a33);
+      color: var(--text-color, #fbfbfe);
+    }
+    .clickable-row:hover,
+    .expanded-row {
+      background: #2b2a33;
+    }
+    .detail-content {
+      background: #2b2a33;
+    }
   }
 
   .pagination-row {

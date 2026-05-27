@@ -14,7 +14,6 @@
 
   let { show, validation, onimport, onclose }: Props = $props();
 
-
   let importRules = $state(true);
   let importTemplates = $state(true);
   let importSettings = $state(false);
@@ -44,10 +43,10 @@
   }
 
   let totalNew = $derived(
-    (validation?.newItems.rules.length || 0) + (validation?.newItems.templates.length || 0)
+    (validation?.newItems.rules.length || 0) + (validation?.newItems.templates.length || 0),
   );
   let totalConflicts = $derived(
-    (validation?.conflicts.rules.length || 0) + (validation?.conflicts.templates.length || 0)
+    (validation?.conflicts.rules.length || 0) + (validation?.conflicts.templates.length || 0),
   );
 </script>
 
@@ -65,7 +64,8 @@
         <div class="summary-row">
           <label class="checkbox-label">
             <input type="checkbox" bind:checked={importTemplates} />
-            <span>{validation.data?.templates.length || 0} {$t('tab_templates').toLowerCase()}</span>
+            <span>{validation.data?.templates.length || 0} {$t('tab_templates').toLowerCase()}</span
+            >
           </label>
         </div>
         <div class="summary-row">
@@ -75,7 +75,9 @@
           </label>
         </div>
         {#if totalNew > 0}
-          <p class="new-count">{$t('import_new_items', { n: totalNew, s: totalNew !== 1 ? 's' : '' })}</p>
+          <p class="new-count">
+            {$t('import_new_items', { n: totalNew, s: totalNew !== 1 ? 's' : '' })}
+          </p>
         {/if}
       </div>
 
@@ -87,7 +89,9 @@
           {#if validation.conflicts.rules.length > 0 && importRules}
             {#each validation.conflicts.rules as conflict}
               <div class="conflict-item">
-                <span class="conflict-name">{$t('import_conflict_rule', { name: conflict.imported.name })}</span>
+                <span class="conflict-name"
+                  >{$t('import_conflict_rule', { name: conflict.imported.name })}</span
+                >
                 <select bind:value={conflictResolutions[`rule:${conflict.imported.id}`]}>
                   <option value="skip">{$t('import_skip')}</option>
                   <option value="replace">{$t('import_replace')}</option>
@@ -100,7 +104,9 @@
           {#if validation.conflicts.templates.length > 0 && importTemplates}
             {#each validation.conflicts.templates as conflict}
               <div class="conflict-item">
-                <span class="conflict-name">{$t('import_conflict_template', { name: conflict.imported.name })}</span>
+                <span class="conflict-name"
+                  >{$t('import_conflict_template', { name: conflict.imported.name })}</span
+                >
                 <select bind:value={conflictResolutions[`tmpl:${conflict.imported.id}`]}>
                   <option value="skip">{$t('import_skip')}</option>
                   <option value="replace">{$t('import_replace')}</option>
@@ -185,7 +191,12 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .new-count { color: #66bb6a; }
-    .conflict-item select { background: #1c1b22; border-color: #4a4a5a; }
+    .new-count {
+      color: #66bb6a;
+    }
+    .conflict-item select {
+      background: #1c1b22;
+      border-color: #4a4a5a;
+    }
   }
 </style>

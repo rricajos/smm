@@ -5,7 +5,13 @@
   import { rules } from '../../lib/stores/rules';
   import { templates } from '../../lib/stores/templates';
   import { settings } from '../../lib/stores/settings';
-  import { exportConfiguration, validateImportData, detectConflicts, type ImportValidationResult, type ImportOptions } from '../../lib/utils/config-io';
+  import {
+    exportConfiguration,
+    validateImportData,
+    detectConflicts,
+    type ImportValidationResult,
+    type ImportOptions,
+  } from '../../lib/utils/config-io';
   import { detectRuleConflicts, type RuleConflict } from '../../lib/utils/rule-conflicts';
   import Button from '../../lib/components/Button.svelte';
   import Modal from '../../lib/components/Modal.svelte';
@@ -14,8 +20,9 @@
   import RuleEditor from '../components/RuleEditor.svelte';
   import PresetGallery from '../components/PresetGallery.svelte';
   import { t } from '../../lib/i18n';
+  import type { FolderInfo, TagInfo } from '../../lib/services/openai';
 
-  declare const browser: any;
+  /// <reference path="../../lib/utils/messenger.d.ts" />
 
   interface Props {
     onrequestai?: (prompt: string) => void;
@@ -33,7 +40,11 @@
 
   // Test rule state
   let testingRuleId = $state<string | null>(null);
-  let testResult = $state<{ processed: number; matched: number; details: Array<{ subject: string; from: string }> } | null>(null);
+  let testResult = $state<{
+    processed: number;
+    matched: number;
+    details: Array<{ subject: string; from: string }>;
+  } | null>(null);
   let showTestModal = $state(false);
   let testRuleName = $state('');
 
@@ -44,18 +55,24 @@
   let showPresetGallery = $state(false);
 
   // Confirm delete state
-  let confirmDelete = $state<{ show: boolean; id: string; name: string }>({ show: false, id: '', name: '' });
+  let confirmDelete = $state<{ show: boolean; id: string; name: string }>({
+    show: false,
+    id: '',
+    name: '',
+  });
 
   // Filter
   let filterQuery = $state('');
 
   let filteredRules = $derived(
     filterQuery.trim()
-      ? $rules.filter(r => {
+      ? $rules.filter((r) => {
           const q = filterQuery.toLowerCase().trim();
-          return r.name.toLowerCase().includes(q) ||
-            r.conditions.some(c => (c.value || '').toLowerCase().includes(q)) ||
-            r.actions.some(a => a.type.toLowerCase().includes(q));
+          return (
+            r.name.toLowerCase().includes(q) ||
+            r.conditions.some((c) => (c.value || '').toLowerCase().includes(q)) ||
+            r.actions.some((a) => a.type.toLowerCase().includes(q))
+          );
         })
       : $rules,
   );
@@ -67,15 +84,18 @@
   let dragIndex = $state<number | null>(null);
   let dragOverIndex = $state<number | null>(null);
 
-
   // Load folders and tags from background
   async function loadMetadata() {
     try {
       folders = await browser.runtime.sendMessage({ type: 'GET_FOLDERS' });
-    } catch { folders = []; }
+    } catch {
+      folders = [];
+    }
     try {
       tags = await browser.runtime.sendMessage({ type: 'GET_TAGS' });
-    } catch { tags = []; }
+    } catch {
+      tags = [];
+    }
   }
 
   loadMetadata();
@@ -83,20 +103,35 @@
   // Check for broken references whenever rules or metadata change
   $effect(() => {
     const refs: Record<string, string[]> = {};
-    const folderIds = new Set(folders.map((f: any) => f.id));
-    const tagKeys = new Set(tags.map((t: any) => t.key));
-    const templateIds = new Set($templates.map(t => t.id));
+    const folderIds = new Set(folders.map((f: FolderInfo) => f.id));
+    const tagKeys = new Set(tags.map((t: TagInfo) => t.key));
+    const templateIds = new Set($templates.map((t) => t.id));
 
     for (const rule of $rules) {
       const problems: string[] = [];
       for (const action of rule.actions) {
-        if (action.type === 'moveToFolder' && action.folderId && folderIds.size > 0 && !folderIds.has(action.folderId)) {
+        if (
+          action.type === 'moveToFolder' &&
+          action.folderId &&
+          folderIds.size > 0 &&
+          !folderIds.has(action.folderId)
+        ) {
           problems.push($t('rules_broken_folder', { id: action.folderId }));
         }
-        if (action.type === 'addTag' && action.tagKey && tagKeys.size > 0 && !tagKeys.has(action.tagKey)) {
+        if (
+          action.type === 'addTag' &&
+          action.tagKey &&
+          tagKeys.size > 0 &&
+          !tagKeys.has(action.tagKey)
+        ) {
           problems.push($t('rules_broken_tag', { key: action.tagKey }));
         }
-        if (action.type === 'autoRespond' && action.templateId && templateIds.size > 0 && !templateIds.has(action.templateId)) {
+        if (
+          action.type === 'autoRespond' &&
+          action.templateId &&
+          templateIds.size > 0 &&
+          !templateIds.has(action.templateId)
+        ) {
           problems.push($t('rules_broken_template'));
         }
       }
@@ -158,7 +193,7 @@
         limit: 50,
       });
       testResult = result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       testResult = { processed: 0, matched: 0, details: [] };
     } finally {
       testingRuleId = null;
@@ -190,7 +225,7 @@
   function handleDrop(e: DragEvent, index: number) {
     e.preventDefault();
     if (dragIndex !== null && dragIndex !== index) {
-      const ids = $rules.map(r => r.id);
+      const ids = $rules.map((r) => r.id);
       const [movedId] = ids.splice(dragIndex, 1);
       ids.splice(index, 0, movedId);
       rules.reorderRules(ids);
@@ -264,9 +299,15 @@
       for (const conflict of importValidation.conflicts.rules) {
         const resolution = options.conflictResolutions[`rule:${conflict.imported.id}`] || 'skip';
         if (resolution === 'replace') {
-          finalRules = finalRules.map(r => r.id === conflict.existing.id ? conflict.imported : r);
+          finalRules = finalRules.map((r) =>
+            r.id === conflict.existing.id ? conflict.imported : r,
+          );
         } else if (resolution === 'duplicate') {
-          finalRules.push({ ...conflict.imported, id: crypto.randomUUID(), name: `${conflict.imported.name} ${$t('rules_imported_suffix')}` });
+          finalRules.push({
+            ...conflict.imported,
+            id: crypto.randomUUID(),
+            name: `${conflict.imported.name} ${$t('rules_imported_suffix')}`,
+          });
         }
       }
       await rules.setRules(finalRules);
@@ -280,9 +321,15 @@
       for (const conflict of importValidation.conflicts.templates) {
         const resolution = options.conflictResolutions[`tmpl:${conflict.imported.id}`] || 'skip';
         if (resolution === 'replace') {
-          finalTemplates = finalTemplates.map(t => t.id === conflict.existing.id ? conflict.imported : t);
+          finalTemplates = finalTemplates.map((t) =>
+            t.id === conflict.existing.id ? conflict.imported : t,
+          );
         } else if (resolution === 'duplicate') {
-          finalTemplates.push({ ...conflict.imported, id: crypto.randomUUID(), name: `${conflict.imported.name} ${$t('rules_imported_suffix')}` });
+          finalTemplates.push({
+            ...conflict.imported,
+            id: crypto.randomUUID(),
+            name: `${conflict.imported.name} ${$t('rules_imported_suffix')}`,
+          });
         }
       }
       await templates.setTemplates(finalTemplates);
@@ -300,7 +347,8 @@
     const logic = rule.conditionLogic === 'all' ? $t('logic_and') : $t('logic_or');
     return rule.conditions
       .map((c) => {
-        if (c.field === 'hasAttachments') return c.boolValue ? $t('cond_has_attachments') : $t('cond_no_attachments');
+        if (c.field === 'hasAttachments')
+          return c.boolValue ? $t('cond_has_attachments') : $t('cond_no_attachments');
         return `${c.field} ${c.operator} "${c.value}"`;
       })
       .join(logic);
@@ -331,15 +379,15 @@
 
   let mergedConflicts = $state(new Set<number>());
 
-  let hasRedundantConflicts = $derived(ruleConflicts.some(c => c.type === 'redundant'));
+  let hasRedundantConflicts = $derived(ruleConflicts.some((c) => c.type === 'redundant'));
 
   function condKey(c: Condition): string {
     return `${c.field}|${c.operator}|${(c.value || '').toLowerCase()}|${c.boolValue ?? ''}`;
   }
 
   function mergeRedundantConflict(conflictIdx: number, conflict: RuleConflict) {
-    const ruleA = $rules.find(r => r.id === conflict.ruleA.id);
-    const ruleB = $rules.find(r => r.id === conflict.ruleB.id);
+    const ruleA = $rules.find((r) => r.id === conflict.ruleA.id);
+    const ruleB = $rules.find((r) => r.id === conflict.ruleB.id);
     if (!ruleA || !ruleB) return;
 
     // Combine conditions, avoiding exact duplicates
@@ -373,14 +421,23 @@
 
   function resolveConflictsWithAI() {
     if (!onrequestai || ruleConflicts.length === 0) return;
-    const conflictLines = ruleConflicts.map((c, i) => {
-      const type = c.type === 'redundant' ? $t('conflict_redundant' as any) :
-                   c.type === 'contradictory_move' ? $t('conflict_move_different' as any) :
-                   c.type === 'contradictory_priority' ? $t('conflict_priority_different' as any) :
-                   c.description;
-      return `${i + 1}. "${c.ruleA.name}" + "${c.ruleB.name}": ${type}`;
-    }).join('\n');
-    const prompt = $t('conflict_ai_prompt' as any, { n: ruleConflicts.length, conflicts: conflictLines });
+    const conflictLines = ruleConflicts
+      .map((c, i) => {
+        const type =
+          c.type === 'redundant'
+            ? $t('conflict_redundant' as any)
+            : c.type === 'contradictory_move'
+              ? $t('conflict_move_different' as any)
+              : c.type === 'contradictory_priority'
+                ? $t('conflict_priority_different' as any)
+                : c.description;
+        return `${i + 1}. "${c.ruleA.name}" + "${c.ruleB.name}": ${type}`;
+      })
+      .join('\n');
+    const prompt = $t('conflict_ai_prompt' as any, {
+      n: ruleConflicts.length,
+      conflicts: conflictLines,
+    });
     onrequestai(prompt);
   }
 
@@ -420,23 +477,48 @@
       <div class="conflicts-header">
         <div class="conflicts-header-left">
           <span class="conflicts-badge">{ruleConflicts.length}</span>
-          <span class="conflicts-title">{$t('conflicts_detected', { n: ruleConflicts.length, s: ruleConflicts.length > 1 ? 's' : '' })}</span>
+          <span class="conflicts-title"
+            >{$t('conflicts_detected', {
+              n: ruleConflicts.length,
+              s: ruleConflicts.length > 1 ? 's' : '',
+            })}</span
+          >
         </div>
       </div>
 
       <div class="conflict-list">
         {#each ruleConflicts as conflict, idx}
-          <div class="conflict-item" class:conflict-warning={conflict.severity === 'warning'} class:conflict-info={conflict.severity === 'info'}>
+          <div
+            class="conflict-item"
+            class:conflict-warning={conflict.severity === 'warning'}
+            class:conflict-info={conflict.severity === 'info'}
+          >
             <div class="conflict-text">
               <span class="conflict-rules">
-                <button class="conflict-rule-link" onclick={() => { const r = $rules.find(r => r.id === conflict.ruleA.id); if (r) openEditRule(r); }}>{conflict.ruleA.name}</button>
+                <button
+                  class="conflict-rule-link"
+                  onclick={() => {
+                    const r = $rules.find((r) => r.id === conflict.ruleA.id);
+                    if (r) openEditRule(r);
+                  }}>{conflict.ruleA.name}</button
+                >
                 <span class="conflict-amp">&amp;</span>
-                <button class="conflict-rule-link" onclick={() => { const r = $rules.find(r => r.id === conflict.ruleB.id); if (r) openEditRule(r); }}>{conflict.ruleB.name}</button>
+                <button
+                  class="conflict-rule-link"
+                  onclick={() => {
+                    const r = $rules.find((r) => r.id === conflict.ruleB.id);
+                    if (r) openEditRule(r);
+                  }}>{conflict.ruleB.name}</button
+                >
               </span>
               <span class="conflict-desc">{conflictDesc(conflict)}</span>
             </div>
             {#if conflict.type === 'redundant' && !mergedConflicts.has(idx)}
-              <Button size="xs" variant="primary" onclick={() => mergeRedundantConflict(idx, conflict)}>{$t('conflict_merge')}</Button>
+              <Button
+                size="xs"
+                variant="primary"
+                onclick={() => mergeRedundantConflict(idx, conflict)}>{$t('conflict_merge')}</Button
+              >
             {:else if mergedConflicts.has(idx)}
               <span class="conflict-merged-badge">{$t('conflict_merged')}</span>
             {/if}
@@ -447,13 +529,45 @@
       <div class="conflicts-actions">
         {#if onrequestai}
           <Button variant="primary" onclick={resolveConflictsWithAI}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" /><line
+                x1="10"
+                y1="16"
+                x2="14"
+                y2="16"
+              /><line x1="10" y1="19" x2="14" y2="19" /><line
+                x1="11"
+                y1="22"
+                x2="13"
+                y2="22"
+              /></svg
+            >
             {$t('conflict_resolve_ai')}
           </Button>
         {/if}
         {#if hasRedundantConflicts}
           <Button variant="ghost" onclick={mergeAllRedundant}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><polyline points="16 3 21 3 21 8" /><line x1="4" y1="20" x2="21" y2="3" /><polyline
+                points="21 16 21 21 16 21"
+              /><line x1="15" y1="15" x2="21" y2="21" /><line x1="4" y1="4" x2="9" y2="9" /></svg
+            >
             {$t('conflict_merge_all')}
           </Button>
         {/if}
@@ -464,7 +578,19 @@
   {#if $rules.length === 0}
     <div class="empty-state">
       <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline
+            points="14 2 14 8 20 8"
+          /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg
+        >
       </div>
       <p class="empty-title">{$t('empty_rules_title')}</p>
       <p class="empty-desc">{$t('empty_rules_desc')}</p>
@@ -533,7 +659,12 @@
             </Button>
             <Button size="sm" onclick={() => duplicateRule(rule)}>{$t('common_duplicate')}</Button>
             <Button size="sm" onclick={() => openEditRule(rule)}>{$t('common_edit')}</Button>
-            <Button size="sm" variant="danger" onclick={() => handleDelete(rule.id, rule.name)} aria-label={$t('common_delete')}>x</Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onclick={() => handleDelete(rule.id, rule.name)}
+              aria-label={$t('common_delete')}>x</Button
+            >
           </div>
         </div>
       {/each}
@@ -541,7 +672,14 @@
   {/if}
 
   <!-- Test result modal -->
-  <Modal title={$t('rules_test_result_title', { name: testRuleName })} show={showTestModal} onclose={() => { showTestModal = false; testResult = null; }}>
+  <Modal
+    title={$t('rules_test_result_title', { name: testRuleName })}
+    show={showTestModal}
+    onclose={() => {
+      showTestModal = false;
+      testResult = null;
+    }}
+  >
     {#if !testResult}
       <div class="test-loading">
         <div class="spinner"></div>
@@ -598,14 +736,20 @@
     templates={$templates}
     existingRules={$rules}
     onsave={handleSave}
-    onclose={() => { showEditor = false; editingRule = null; }}
+    onclose={() => {
+      showEditor = false;
+      editingRule = null;
+    }}
   />
 
   <ImportModal
     show={showImportModal}
     validation={importValidation}
     onimport={handleImport}
-    onclose={() => { showImportModal = false; importValidation = null; }}
+    onclose={() => {
+      showImportModal = false;
+      importValidation = null;
+    }}
   />
 
   <PresetGallery
@@ -820,7 +964,9 @@
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
   .test-results {
     display: flex;
@@ -1019,19 +1165,59 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .conflicts-section { background: linear-gradient(135deg, #332d00 0%, #2e2800 100%); border-color: #8d6e00; }
-    .conflicts-header { background: rgba(141, 110, 0, 0.15); border-bottom-color: rgba(141, 110, 0, 0.3); }
-    .conflicts-badge { background: #ff8f00; color: #1c1b22; }
-    .conflicts-title { color: #ffb74d; }
-    .conflict-item:hover { background: rgba(255, 255, 255, 0.04); }
-    .conflict-warning { background: rgba(255, 152, 0, 0.1); border-left-color: #ff9800; }
-    .conflict-info { background: rgba(66, 165, 245, 0.08); border-left-color: #42a5f5; }
-    .conflicts-actions { background: rgba(141, 110, 0, 0.1); border-top-color: rgba(141, 110, 0, 0.3); }
-    .conflict-merged-badge { background: #1b4332; color: #95d5b2; }
-    .rule-item.has-warning { border-color: #8d6e00; background: #332d00; }
-    .broken-ref-warning span { background: #332d00; border-color: #8d6e00; color: #ffb74d; }
-    .test-stat.match .test-stat-value { color: #66bb6a; }
-    .import-error { background: #4a1c1c; color: #ef9a9a; }
-    .filter-input { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
+    .conflicts-section {
+      background: linear-gradient(135deg, #332d00 0%, #2e2800 100%);
+      border-color: #8d6e00;
+    }
+    .conflicts-header {
+      background: rgba(141, 110, 0, 0.15);
+      border-bottom-color: rgba(141, 110, 0, 0.3);
+    }
+    .conflicts-badge {
+      background: #ff8f00;
+      color: #1c1b22;
+    }
+    .conflicts-title {
+      color: #ffb74d;
+    }
+    .conflict-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .conflict-warning {
+      background: rgba(255, 152, 0, 0.1);
+      border-left-color: #ff9800;
+    }
+    .conflict-info {
+      background: rgba(66, 165, 245, 0.08);
+      border-left-color: #42a5f5;
+    }
+    .conflicts-actions {
+      background: rgba(141, 110, 0, 0.1);
+      border-top-color: rgba(141, 110, 0, 0.3);
+    }
+    .conflict-merged-badge {
+      background: #1b4332;
+      color: #95d5b2;
+    }
+    .rule-item.has-warning {
+      border-color: #8d6e00;
+      background: #332d00;
+    }
+    .broken-ref-warning span {
+      background: #332d00;
+      border-color: #8d6e00;
+      color: #ffb74d;
+    }
+    .test-stat.match .test-stat-value {
+      color: #66bb6a;
+    }
+    .import-error {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
+    .filter-input {
+      background: var(--bg-secondary, #2b2a33);
+      color: var(--text-color, #fbfbfe);
+    }
   }
 </style>

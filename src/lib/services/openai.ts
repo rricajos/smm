@@ -4,7 +4,13 @@ import type { Rule, Condition, Action } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
 import { getLocaleFromStorage, translate, type SupportedLocale } from '../i18n';
 import { getErrorMessage } from '../utils/error';
-import { MAX_EMAIL_SNIPPET_LENGTH, MAX_SANITIZED_CONTENT_LENGTH, MAX_CHAT_EMAILS } from '../utils/constants';
+import { fetchWithRetry } from '../utils/fetch-with-timeout';
+import { aiRateLimiter } from '../utils/rate-limiter';
+import {
+  MAX_EMAIL_SNIPPET_LENGTH,
+  MAX_SANITIZED_CONTENT_LENGTH,
+  MAX_CHAT_EMAILS,
+} from '../utils/constants';
 import {
   rulesResponseSchema,
   consultantResponseSchema,
@@ -92,27 +98,39 @@ const RULE_SCHEMA = `
 
 function summarizeExistingRules(existingRules: Rule[]): string {
   if (existingRules.length === 0) return '  (no hay reglas configuradas)';
-  return existingRules.map(r => {
-    const conds = r.conditions.map(c =>
-      c.field === 'hasAttachments'
-        ? `${c.field}=${c.boolValue}`
-        : `${c.field} ${c.operator} "${c.value}"`
-    ).join(r.conditionLogic === 'all' ? ' Y ' : ' O ');
-    const acts = r.actions.map(a => {
-      if (a.type === 'moveToFolder') return `mover a ${a.folderId}`;
-      if (a.type === 'addTag') return `etiquetar ${a.tagKey}`;
-      if (a.type === 'setPriority') return `prioridad ${a.priority}`;
-      return a.type;
-    }).join(', ');
-    return `  - ID: "${r.id}" "${r.name}" [${r.enabled ? 'activa' : 'inactiva'}]: SI ${conds} → ${acts}`;
-  }).join('\n');
+  return existingRules
+    .map((r) => {
+      const conds = r.conditions
+        .map((c) =>
+          c.field === 'hasAttachments'
+            ? `${c.field}=${c.boolValue}`
+            : `${c.field} ${c.operator} "${c.value}"`,
+        )
+        .join(r.conditionLogic === 'all' ? ' Y ' : ' O ');
+      const acts = r.actions
+        .map((a) => {
+          if (a.type === 'moveToFolder') return `mover a ${a.folderId}`;
+          if (a.type === 'addTag') return `etiquetar ${a.tagKey}`;
+          if (a.type === 'setPriority') return `prioridad ${a.priority}`;
+          return a.type;
+        })
+        .join(', ');
+      return `  - ID: "${r.id}" "${r.name}" [${r.enabled ? 'activa' : 'inactiva'}]: SI ${conds} → ${acts}`;
+    })
+    .join('\n');
 }
 
-export function buildSystemPrompt(folders: FolderInfo[], tags: TagInfo[], existingRules: Rule[], loc: SupportedLocale = 'es'): string {
-  const folderList = folders.map(f => `  - ID: "${f.id}" → ${f.path}`).join('\n');
-  const tagList = tags.length > 0
-    ? tags.map(t => `  - Key: "${t.key}" → ${t.tag}`).join('\n')
-    : '  (no hay tags configurados)';
+export function buildSystemPrompt(
+  folders: FolderInfo[],
+  tags: TagInfo[],
+  existingRules: Rule[],
+  loc: SupportedLocale = 'es',
+): string {
+  const folderList = folders.map((f) => `  - ID: "${f.id}" → ${f.path}`).join('\n');
+  const tagList =
+    tags.length > 0
+      ? tags.map((t) => `  - Key: "${t.key}" → ${t.tag}`).join('\n')
+      : '  (no hay tags configurados)';
   const rulesSummary = summarizeExistingRules(existingRules);
 
   const langName = translate(loc, 'ai_lang_name');
@@ -154,14 +172,18 @@ export function extractJSON(text: string, loc: SupportedLocale = 'es'): unknown 
   // 1. Direct parse
   try {
     return JSON.parse(text);
-  } catch { /* continue */ }
+  } catch {
+    /* continue */
+  }
 
   // 2. Extract from markdown code blocks: ```json ... ``` or ``` ... ```
   const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
   if (codeBlockMatch) {
     try {
       return JSON.parse(codeBlockMatch[1].trim());
-    } catch { /* continue */ }
+    } catch {
+      /* continue */
+    }
   }
 
   // 3. Find the outermost { ... } block
@@ -170,7 +192,9 @@ export function extractJSON(text: string, loc: SupportedLocale = 'es'): unknown 
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     try {
       return JSON.parse(text.substring(firstBrace, lastBrace + 1));
-    } catch { /* continue */ }
+    } catch {
+      /* continue */
+    }
   }
 
   throw new Error(translate(loc, 'ai_error_json_parse'));
@@ -195,7 +219,8 @@ async function ensureCustomPermission(provider: AiProvider, baseUrl: string): Pr
   try {
     const url = new URL(baseUrl);
     // Require HTTPS for non-local endpoints to protect API keys in transit
-    const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
+    const isLocal =
+      url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
     if (!isLocal && url.protocol !== 'https:') {
       throw new Error('HTTPS required for remote API endpoints');
     }
@@ -221,7 +246,7 @@ async function callAnthropicAPI(
   maxTokens: number,
   loc: SupportedLocale = 'es',
 ): Promise<unknown> {
-  const response = await fetch(baseUrl, {
+  const response = await fetchWithRetry(baseUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -232,18 +257,18 @@ async function callAnthropicAPI(
     body: JSON.stringify({
       model,
       system: systemPrompt,
-      messages: messages.filter(m => m.role !== 'system'),
+      messages: messages.filter((m) => m.role !== 'system'),
       temperature,
       max_tokens: maxTokens,
     }),
   });
 
   if (!response.ok) {
-    const errBody = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    const errBody = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
     throw new Error(errBody.error?.message || `Anthropic API error: ${response.status}`);
   }
 
-  const data = await response.json() as { content?: Array<{ text?: string }> };
+  const data = (await response.json()) as { content?: Array<{ text?: string }> };
   const content = data.content?.[0]?.text;
   if (!content) throw new Error(translate(loc, 'ai_error_empty_anthropic'));
   return extractJSON(content, loc);
@@ -261,7 +286,7 @@ async function callOpenAICompatibleAPI(
 ): Promise<unknown> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   };
   if (provider === 'openrouter') {
     headers['HTTP-Referer'] = 'https://addons.thunderbird.net';
@@ -279,19 +304,19 @@ async function callOpenAICompatibleAPI(
     body.response_format = { type: 'json_object' };
   }
 
-  const response = await fetch(baseUrl, {
+  const response = await fetchWithRetry(baseUrl, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
-    const errBody = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    const errBody = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
     const providerName = AI_PROVIDERS[provider]?.name || provider;
     throw new Error(errBody.error?.message || `${providerName} API error: ${response.status}`);
   }
 
-  const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error(translate(loc, 'ai_error_empty_provider'));
   return extractJSON(content, loc);
@@ -305,26 +330,39 @@ async function callAI(
 ): Promise<unknown> {
   const baseUrl = getBaseUrl(opts.provider, opts.customBaseUrl);
   await ensureCustomPermission(opts.provider, baseUrl);
-  const temperature = opts.temperature ?? 0.3;
-  const maxTokens = opts.maxTokens ?? 2000;
-  const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
 
-  if (format === 'anthropic') {
-    return callAnthropicAPI(
-      baseUrl, opts.apiKey, opts.model, systemPrompt,
-      [{ role: 'user', content: userPrompt }],
-      temperature, maxTokens, loc,
+  return aiRateLimiter.execute(async () => {
+    const temperature = opts.temperature ?? 0.3;
+    const maxTokens = opts.maxTokens ?? 2000;
+    const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
+
+    if (format === 'anthropic') {
+      return callAnthropicAPI(
+        baseUrl,
+        opts.apiKey,
+        opts.model,
+        systemPrompt,
+        [{ role: 'user', content: userPrompt }],
+        temperature,
+        maxTokens,
+        loc,
+      );
+    }
+
+    return callOpenAICompatibleAPI(
+      baseUrl,
+      opts.apiKey,
+      opts.model,
+      opts.provider,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature,
+      maxTokens,
+      loc,
     );
-  }
-
-  return callOpenAICompatibleAPI(
-    baseUrl, opts.apiKey, opts.model, opts.provider,
-    [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature, maxTokens, loc,
-  );
+  });
 }
 
 async function callAIChat(
@@ -335,22 +373,36 @@ async function callAIChat(
 ): Promise<unknown> {
   const baseUrl = getBaseUrl(opts.provider, opts.customBaseUrl);
   await ensureCustomPermission(opts.provider, baseUrl);
-  const temperature = opts.temperature ?? 0.5;
-  const maxTokens = opts.maxTokens ?? 4000;
-  const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
 
-  if (format === 'anthropic') {
-    return callAnthropicAPI(
-      baseUrl, opts.apiKey, opts.model, systemPrompt,
-      chatMessages, temperature, maxTokens, loc,
+  return aiRateLimiter.execute(async () => {
+    const temperature = opts.temperature ?? 0.5;
+    const maxTokens = opts.maxTokens ?? 4000;
+    const format = AI_PROVIDERS[opts.provider]?.format || 'openai';
+
+    if (format === 'anthropic') {
+      return callAnthropicAPI(
+        baseUrl,
+        opts.apiKey,
+        opts.model,
+        systemPrompt,
+        chatMessages,
+        temperature,
+        maxTokens,
+        loc,
+      );
+    }
+
+    return callOpenAICompatibleAPI(
+      baseUrl,
+      opts.apiKey,
+      opts.model,
+      opts.provider,
+      [{ role: 'system', content: systemPrompt }, ...chatMessages],
+      temperature,
+      maxTokens,
+      loc,
     );
-  }
-
-  return callOpenAICompatibleAPI(
-    baseUrl, opts.apiKey, opts.model, opts.provider,
-    [{ role: 'system', content: systemPrompt }, ...chatMessages],
-    temperature, maxTokens, loc,
-  );
+  });
 }
 
 function mapCondition(c: ValidatedCondition): Condition {
@@ -377,21 +429,23 @@ export function parseRuleSuggestions(data: unknown, loc: SupportedLocale = 'es')
   const parsed = safeParseAI(rulesResponseSchema, data, 'parseRuleSuggestions');
   const now = Date.now();
 
-  return parsed.rules.map((r: ValidatedRuleData, i: number): RuleSuggestion => ({
-    rule: {
-      id: crypto.randomUUID(),
-      name: r.name || `${translate(loc, 'ai_fallback_rule_name')} ${i + 1}`,
-      enabled: true,
-      conditions: r.conditions.map(mapCondition),
-      conditionLogic: r.conditionLogic as Rule['conditionLogic'],
-      actions: r.actions.map(mapAction),
-      stopProcessing: false,
-      createdAt: now,
-      updatedAt: now,
-    },
-    explanation: r.explanation,
-    confidence: r.confidence,
-  }));
+  return parsed.rules.map(
+    (r: ValidatedRuleData, i: number): RuleSuggestion => ({
+      rule: {
+        id: crypto.randomUUID(),
+        name: r.name || `${translate(loc, 'ai_fallback_rule_name')} ${i + 1}`,
+        enabled: true,
+        conditions: r.conditions.map(mapCondition),
+        conditionLogic: r.conditionLogic as Rule['conditionLogic'],
+        actions: r.actions.map(mapAction),
+        stopProcessing: false,
+        createdAt: now,
+        updatedAt: now,
+      },
+      explanation: r.explanation,
+      confidence: r.confidence,
+    }),
+  );
 }
 
 export async function generateRulesFromEmails(
@@ -407,13 +461,21 @@ export async function generateRulesFromEmails(
   const loc = await getLocaleFromStorage();
   const systemPrompt = buildSystemPrompt(folders, tags, existingRules, loc);
 
-  const emailList = emails.map((e, i) =>
-    `${i + 1}. De: ${sanitizeEmailContent(e.from)}\n   Asunto: ${sanitizeEmailContent(e.subject)}\n   Snippet: ${sanitizeEmailContent(e.snippet).substring(0, MAX_EMAIL_SNIPPET_LENGTH)}`
-  ).join('\n\n');
+  const emailList = emails
+    .map(
+      (e, i) =>
+        `${i + 1}. De: ${sanitizeEmailContent(e.from)}\n   Asunto: ${sanitizeEmailContent(e.subject)}\n   Snippet: ${sanitizeEmailContent(e.snippet).substring(0, MAX_EMAIL_SNIPPET_LENGTH)}`,
+    )
+    .join('\n\n');
 
   const userPrompt = translate(loc, 'ai_prompt_analyze_emails', { emailList });
 
-  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt, loc);
+  const data = await callAI(
+    { apiKey, model, provider, customBaseUrl },
+    systemPrompt,
+    userPrompt,
+    loc,
+  );
   return parseRuleSuggestions(data, loc);
 }
 
@@ -431,7 +493,12 @@ export async function generateRuleFromDescription(
   const systemPrompt = buildSystemPrompt(folders, tags, existingRules, loc);
   const userPrompt = translate(loc, 'ai_prompt_generate_from_desc', { description });
 
-  const data = await callAI({ apiKey, model, provider, customBaseUrl }, systemPrompt, userPrompt, loc);
+  const data = await callAI(
+    { apiKey, model, provider, customBaseUrl },
+    systemPrompt,
+    userPrompt,
+    loc,
+  );
   return parseRuleSuggestions(data, loc);
 }
 
@@ -492,21 +559,30 @@ function buildConsultantSystemPrompt(
   existingTemplates: ResponseTemplate[] = [],
   loc: SupportedLocale = 'es',
 ): string {
-  const folderList = folders.map(f => `  - ID: "${f.id}" → ${f.path}`).join('\n');
-  const tagList = tags.length > 0
-    ? tags.map(t => `  - Key: "${t.key}" → ${t.tag}`).join('\n')
-    : '  (no hay tags configurados)';
+  const folderList = folders.map((f) => `  - ID: "${f.id}" → ${f.path}`).join('\n');
+  const tagList =
+    tags.length > 0
+      ? tags.map((t) => `  - Key: "${t.key}" → ${t.tag}`).join('\n')
+      : '  (no hay tags configurados)';
   const rulesSummary = summarizeExistingRules(existingRules);
 
-  const emailSummary = emails.length > 0
-    ? `===BEGIN_USER_EMAILS===\n${emails.slice(0, MAX_CHAT_EMAILS).map((e, i) =>
-        `  ${i + 1}. De: ${sanitizeEmailContent(e.from)} | Asunto: ${sanitizeEmailContent(e.subject)}`
-      ).join('\n')}\n===END_USER_EMAILS===`
-    : '  (no hay correos disponibles)';
+  const emailSummary =
+    emails.length > 0
+      ? `===BEGIN_USER_EMAILS===\n${emails
+          .slice(0, MAX_CHAT_EMAILS)
+          .map(
+            (e, i) =>
+              `  ${i + 1}. De: ${sanitizeEmailContent(e.from)} | Asunto: ${sanitizeEmailContent(e.subject)}`,
+          )
+          .join('\n')}\n===END_USER_EMAILS===`
+      : '  (no hay correos disponibles)';
 
-  const templatesSummary = existingTemplates.length > 0
-    ? existingTemplates.map(t => `  - ID: "${t.id}" → "${t.name}" [${t.sendMode}, ${t.replyType}]`).join('\n')
-    : '  (no hay plantillas configuradas)';
+  const templatesSummary =
+    existingTemplates.length > 0
+      ? existingTemplates
+          .map((t) => `  - ID: "${t.id}" → "${t.name}" [${t.sendMode}, ${t.replyType}]`)
+          .join('\n')
+      : '  (no hay plantillas configuradas)';
 
   const langName = translate(loc, 'ai_lang_name');
   return `Eres un consultor experto en organización de correo electrónico. Tu trabajo es ayudar al usuario a tener un buzón perfectamente organizado. Eres PROACTIVO y no tienes miedo de proponer cambios grandes.
@@ -696,77 +772,100 @@ export async function chatWithAssistant(
   existingTemplates: ResponseTemplate[] = [],
 ): Promise<AssistantResponse> {
   const loc = await getLocaleFromStorage();
-  const systemPrompt = buildConsultantSystemPrompt(folders, tags, existingRules, emails, existingTemplates, loc);
-  const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+  const systemPrompt = buildConsultantSystemPrompt(
+    folders,
+    tags,
+    existingRules,
+    emails,
+    existingTemplates,
+    loc,
+  );
+  const chatMessages = messages.map((m) => ({ role: m.role, content: m.content }));
 
   const parsed = await callAIChat(
     { apiKey, model, provider, customBaseUrl, temperature: 0.5, maxTokens: 4000 },
-    systemPrompt, chatMessages, loc,
+    systemPrompt,
+    chatMessages,
+    loc,
   );
   const now = Date.now();
 
-  const raw: ValidatedConsultantResponse = safeParseAI(consultantResponseSchema, parsed, 'chatWithAssistant');
+  const raw: ValidatedConsultantResponse = safeParseAI(
+    consultantResponseSchema,
+    parsed,
+    'chatWithAssistant',
+  );
   const result = {
     message: raw.message,
-    folderProposals: raw.folder_proposals.map((fp): FolderProposal => ({
-      name: fp.name,
-      parentFolderId: fp.parentFolderId,
-      parentPath: fp.parentPath,
-      description: fp.description,
-    })),
-    moveProposals: raw.move_proposals.map((mp): MoveProposal => ({
-      sourceFolderId: mp.sourceFolderId,
-      sourceFolderPath: mp.sourceFolderPath,
-      destFolderId: mp.destFolderId,
-      destFolderPath: mp.destFolderPath,
-      deleteSource: mp.deleteSource,
-      description: mp.description,
-    })),
-    ruleProposals: raw.rule_proposals.map((rp): RuleProposal => ({
-      rule: {
-        id: crypto.randomUUID(),
-        name: rp.name || translate(loc, 'ai_fallback_rule_name'),
-        enabled: true,
-        conditions: rp.conditions.map(mapCondition),
-        conditionLogic: rp.conditionLogic as Rule['conditionLogic'],
-        actions: rp.actions.map(mapAction),
-        stopProcessing: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      description: rp.description,
-    })),
-    templateProposals: raw.template_proposals.map((tp): TemplateProposal => ({
-      template: {
-        id: crypto.randomUUID(),
-        name: tp.name || translate(loc, 'ai_fallback_template_name'),
-        subject: tp.subject,
-        body: tp.body,
-        isPlainText: tp.isPlainText,
-        sendMode: tp.sendMode as ResponseTemplate['sendMode'],
-        replyType: tp.replyType as ResponseTemplate['replyType'],
-      },
-      description: tp.description,
-    })),
-    ruleConsolidationProposals: raw.rule_consolidation_proposals.map((rc): RuleConsolidationProposal => {
-      const merged = rc.mergedRule;
-      return {
-        mergedRule: {
+    folderProposals: raw.folder_proposals.map(
+      (fp): FolderProposal => ({
+        name: fp.name,
+        parentFolderId: fp.parentFolderId,
+        parentPath: fp.parentPath,
+        description: fp.description,
+      }),
+    ),
+    moveProposals: raw.move_proposals.map(
+      (mp): MoveProposal => ({
+        sourceFolderId: mp.sourceFolderId,
+        sourceFolderPath: mp.sourceFolderPath,
+        destFolderId: mp.destFolderId,
+        destFolderPath: mp.destFolderPath,
+        deleteSource: mp.deleteSource,
+        description: mp.description,
+      }),
+    ),
+    ruleProposals: raw.rule_proposals.map(
+      (rp): RuleProposal => ({
+        rule: {
           id: crypto.randomUUID(),
-          name: merged?.name || translate(loc, 'ai_fallback_merged_name'),
+          name: rp.name || translate(loc, 'ai_fallback_rule_name'),
           enabled: true,
-          conditions: (merged?.conditions || []).map(mapCondition),
-          conditionLogic: (merged?.conditionLogic || 'any') as Rule['conditionLogic'],
-          actions: (merged?.actions || []).map(mapAction),
+          conditions: rp.conditions.map(mapCondition),
+          conditionLogic: rp.conditionLogic as Rule['conditionLogic'],
+          actions: rp.actions.map(mapAction),
           stopProcessing: false,
           createdAt: now,
           updatedAt: now,
         },
-        sourceRuleIds: rc.sourceRuleIds,
-        sourceRuleNames: rc.sourceRuleNames,
-        description: rc.description,
-      };
-    }),
+        description: rp.description,
+      }),
+    ),
+    templateProposals: raw.template_proposals.map(
+      (tp): TemplateProposal => ({
+        template: {
+          id: crypto.randomUUID(),
+          name: tp.name || translate(loc, 'ai_fallback_template_name'),
+          subject: tp.subject,
+          body: tp.body,
+          isPlainText: tp.isPlainText,
+          sendMode: tp.sendMode as ResponseTemplate['sendMode'],
+          replyType: tp.replyType as ResponseTemplate['replyType'],
+        },
+        description: tp.description,
+      }),
+    ),
+    ruleConsolidationProposals: raw.rule_consolidation_proposals.map(
+      (rc): RuleConsolidationProposal => {
+        const merged = rc.mergedRule;
+        return {
+          mergedRule: {
+            id: crypto.randomUUID(),
+            name: merged?.name || translate(loc, 'ai_fallback_merged_name'),
+            enabled: true,
+            conditions: (merged?.conditions || []).map(mapCondition),
+            conditionLogic: (merged?.conditionLogic || 'any') as Rule['conditionLogic'],
+            actions: (merged?.actions || []).map(mapAction),
+            stopProcessing: false,
+            createdAt: now,
+            updatedAt: now,
+          },
+          sourceRuleIds: rc.sourceRuleIds,
+          sourceRuleNames: rc.sourceRuleNames,
+          description: rc.description,
+        };
+      },
+    ),
   };
 
   // Resolve NEW_RULE: references and name-based fallbacks in consolidation proposals
@@ -790,7 +889,7 @@ export async function chatWithAssistant(
           return newRuleMap.get(name) || idOrRef;
         }
         // If it matches an existing rule ID, keep it
-        if (existingRules.some(r => r.id === idOrRef)) return idOrRef;
+        if (existingRules.some((r) => r.id === idOrRef)) return idOrRef;
         // Fallback: try matching as a name against new proposals
         const byNewName = newRuleMap.get(idOrRef.toLowerCase());
         if (byNewName) return byNewName;
@@ -818,7 +917,7 @@ export async function testConnection(
   const format = AI_PROVIDERS[provider]?.format || 'openai';
 
   if (format === 'anthropic') {
-    const response = await fetch(baseUrl, {
+    const response = await fetchWithRetry(baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -833,7 +932,7 @@ export async function testConnection(
       }),
     });
     if (!response.ok) {
-      const errBody = await response.json().catch(() => ({})) as { error?: { message?: string } };
+      const errBody = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
       throw new Error(errBody.error?.message || `Error: ${response.status}`);
     }
     return true;
@@ -841,14 +940,14 @@ export async function testConnection(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   };
   if (provider === 'openrouter') {
     headers['HTTP-Referer'] = 'https://addons.thunderbird.net';
     headers['X-Title'] = 'Smart Mail Manager';
   }
 
-  const response = await fetch(baseUrl, {
+  const response = await fetchWithRetry(baseUrl, {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -859,7 +958,7 @@ export async function testConnection(
   });
 
   if (!response.ok) {
-    const errBody = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    const errBody = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
     throw new Error(errBody.error?.message || `Error: ${response.status}`);
   }
 

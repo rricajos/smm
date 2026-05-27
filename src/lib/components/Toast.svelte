@@ -11,7 +11,15 @@
     duration?: number;
   }
 
-  let { message, type = 'info', show, actionLabel, onaction, ondismiss, duration }: Props = $props();
+  let {
+    message,
+    type = 'info',
+    show,
+    actionLabel,
+    onaction,
+    ondismiss,
+    duration,
+  }: Props = $props();
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && show && ondismiss) {
@@ -29,7 +37,9 @@
       <button class="toast-action" onclick={onaction}>{actionLabel}</button>
     {/if}
     {#if ondismiss}
-      <button class="toast-close" onclick={ondismiss} aria-label={$t('toast_dismiss')}>&times;</button>
+      <button class="toast-close" onclick={ondismiss} aria-label={$t('toast_dismiss')}
+        >&times;</button
+      >
     {/if}
     {#if duration}
       <div class="toast-progress" style="--toast-duration: {duration}ms"></div>
@@ -117,14 +127,26 @@
     }
   }
   @keyframes shrink {
-    from { width: 100%; }
-    to { width: 0%; }
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
   }
 
   @media (prefers-color-scheme: dark) {
-    .toast-success { background: #1b8a6b; }
-    .toast-error { background: #b71c3a; }
-    .toast-info { background: #1a5ab8; }
-    .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
+    .toast-success {
+      background: #1b8a6b;
+    }
+    .toast-error {
+      background: #b71c3a;
+    }
+    .toast-info {
+      background: #1a5ab8;
+    }
+    .toast {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
   }
 </style>

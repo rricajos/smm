@@ -26,7 +26,7 @@
     // Focus trap: keep Tab within modal
     if (e.key === 'Tab' && modalEl) {
       const focusable = modalEl.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (focusable.length === 0) return;
       const first = focusable[0];
@@ -46,7 +46,7 @@
       previouslyFocused = document.activeElement;
       // Focus first focusable element inside modal
       const firstFocusable = modalEl.querySelector<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
       );
       if (firstFocusable) {
         setTimeout(() => firstFocusable.focus(), 10);
@@ -64,7 +64,13 @@
 {#if show}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} role="presentation">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" bind:this={modalEl}>
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      bind:this={modalEl}
+    >
       <div class="modal-header">
         <h2 id="modal-title">{title}</h2>
         <Button size="sm" onclick={onclose} aria-label={$t('common_close')}>&#10005;</Button>

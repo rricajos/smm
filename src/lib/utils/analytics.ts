@@ -23,7 +23,10 @@ export interface SenderStat {
  * Compute 7-day activity chart data.
  * dayIndex 0 = 6 days ago, dayIndex 6 = today.
  */
-export function computeWeeklyData(log: ActivityEntry[], now: number = Date.now()): WeeklyDataPoint[] {
+export function computeWeeklyData(
+  log: ActivityEntry[],
+  now: number = Date.now(),
+): WeeklyDataPoint[] {
   const days: WeeklyDataPoint[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now);
@@ -32,8 +35,12 @@ export function computeWeeklyData(log: ActivityEntry[], now: number = Date.now()
     const end = new Date(d).setHours(23, 59, 59, 999);
     days.push({
       dayIndex: 6 - i,
-      classifications: log.filter(a => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end).length,
-      responses: log.filter(a => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end).length,
+      classifications: log.filter(
+        (a) => a.type === 'classification' && a.timestamp >= start && a.timestamp <= end,
+      ).length,
+      responses: log.filter(
+        (a) => a.type === 'autoResponse' && a.timestamp >= start && a.timestamp <= end,
+      ).length,
     });
   }
   return days;
@@ -88,5 +95,5 @@ export function filterByTimeRange(
   if (range === 'all') return entries;
   const ms = range === '7d' ? 7 * 86400000 : 30 * 86400000;
   const start = now - ms;
-  return entries.filter(a => a.timestamp >= start);
+  return entries.filter((a) => a.timestamp >= start);
 }

@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
-import type { Rule, Condition, Action } from '../../types/rules';
+import type { Rule, Action } from '../../types/rules';
 
 export interface RuleConflict {
   ruleA: { id: string; name: string };
@@ -90,7 +90,10 @@ function actionsAreIdentical(a: Action[], b: Action[]): boolean {
   if (a.length !== b.length) return false;
   const serialize = (actions: Action[]) =>
     actions
-      .map((act) => `${act.type}|${act.folderId || ''}|${act.tagKey || ''}|${act.priority || ''}|${act.templateId || ''}`)
+      .map(
+        (act) =>
+          `${act.type}|${act.folderId || ''}|${act.tagKey || ''}|${act.priority || ''}|${act.templateId || ''}`,
+      )
       .sort()
       .join(';;');
   return serialize(a) === serialize(b);

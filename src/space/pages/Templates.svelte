@@ -17,16 +17,21 @@
   let showEditor = $state(false);
   let editingTemplate = $state<ResponseTemplate | null>(null);
   let filterQuery = $state('');
-  let confirmDelete = $state<{ show: boolean; id: string; name: string }>({ show: false, id: '', name: '' });
-
+  let confirmDelete = $state<{ show: boolean; id: string; name: string }>({
+    show: false,
+    id: '',
+    name: '',
+  });
 
   let filteredTemplates = $derived(
     filterQuery.trim()
-      ? $templates.filter(t => {
+      ? $templates.filter((t) => {
           const q = filterQuery.toLowerCase().trim();
-          return t.name.toLowerCase().includes(q) ||
+          return (
+            t.name.toLowerCase().includes(q) ||
             t.subject.toLowerCase().includes(q) ||
-            t.body.toLowerCase().includes(q);
+            t.body.toLowerCase().includes(q)
+          );
         })
       : $templates,
   );
@@ -97,7 +102,22 @@
     <div class="header-actions">
       {#if onrequestai}
         <Button variant="primary" onclick={suggestWithAI}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" /><line
+              x1="10"
+              y1="16"
+              x2="14"
+              y2="16"
+            /><line x1="10" y1="19" x2="14" y2="19" /><line x1="11" y1="22" x2="13" y2="22" /></svg
+          >
           {$t('templates_suggest_ai')}
         </Button>
       {/if}
@@ -117,7 +137,17 @@
   {#if $templates.length === 0}
     <div class="empty-state">
       <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg
+        >
       </div>
       <p class="empty-title">{$t('empty_templates_title')}</p>
       <p class="empty-desc">{$t('empty_templates_desc')}</p>
@@ -125,7 +155,27 @@
         <Button variant="primary" onclick={openNewTemplate}>{$t('empty_templates_cta')}</Button>
         {#if onrequestai}
           <Button variant="primary" onclick={suggestWithAI}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" /><line
+                x1="10"
+                y1="16"
+                x2="14"
+                y2="16"
+              /><line x1="10" y1="19" x2="14" y2="19" /><line
+                x1="11"
+                y1="22"
+                x2="13"
+                y2="22"
+              /></svg
+            >
             {$t('templates_suggest_ai')}
           </Button>
         {/if}
@@ -140,14 +190,20 @@
             <div class="template-details">
               <span class="tag">{sendModeLabels[tmpl.sendMode]}</span>
               <span class="tag">{replyTypeLabels[tmpl.replyType]}</span>
-              <span class="tag">{tmpl.isPlainText ? $t('templates_plain_text') : $t('templates_html')}</span>
+              <span class="tag"
+                >{tmpl.isPlainText ? $t('templates_plain_text') : $t('templates_html')}</span
+              >
             </div>
             <div class="template-preview">{tmpl.subject}</div>
           </div>
           <div class="template-actions">
-            <Button size="sm" onclick={() => duplicateTemplate(tmpl)}>{$t('common_duplicate')}</Button>
+            <Button size="sm" onclick={() => duplicateTemplate(tmpl)}
+              >{$t('common_duplicate')}</Button
+            >
             <Button size="sm" onclick={() => openEditTemplate(tmpl)}>{$t('common_edit')}</Button>
-            <Button size="sm" variant="danger" onclick={() => handleDelete(tmpl.id, tmpl.name)}>{$t('common_delete')}</Button>
+            <Button size="sm" variant="danger" onclick={() => handleDelete(tmpl.id, tmpl.name)}
+              >{$t('common_delete')}</Button
+            >
           </div>
         </div>
       {/each}
@@ -158,7 +214,10 @@
     show={showEditor}
     template={editingTemplate}
     onsave={handleSave}
-    onclose={() => { showEditor = false; editingTemplate = null; }}
+    onclose={() => {
+      showEditor = false;
+      editingTemplate = null;
+    }}
   />
 
   <ConfirmDialog
@@ -290,6 +349,9 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .filter-input { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
+    .filter-input {
+      background: var(--bg-secondary, #2b2a33);
+      color: var(--text-color, #fbfbfe);
+    }
   }
 </style>

@@ -65,29 +65,37 @@
   ]);
 </script>
 
-<svelte:window onkeydown={(e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault();
-    searchComponent?.focus();
-    return;
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-    e.preventDefault();
-    showShortcuts = !showShortcuts;
-    return;
-  }
-  if (e.key === 'Escape' && showShortcuts) {
-    showShortcuts = false;
-    return;
-  }
-  if (e.ctrlKey || e.metaKey) {
-    const tabKeys: Record<string, string> = { '1': 'dashboard', '2': 'rules', '3': 'templates', '4': 'ai', '5': 'log' };
-    if (tabKeys[e.key]) {
+<svelte:window
+  onkeydown={(e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
-      activeTab = tabKeys[e.key];
+      searchComponent?.focus();
+      return;
     }
-  }
-}} />
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      e.preventDefault();
+      showShortcuts = !showShortcuts;
+      return;
+    }
+    if (e.key === 'Escape' && showShortcuts) {
+      showShortcuts = false;
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      const tabKeys: Record<string, string> = {
+        '1': 'dashboard',
+        '2': 'rules',
+        '3': 'templates',
+        '4': 'ai',
+        '5': 'log',
+      };
+      if (tabKeys[e.key]) {
+        e.preventDefault();
+        activeTab = tabKeys[e.key];
+      }
+    }
+  }}
+/>
 
 <div class="app">
   <nav class="tabs">
@@ -112,20 +120,99 @@
         >
           <span class="tab-icon">
             {#if tab.icon === 'dashboard'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><rect x="3" y="3" width="7" height="7" /><rect
+                  x="14"
+                  y="3"
+                  width="7"
+                  height="7"
+                /><rect x="3" y="14" width="7" height="7" /><rect
+                  x="14"
+                  y="14"
+                  width="7"
+                  height="7"
+                /></svg
+              >
             {:else if tab.icon === 'rules'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline
+                  points="14 2 14 8 20 8"
+                /><line x1="16" y1="13" x2="8" y2="13" /><line
+                  x1="16"
+                  y1="17"
+                  x2="8"
+                  y2="17"
+                /></svg
+              >
             {:else if tab.icon === 'templates'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg
+              >
             {:else if tab.icon === 'ai'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="11" y1="22" x2="13" y2="22"/></svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" /><line
+                  x1="10"
+                  y1="16"
+                  x2="14"
+                  y2="16"
+                /><line x1="10" y1="19" x2="14" y2="19" /><line
+                  x1="11"
+                  y1="22"
+                  x2="13"
+                  y2="22"
+                /></svg
+              >
             {:else if tab.icon === 'log'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg
+              >
             {/if}
           </span>
           {tab.label}
           {#if tab.id === 'dashboard' && $unreadClassifications > 0}
-            <span class="badge-dot">{$unreadClassifications > 99 ? '99+' : $unreadClassifications}</span>
+            <span class="badge-dot"
+              >{$unreadClassifications > 99 ? '99+' : $unreadClassifications}</span
+            >
           {/if}
         </button>
       {/each}
@@ -133,33 +220,86 @@
     <button
       class="folder-toggle-btn"
       class:active={showFolderTree}
-      onclick={() => { showFolderTree = !showFolderTree; }}
+      onclick={() => {
+        showFolderTree = !showFolderTree;
+      }}
       title={$t('ai_view_folders')}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><path
+          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+        /></svg
+      >
     </button>
   </nav>
 
   <div class="content">
     {#if showFolderTree}
       <div class="folder-sidebar">
-        <FolderTree bind:this={folderTreeRef} onfolderselect={handleFolderSelect} selectedFolderId={selectedFolder?.id} />
+        <FolderTree
+          bind:this={folderTreeRef}
+          onfolderselect={handleFolderSelect}
+          selectedFolderId={selectedFolder?.id}
+        />
       </div>
     {/if}
     <div class="tab-panels">
-      <div class="tab-panel" class:active-panel={activeTab === 'dashboard'} role="tabpanel" id="panel-dashboard" aria-labelledby="tab-dashboard">
+      <div
+        class="tab-panel"
+        class:active-panel={activeTab === 'dashboard'}
+        role="tabpanel"
+        id="panel-dashboard"
+        aria-labelledby="tab-dashboard"
+      >
         <Dashboard />
       </div>
-      <div class="tab-panel" class:active-panel={activeTab === 'rules'} role="tabpanel" id="panel-rules" aria-labelledby="tab-rules">
+      <div
+        class="tab-panel"
+        class:active-panel={activeTab === 'rules'}
+        role="tabpanel"
+        id="panel-rules"
+        aria-labelledby="tab-rules"
+      >
         <Rules onrequestai={handleRequestAI} />
       </div>
-      <div class="tab-panel" class:active-panel={activeTab === 'templates'} role="tabpanel" id="panel-templates" aria-labelledby="tab-templates">
+      <div
+        class="tab-panel"
+        class:active-panel={activeTab === 'templates'}
+        role="tabpanel"
+        id="panel-templates"
+        aria-labelledby="tab-templates"
+      >
         <Templates onrequestai={handleRequestAI} />
       </div>
-      <div class="tab-panel" class:active-panel={activeTab === 'ai'} role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
-        <AI pendingPrompt={pendingAiPrompt} onconsumeprompt={() => (pendingAiPrompt = '')} selectedFolder={selectedFolder} onclearfolder={() => (selectedFolder = null)} />
+      <div
+        class="tab-panel"
+        class:active-panel={activeTab === 'ai'}
+        role="tabpanel"
+        id="panel-ai"
+        aria-labelledby="tab-ai"
+      >
+        <AI
+          pendingPrompt={pendingAiPrompt}
+          onconsumeprompt={() => (pendingAiPrompt = '')}
+          {selectedFolder}
+          onclearfolder={() => (selectedFolder = null)}
+        />
       </div>
-      <div class="tab-panel" class:active-panel={activeTab === 'log'} role="tabpanel" id="panel-log" aria-labelledby="tab-log">
+      <div
+        class="tab-panel"
+        class:active-panel={activeTab === 'log'}
+        role="tabpanel"
+        id="panel-log"
+        aria-labelledby="tab-log"
+      >
         <Log initialSearch={searchFilter} />
       </div>
     </div>
@@ -173,25 +313,43 @@
     <div class="shortcuts-modal" onclick={(e) => e.stopPropagation()}>
       <div class="shortcuts-header">
         <h3>{$t('shortcuts_title')}</h3>
-        <button class="shortcuts-close" aria-label={$t('shortcuts_close')} onclick={() => (showShortcuts = false)}>&times;</button>
+        <button
+          class="shortcuts-close"
+          aria-label={$t('shortcuts_close')}
+          onclick={() => (showShortcuts = false)}>&times;</button
+        >
       </div>
       <div class="shortcuts-body">
         <div class="shortcut-group">
           <h4>{$t('shortcuts_global')}</h4>
-          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>K</kbd><span>{$t('shortcuts_search')}</span></div>
-          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>1</kbd>-<kbd>5</kbd><span>{$t('shortcuts_tabs', { n: '1-5' })}</span></div>
-          <div class="shortcut-row"><kbd>Ctrl</kbd> + <kbd>/</kbd><span>{$t('shortcuts_help')}</span></div>
+          <div class="shortcut-row">
+            <kbd>Ctrl</kbd> + <kbd>K</kbd><span>{$t('shortcuts_search')}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>Ctrl</kbd> + <kbd>1</kbd>-<kbd>5</kbd><span
+              >{$t('shortcuts_tabs', { n: '1-5' })}</span
+            >
+          </div>
+          <div class="shortcut-row">
+            <kbd>Ctrl</kbd> + <kbd>/</kbd><span>{$t('shortcuts_help')}</span>
+          </div>
           <div class="shortcut-row"><kbd>Esc</kbd><span>{$t('shortcuts_close')}</span></div>
         </div>
         <div class="shortcut-group">
           <h4>{$t('shortcuts_rules')}</h4>
-          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&uarr;</kbd><span>{$t('shortcuts_move_up')}</span></div>
-          <div class="shortcut-row"><kbd>Alt</kbd> + <kbd>&darr;</kbd><span>{$t('shortcuts_move_down')}</span></div>
+          <div class="shortcut-row">
+            <kbd>Alt</kbd> + <kbd>&uarr;</kbd><span>{$t('shortcuts_move_up')}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>Alt</kbd> + <kbd>&darr;</kbd><span>{$t('shortcuts_move_down')}</span>
+          </div>
         </div>
         <div class="shortcut-group">
           <h4>{$t('shortcuts_chat')}</h4>
           <div class="shortcut-row"><kbd>Enter</kbd><span>{$t('shortcuts_send')}</span></div>
-          <div class="shortcut-row"><kbd>Shift</kbd> + <kbd>Enter</kbd><span>{$t('shortcuts_newline')}</span></div>
+          <div class="shortcut-row">
+            <kbd>Shift</kbd> + <kbd>Enter</kbd><span>{$t('shortcuts_newline')}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -266,7 +424,9 @@
     font-size: 13px;
     font-family: inherit;
     color: var(--text-secondary);
-    transition: color 0.15s, border-color 0.15s;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
   }
   .tab-icon {
     display: inline-flex;
@@ -318,8 +478,14 @@
     animation: slideIn 0.15s ease-out;
   }
   @keyframes slideIn {
-    from { opacity: 0; width: 0; }
-    to { opacity: 1; width: 260px; }
+    from {
+      opacity: 0;
+      width: 0;
+    }
+    to {
+      opacity: 1;
+      width: 260px;
+    }
   }
   .tab-panels {
     flex: 1;
@@ -348,7 +514,9 @@
     background: var(--bg-primary, white);
     cursor: pointer;
     color: var(--text-secondary, #666);
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
     flex-shrink: 0;
   }
   .folder-toggle-btn:hover {
@@ -373,8 +541,12 @@
     animation: fadeIn 0.1s ease;
   }
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   .shortcuts-modal {
     background: var(--bg-primary, white);

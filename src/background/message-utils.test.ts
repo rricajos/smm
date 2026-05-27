@@ -36,9 +36,7 @@ describe('extractBodyText', () => {
 
   it('falls back to text/html if no text/plain part exists', () => {
     const msg = {
-      parts: [
-        { body: '<p>Only HTML</p>', contentType: 'text/html' },
-      ],
+      parts: [{ body: '<p>Only HTML</p>', contentType: 'text/html' }],
     } as any;
     expect(extractBodyText(msg)).toContain('Only HTML');
   });
@@ -48,9 +46,7 @@ describe('extractBodyText', () => {
       parts: [
         {
           contentType: 'multipart/alternative',
-          parts: [
-            { body: 'Nested plain', contentType: 'text/plain' },
-          ],
+          parts: [{ body: 'Nested plain', contentType: 'text/plain' }],
         },
       ],
     } as any;
@@ -69,7 +65,7 @@ describe('getHeaderValue', () => {
   });
 
   it('returns first value if multiple', () => {
-    const msg = { headers: { 'received': ['first', 'second'] } } as any;
+    const msg = { headers: { received: ['first', 'second'] } } as any;
     expect(getHeaderValue(msg, 'received')).toBe('first');
   });
 
@@ -109,7 +105,7 @@ describe('isAutoSubmitted', () => {
   });
 
   it('returns false for normal message without auto headers', () => {
-    const msg = { headers: { 'from': ['user@example.com'] } } as any;
+    const msg = { headers: { from: ['user@example.com'] } } as any;
     expect(isAutoSubmitted(msg)).toBe(false);
   });
 });
@@ -121,7 +117,7 @@ describe('isMailingList', () => {
   });
 
   it('returns false if no list-unsubscribe header', () => {
-    const msg = { headers: { 'from': ['user@example.com'] } } as any;
+    const msg = { headers: { from: ['user@example.com'] } } as any;
     expect(isMailingList(msg)).toBe(false);
   });
 

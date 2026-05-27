@@ -6,7 +6,7 @@
   import { t } from '../lib/i18n';
   import Button from '../lib/components/Button.svelte';
 
-  declare const browser: any;
+  /// <reference path="../lib/utils/messenger.d.ts" />
 
   let classifyStatus = $state('');
 
@@ -70,14 +70,24 @@
       <span class="stat-value">{todayClassifications}</span>
       <span class="stat-label">{$t('popup_today_classified')}</span>
     </div>
-    <div class="stat-chip" class:ai-ok={$settings.openaiApiKey} class:ai-off={!$settings.openaiApiKey}>
+    <div
+      class="stat-chip"
+      class:ai-ok={$settings.openaiApiKey}
+      class:ai-off={!$settings.openaiApiKey}
+    >
       <span class="stat-value">{$t('popup_ai_status')}</span>
-      <span class="stat-label">{$settings.openaiApiKey ? $t('popup_ai_ok') : $t('popup_ai_not_set')}</span>
+      <span class="stat-label"
+        >{$settings.openaiApiKey ? $t('popup_ai_ok') : $t('popup_ai_not_set')}</span
+      >
     </div>
   </div>
 
   <div class="toggles">
-    <button class="toggle" class:on={$settings.classificationEnabled} onclick={toggleClassification}>
+    <button
+      class="toggle"
+      class:on={$settings.classificationEnabled}
+      onclick={toggleClassification}
+    >
       <span class="dot"></span>
       {$t('popup_classification')}
     </button>
@@ -110,7 +120,17 @@
   </div>
 
   <button class="open-panel-btn" onclick={openPanel}>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      ><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg
+    >
     {$t('popup_open_panel')}
   </button>
 </div>
@@ -196,15 +216,36 @@
       --border-color: #4a4a5a;
       --text-secondary: #b1b1bd;
     }
-    .toggle { background: var(--bg-secondary); border-color: var(--border-color); color: #fbfbfe; }
-    .toggle.on { background: #1a3a5c; border-color: var(--primary-color); }
-    .dot { background: #666; }
-    .entry { border-bottom-color: var(--border-color); }
-    .stat-chip.ai-ok { border-color: #66bb6a; }
-    .stat-chip.ai-ok .stat-value { color: #66bb6a; }
-    .stat-chip.ai-off .stat-value { color: #666; }
-    .open-panel-btn { color: #45a1ff; }
-    .open-panel-btn:hover { background: #1a3a5c; }
+    .toggle {
+      background: var(--bg-secondary);
+      border-color: var(--border-color);
+      color: #fbfbfe;
+    }
+    .toggle.on {
+      background: #1a3a5c;
+      border-color: var(--primary-color);
+    }
+    .dot {
+      background: #666;
+    }
+    .entry {
+      border-bottom-color: var(--border-color);
+    }
+    .stat-chip.ai-ok {
+      border-color: #66bb6a;
+    }
+    .stat-chip.ai-ok .stat-value {
+      color: #66bb6a;
+    }
+    .stat-chip.ai-off .stat-value {
+      color: #666;
+    }
+    .open-panel-btn {
+      color: #45a1ff;
+    }
+    .open-panel-btn:hover {
+      background: #1a3a5c;
+    }
   }
   .popup {
     width: 300px;

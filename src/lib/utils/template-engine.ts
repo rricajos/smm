@@ -1,9 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
-export function renderTemplate(
-  template: string,
-  variables: Record<string, string>,
-): string {
+export function renderTemplate(template: string, variables: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
     return variables[key] !== undefined ? variables[key] : `{{${key}}}`;
   });

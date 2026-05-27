@@ -21,7 +21,12 @@ interface SearchLabels {
 /**
  * Search rules by name and condition values.
  */
-export function searchRules(query: string, rules: Rule[], labels: SearchLabels, max: number = 5): SearchResult[] {
+export function searchRules(
+  query: string,
+  rules: Rule[],
+  labels: SearchLabels,
+  max: number = 5,
+): SearchResult[] {
   if (!query.trim()) return [];
   const q = query.toLowerCase().trim();
   const items: SearchResult[] = [];
@@ -30,7 +35,7 @@ export function searchRules(query: string, rules: Rule[], labels: SearchLabels, 
     if (items.length >= max) break;
     if (
       rule.name.toLowerCase().includes(q) ||
-      rule.conditions.some(c => (c.value || '').toLowerCase().includes(q))
+      rule.conditions.some((c) => (c.value || '').toLowerCase().includes(q))
     ) {
       items.push({
         type: 'rule',
@@ -47,17 +52,18 @@ export function searchRules(query: string, rules: Rule[], labels: SearchLabels, 
 /**
  * Search templates by name and subject.
  */
-export function searchTemplates(query: string, templates: ResponseTemplate[], max: number = 5): SearchResult[] {
+export function searchTemplates(
+  query: string,
+  templates: ResponseTemplate[],
+  max: number = 5,
+): SearchResult[] {
   if (!query.trim()) return [];
   const q = query.toLowerCase().trim();
   const items: SearchResult[] = [];
 
   for (const tmpl of templates) {
     if (items.length >= max) break;
-    if (
-      tmpl.name.toLowerCase().includes(q) ||
-      tmpl.subject.toLowerCase().includes(q)
-    ) {
+    if (tmpl.name.toLowerCase().includes(q) || tmpl.subject.toLowerCase().includes(q)) {
       items.push({
         type: 'template',
         id: tmpl.id,
@@ -73,7 +79,12 @@ export function searchTemplates(query: string, templates: ResponseTemplate[], ma
 /**
  * Search activity log by subject, sender, and rule name.
  */
-export function searchActivity(query: string, entries: ActivityEntry[], labels: SearchLabels, max: number = 5): SearchResult[] {
+export function searchActivity(
+  query: string,
+  entries: ActivityEntry[],
+  labels: SearchLabels,
+  max: number = 5,
+): SearchResult[] {
   if (!query.trim()) return [];
   const q = query.toLowerCase().trim();
   const items: SearchResult[] = [];

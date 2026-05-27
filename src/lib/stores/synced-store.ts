@@ -18,15 +18,22 @@ export interface SyncedStore<T> {
  * Handles: initial load, cross-context sync via onChanged, and persistence.
  * Each store only needs to add its own domain-specific methods on top.
  */
-export function createSyncedStore<T>(storageKey: string, defaultValue: T, name: string): SyncedStore<T> {
+export function createSyncedStore<T>(
+  storageKey: string,
+  defaultValue: T,
+  name: string,
+): SyncedStore<T> {
   const { subscribe, set, update } = writable<T>(defaultValue);
 
   try {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
-      browser.storage.local.get(storageKey).then((result: Record<string, unknown>) => {
-        const val = result[storageKey];
-        if (val !== undefined) set(val as T);
-      }).catch((e: unknown) => logger.error(`${name} load error`, e));
+      browser.storage.local
+        .get(storageKey)
+        .then((result: Record<string, unknown>) => {
+          const val = result[storageKey];
+          if (val !== undefined) set(val as T);
+        })
+        .catch((e: unknown) => logger.error(`${name} load error`, e));
 
       browser.storage.onChanged.addListener(
         (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {

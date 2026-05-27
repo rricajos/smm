@@ -5,14 +5,21 @@
   import { rules } from '../lib/stores/rules';
   import { templates } from '../lib/stores/templates';
   import type { AiProvider } from '../types/settings';
-  import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS, AI_PROVIDERS } from '../lib/utils/constants';
+  import {
+    OPENAI_MODELS,
+    OPENAI_DIRECT_MODELS,
+    ANTHROPIC_DIRECT_MODELS,
+    GOOGLE_DIRECT_MODELS,
+    AI_PROVIDERS,
+  } from '../lib/utils/constants';
   import { t, locale, setLocale, type SupportedLocale } from '../lib/i18n';
-  const openrouterProviders = [...new Set(OPENAI_MODELS.map(m => m.provider))];
+  const openrouterProviders = [...new Set(OPENAI_MODELS.map((m) => m.provider))];
   import { testConnection } from '../lib/services/openai';
   import Button from '../lib/components/Button.svelte';
   import Toast from '../lib/components/Toast.svelte';
+  import { getErrorMessage } from '../lib/utils/error';
 
-  declare const browser: any;
+  /// <reference path="../lib/utils/messenger.d.ts" />
 
   let currentSettings = $state<Settings>({
     classificationEnabled: true,
@@ -31,10 +38,14 @@
 
   function getModelsForProvider(provider: AiProvider) {
     switch (provider) {
-      case 'openai': return OPENAI_DIRECT_MODELS;
-      case 'anthropic': return ANTHROPIC_DIRECT_MODELS;
-      case 'google': return GOOGLE_DIRECT_MODELS;
-      default: return [];
+      case 'openai':
+        return OPENAI_DIRECT_MODELS;
+      case 'anthropic':
+        return ANTHROPIC_DIRECT_MODELS;
+      case 'google':
+        return GOOGLE_DIRECT_MODELS;
+      default:
+        return [];
     }
   }
 
@@ -50,7 +61,6 @@
       currentSettings.openaiModel = models[0]?.id || '';
     }
   }
-
 
   let showApiKey = $state(false);
   let testingConnection = $state(false);
@@ -110,8 +120,8 @@
         currentSettings.customBaseUrl,
       );
       showNotification($t('options_connection_ok'));
-    } catch (err: any) {
-      showNotification($t('options_connection_error', { msg: err.message }), 'error');
+    } catch (err: unknown) {
+      showNotification($t('options_connection_error', { msg: getErrorMessage(err) }), 'error');
     } finally {
       testingConnection = false;
     }
@@ -203,11 +213,23 @@
     <h2>{$t('options_limits')}</h2>
     <div class="field">
       <label for="max-responses">{$t('options_max_responses')}</label>
-      <input id="max-responses" type="number" min="1" max="100" bind:value={currentSettings.maxAutoResponsesPerHour} />
+      <input
+        id="max-responses"
+        type="number"
+        min="1"
+        max="100"
+        bind:value={currentSettings.maxAutoResponsesPerHour}
+      />
     </div>
     <div class="field">
       <label for="log-retention">{$t('options_log_retention')}</label>
-      <input id="log-retention" type="number" min="1" max="365" bind:value={currentSettings.logRetentionDays} />
+      <input
+        id="log-retention"
+        type="number"
+        min="1"
+        max="365"
+        bind:value={currentSettings.logRetentionDays}
+      />
       <span class="field-hint">{$t('options_log_retention_hint')}</span>
     </div>
   </section>
@@ -216,7 +238,11 @@
     <h2>{$t('options_ai_provider')}</h2>
     <div class="field">
       <label for="ai-provider">{$t('options_provider')}</label>
-      <select id="ai-provider" value={currentSettings.aiProvider} onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value as AiProvider)}>
+      <select
+        id="ai-provider"
+        value={currentSettings.aiProvider}
+        onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value as AiProvider)}
+      >
         <option value="openrouter">{$t('options_provider_openrouter')}</option>
         <option value="openai">{$t('options_provider_openai')}</option>
         <option value="anthropic">{$t('options_provider_anthropic')}</option>
@@ -262,7 +288,7 @@
         <select id="ai-model" bind:value={currentSettings.openaiModel}>
           {#each openrouterProviders as provider}
             <optgroup label={provider}>
-              {#each OPENAI_MODELS.filter(m => m.provider === provider) as model}
+              {#each OPENAI_MODELS.filter((m) => m.provider === provider) as model}
                 <option value={model.id}>{model.label}</option>
               {/each}
             </optgroup>
@@ -286,7 +312,10 @@
     </div>
 
     <div class="field">
-      <Button onclick={handleTestConnection} disabled={testingConnection || !currentSettings.openaiApiKey}>
+      <Button
+        onclick={handleTestConnection}
+        disabled={testingConnection || !currentSettings.openaiApiKey}
+      >
         {testingConnection ? $t('options_testing') : $t('options_test_connection')}
       </Button>
     </div>
@@ -305,7 +334,12 @@
     <Button variant="primary" onclick={saveSettings}>{$t('common_save')}</Button>
   </div>
 
-  <Toast message={toastMessage} type={toastType} show={showToast} ondismiss={() => (showToast = false)} />
+  <Toast
+    message={toastMessage}
+    type={toastType}
+    show={showToast}
+    ondismiss={() => (showToast = false)}
+  />
 </div>
 
 <style>
@@ -332,13 +366,25 @@
       --bg-secondary: #2b2a33;
       --bg-hover: #3a3944;
     }
-    section { background: #2b2a33; }
-    .field label { color: #b1b1bd; }
-    .checkbox-label { color: #fbfbfe !important; }
-    .info { color: #b1b1bd; }
-    .field input[type="number"],
+    section {
+      background: #2b2a33;
+    }
+    .field label {
+      color: #b1b1bd;
+    }
+    .checkbox-label {
+      color: #fbfbfe !important;
+    }
+    .info {
+      color: #b1b1bd;
+    }
+    .field input[type='number'],
     .field select,
-    .api-key-input { background: #1c1b22; color: #fbfbfe; border-color: #4a4a5a; }
+    .api-key-input {
+      background: #1c1b22;
+      color: #fbfbfe;
+      border-color: #4a4a5a;
+    }
   }
 
   .options {
@@ -371,7 +417,7 @@
     font-size: 13px;
     color: #5b5b66;
   }
-  .field input[type="number"] {
+  .field input[type='number'] {
     padding: 6px 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -431,7 +477,9 @@
     font-style: italic;
   }
   @media (prefers-color-scheme: dark) {
-    .api-key-notice { color: #81c784; }
+    .api-key-notice {
+      color: #81c784;
+    }
   }
   .field select {
     padding: 6px 10px;

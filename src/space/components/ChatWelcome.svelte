@@ -81,7 +81,9 @@
     background: var(--bg-primary, white);
     cursor: pointer;
     text-align: left;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
     font-family: inherit;
   }
   .quick-action:hover {

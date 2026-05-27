@@ -13,7 +13,10 @@ vi.mock('../i18n', () => ({
 
 vi.stubGlobal('browser', {
   permissions: { request: vi.fn(async () => true) },
-  storage: { local: { get: vi.fn(async () => ({})), set: vi.fn(async () => {}) }, onChanged: { addListener: vi.fn() } },
+  storage: {
+    local: { get: vi.fn(async () => ({})), set: vi.fn(async () => {}) },
+    onChanged: { addListener: vi.fn() },
+  },
 });
 
 const mockFetch = vi.fn();
@@ -29,16 +32,16 @@ const folders = [
   { id: 'folder2', path: 'Account/Archive', name: 'Archive' },
 ];
 
-const tags = [
-  { key: 'tag1', tag: 'Important', color: '#ff0000' },
-];
+const tags = [{ key: 'tag1', tag: 'Important', color: '#ff0000' }];
 
 const existingRules: Rule[] = [
   {
     id: 'rule1',
     name: 'Move newsletters',
     enabled: true,
-    conditions: [{ field: 'from', operator: 'contains', value: 'newsletter', caseSensitive: false }],
+    conditions: [
+      { field: 'from', operator: 'contains', value: 'newsletter', caseSensitive: false },
+    ],
     conditionLogic: 'all',
     actions: [{ type: 'moveToFolder', folderId: 'folder2' }],
     stopProcessing: false,
@@ -83,18 +86,22 @@ describe('buildSystemPrompt', () => {
 
 describe('parseRuleSuggestions', () => {
   beforeEach(() => {
-    vi.mocked(crypto.randomUUID).mockReturnValue('test-uuid-1234' as `${string}-${string}-${string}-${string}-${string}`);
+    vi.mocked(crypto.randomUUID).mockReturnValue(
+      'test-uuid-1234' as `${string}-${string}-${string}-${string}-${string}`,
+    );
   });
 
   it('parses valid rule suggestions from data.rules array', () => {
     const data = {
-      rules: [{
-        name: 'Newsletter Filter',
-        conditions: [{ field: 'from', operator: 'contains', value: 'newsletter' }],
-        actions: [{ type: 'moveToFolder', folderId: 'folder1' }],
-        conditionLogic: 'all',
-        confidence: 0.9,
-      }],
+      rules: [
+        {
+          name: 'Newsletter Filter',
+          conditions: [{ field: 'from', operator: 'contains', value: 'newsletter' }],
+          actions: [{ type: 'moveToFolder', folderId: 'folder1' }],
+          conditionLogic: 'all',
+          confidence: 0.9,
+        },
+      ],
     };
     const result = parseRuleSuggestions(data);
     expect(result).toHaveLength(1);
@@ -108,13 +115,15 @@ describe('parseRuleSuggestions', () => {
 
   it('generates unique IDs using crypto.randomUUID', () => {
     const data = {
-      rules: [{
-        name: 'Test Rule',
-        conditions: [],
-        actions: [],
-        conditionLogic: 'all',
-        confidence: 0.8,
-      }],
+      rules: [
+        {
+          name: 'Test Rule',
+          conditions: [],
+          actions: [],
+          conditionLogic: 'all',
+          confidence: 0.8,
+        },
+      ],
     };
     const result = parseRuleSuggestions(data);
     expect(crypto.randomUUID).toHaveBeenCalled();
@@ -123,12 +132,14 @@ describe('parseRuleSuggestions', () => {
 
   it('defaults conditionLogic to "all" when missing', () => {
     const data = {
-      rules: [{
-        name: 'No Logic Rule',
-        conditions: [],
-        actions: [],
-        confidence: 0.7,
-      }],
+      rules: [
+        {
+          name: 'No Logic Rule',
+          conditions: [],
+          actions: [],
+          confidence: 0.7,
+        },
+      ],
     };
     const result = parseRuleSuggestions(data);
     expect(result[0].rule.conditionLogic).toBe('all');
@@ -136,13 +147,15 @@ describe('parseRuleSuggestions', () => {
 
   it('defaults condition operator to "contains" when missing', () => {
     const data = {
-      rules: [{
-        name: 'No Operator Rule',
-        conditions: [{ field: 'subject', value: 'test' }],
-        actions: [],
-        conditionLogic: 'all',
-        confidence: 0.6,
-      }],
+      rules: [
+        {
+          name: 'No Operator Rule',
+          conditions: [{ field: 'subject', value: 'test' }],
+          actions: [],
+          conditionLogic: 'all',
+          confidence: 0.6,
+        },
+      ],
     };
     const result = parseRuleSuggestions(data);
     expect(result[0].rule.conditions[0].operator).toBe('contains');
@@ -150,13 +163,15 @@ describe('parseRuleSuggestions', () => {
 
   it('sets confidence to 0.5 when not a number', () => {
     const data = {
-      rules: [{
-        name: 'Bad Confidence Rule',
-        conditions: [],
-        actions: [],
-        conditionLogic: 'all',
-        confidence: 'high',
-      }],
+      rules: [
+        {
+          name: 'Bad Confidence Rule',
+          conditions: [],
+          actions: [],
+          conditionLogic: 'all',
+          confidence: 'high',
+        },
+      ],
     };
     const result = parseRuleSuggestions(data);
     expect(result[0].confidence).toBe(0.5);

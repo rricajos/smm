@@ -10,7 +10,7 @@ export const logger = {
     console.warn(PREFIX, ...args);
   },
   error(context: string, err?: unknown) {
-    console.error(PREFIX, context, err instanceof Error ? err.message : err ?? '');
+    console.error(PREFIX, context, err instanceof Error ? err.message : (err ?? ''));
   },
   debug(...args: unknown[]) {
     console.debug(PREFIX, ...args);

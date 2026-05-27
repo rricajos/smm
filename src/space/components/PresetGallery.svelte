@@ -1,11 +1,17 @@
 <script lang="ts">
   /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Rule } from '../../types/rules';
-  import { RULE_PRESETS, PRESET_CATEGORIES, type RulePreset, type PresetCategory } from '../../lib/utils/rule-presets';
+  import {
+    RULE_PRESETS,
+    PRESET_CATEGORIES,
+    type RulePreset,
+    type PresetCategory,
+  } from '../../lib/utils/rule-presets';
   import { t } from '../../lib/i18n';
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
 
+  import type { FolderInfo, TagInfo } from '../../lib/services/openai';
 
   let {
     folders = [],
@@ -14,8 +20,8 @@
     oninstall,
     onclose,
   }: {
-    folders: any[];
-    tags: any[];
+    folders: FolderInfo[];
+    tags: TagInfo[];
     show: boolean;
     oninstall: (rule: Rule) => void;
     onclose: () => void;
@@ -92,15 +98,27 @@
   }
 </script>
 
-<Modal title={selectedPreset ? selectedPreset.name : $t('preset_gallery_title')} {show} onclose={handleClose}>
+<Modal
+  title={selectedPreset ? selectedPreset.name : $t('preset_gallery_title')}
+  {show}
+  onclose={handleClose}
+>
   {#if !selectedPreset}
     <div class="preset-gallery">
       <div class="category-tabs">
-        <button class="cat-tab" class:active={selectedCategory === 'all'} onclick={() => (selectedCategory = 'all')}>
+        <button
+          class="cat-tab"
+          class:active={selectedCategory === 'all'}
+          onclick={() => (selectedCategory = 'all')}
+        >
           {$t('preset_all')}
         </button>
         {#each PRESET_CATEGORIES as cat}
-          <button class="cat-tab" class:active={selectedCategory === cat.key} onclick={() => (selectedCategory = cat.key)}>
+          <button
+            class="cat-tab"
+            class:active={selectedCategory === cat.key}
+            onclick={() => (selectedCategory = cat.key)}
+          >
             {cat.label}
           </button>
         {/each}
@@ -129,7 +147,11 @@
             <code class="cond-value">{cond.value}</code>
           </div>
         {/each}
-        <span class="cond-logic">{selectedPreset.conditionLogic === 'all' ? $t('preset_logic_all') : $t('preset_logic_any')}</span>
+        <span class="cond-logic"
+          >{selectedPreset.conditionLogic === 'all'
+            ? $t('preset_logic_all')
+            : $t('preset_logic_any')}</span
+        >
       </div>
 
       <div class="preset-actions-preview">
@@ -139,7 +161,9 @@
             <li>
               {#if action.type === 'moveToFolder'}{$t('preset_move_to_folder')}{/if}
               {#if action.type === 'addTag'}{$t('preset_add_tag')}{/if}
-              {#if action.type === 'setPriority'}{$t('preset_set_priority', { value: action.priority || '' })}{/if}
+              {#if action.type === 'setPriority'}{$t('preset_set_priority', {
+                  value: action.priority || '',
+                })}{/if}
               {#if action.type === 'markRead'}{$t('preset_mark_read')}{/if}
               {#if action.type === 'autoRespond'}{$t('preset_auto_respond')}{/if}
             </li>
@@ -224,7 +248,9 @@
     border-radius: 8px;
     background: var(--bg-primary, white);
     cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
     font-family: inherit;
     text-align: center;
     color: var(--text-color, #15141a);
@@ -258,10 +284,12 @@
     font-size: 13px;
     color: var(--text-secondary, #666);
   }
-  .preset-conditions, .preset-actions-preview {
+  .preset-conditions,
+  .preset-actions-preview {
     font-size: 12px;
   }
-  .preset-conditions h4, .preset-actions-preview h4 {
+  .preset-conditions h4,
+  .preset-actions-preview h4 {
     margin: 0 0 6px 0;
     font-size: 12px;
     font-weight: 600;
@@ -331,12 +359,30 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .cat-tab { background: var(--bg-secondary, #2b2a33); border-color: var(--border-color, #52525e); }
-    .cat-tab.active { background: var(--primary-color, #0060df); border-color: var(--primary-color, #0060df); }
-    .preset-card { background: var(--bg-secondary, #2b2a33); }
-    .preset-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
-    .cond-value { background: var(--bg-secondary, #2b2a33); }
-    .config-field select { background: var(--bg-secondary, #2b2a33); color: var(--text-color, #fbfbfe); }
-    .install-error { background: #4a1c1c; color: #ef9a9a; }
+    .cat-tab {
+      background: var(--bg-secondary, #2b2a33);
+      border-color: var(--border-color, #52525e);
+    }
+    .cat-tab.active {
+      background: var(--primary-color, #0060df);
+      border-color: var(--primary-color, #0060df);
+    }
+    .preset-card {
+      background: var(--bg-secondary, #2b2a33);
+    }
+    .preset-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    .cond-value {
+      background: var(--bg-secondary, #2b2a33);
+    }
+    .config-field select {
+      background: var(--bg-secondary, #2b2a33);
+      color: var(--text-color, #fbfbfe);
+    }
+    .install-error {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
   }
 </style>

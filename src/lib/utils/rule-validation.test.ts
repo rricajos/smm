@@ -61,7 +61,7 @@ describe('validateRule', () => {
 
   it('flags empty condition value', () => {
     const errs = validateRule('Rule', [cond({ value: '' })], [action()], t);
-    expect(errs.some(e => e.includes('editor_condition_empty'))).toBe(true);
+    expect(errs.some((e) => e.includes('editor_condition_empty'))).toBe(true);
   });
 
   it('allows empty value for hasAttachments field', () => {
@@ -81,7 +81,7 @@ describe('validateRule', () => {
       [action()],
       t,
     );
-    expect(errs.some(e => e.includes('editor_regex_invalid'))).toBe(true);
+    expect(errs.some((e) => e.includes('editor_regex_invalid'))).toBe(true);
   });
 
   it('accepts valid regex pattern', () => {
@@ -95,13 +95,8 @@ describe('validateRule', () => {
   });
 
   it('flags moveToFolder without folderId', () => {
-    const errs = validateRule(
-      'Rule',
-      [cond()],
-      [action({ type: 'moveToFolder' })],
-      t,
-    );
-    expect(errs.some(e => e.includes('editor_action_select_folder'))).toBe(true);
+    const errs = validateRule('Rule', [cond()], [action({ type: 'moveToFolder' })], t);
+    expect(errs.some((e) => e.includes('editor_action_select_folder'))).toBe(true);
   });
 
   it('accepts moveToFolder with folderId', () => {
@@ -115,23 +110,13 @@ describe('validateRule', () => {
   });
 
   it('flags addTag without tagKey', () => {
-    const errs = validateRule(
-      'Rule',
-      [cond()],
-      [action({ type: 'addTag' })],
-      t,
-    );
-    expect(errs.some(e => e.includes('editor_action_select_tag'))).toBe(true);
+    const errs = validateRule('Rule', [cond()], [action({ type: 'addTag' })], t);
+    expect(errs.some((e) => e.includes('editor_action_select_tag'))).toBe(true);
   });
 
   it('flags autoRespond without templateId', () => {
-    const errs = validateRule(
-      'Rule',
-      [cond()],
-      [action({ type: 'autoRespond' })],
-      t,
-    );
-    expect(errs.some(e => e.includes('editor_action_select_template'))).toBe(true);
+    const errs = validateRule('Rule', [cond()], [action({ type: 'autoRespond' })], t);
+    expect(errs.some((e) => e.includes('editor_action_select_template'))).toBe(true);
   });
 
   it('collects multiple errors at once', () => {

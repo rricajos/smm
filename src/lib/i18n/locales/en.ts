@@ -196,12 +196,14 @@ export const en: Translations = {
   ai_success_rule_undo: 'Rule "{name}" deleted (undo).',
   ai_success_accepted: 'Rule "{name}" saved successfully.',
   ai_quick_analyze_title: 'Analyze recent emails',
-  ai_quick_analyze_desc: 'Analyze your latest emails to detect patterns and suggest rules automatically.',
+  ai_quick_analyze_desc:
+    'Analyze your latest emails to detect patterns and suggest rules automatically.',
   ai_quick_analyze_btn: 'Analyze my recent emails',
   ai_quick_analyzing: 'Analyzing...',
   ai_quick_describe_title: 'Describe rule in natural language',
   ai_quick_describe_desc: 'Describe what you want the rule to do and AI will generate it for you.',
-  ai_quick_describe_placeholder: 'E.g.: Move newsletter emails to the Promos folder and mark them as read',
+  ai_quick_describe_placeholder:
+    'E.g.: Move newsletter emails to the Promos folder and mark them as read',
   ai_quick_generate_btn: 'Generate rule',
   ai_quick_generating: 'Generating...',
   ai_quick_consulting: 'Consulting AI...',
@@ -214,14 +216,17 @@ export const en: Translations = {
   ai_actions_label: 'Actions:',
   ai_undo_label: 'Undo',
   ai_batch_title: 'Analyze all emails',
-  ai_batch_desc: 'Analyze all emails in your mailbox in batches of 64 to exhaustively detect patterns and generate rules.',
+  ai_batch_desc:
+    'Analyze all emails in your mailbox in batches of 64 to exhaustively detect patterns and generate rules.',
   ai_batch_btn: 'Analyze all my emails',
   ai_batch_fetching: 'Fetching emails...',
   ai_batch_progress: 'Batch {current} of {total} ({processed} emails processed)',
-  ai_batch_complete: 'Analysis complete: {total} emails processed in {batches} batches, {rules} rules suggested.',
+  ai_batch_complete:
+    'Analysis complete: {total} emails processed in {batches} batches, {rules} rules suggested.',
   ai_batch_no_emails: 'No emails found to analyze.',
   ai_batch_cancel: 'Cancel',
-  ai_batch_cancelled: 'Analysis cancelled. {rules} rules suggested from {processed} emails processed.',
+  ai_batch_cancelled:
+    'Analysis cancelled. {rules} rules suggested from {processed} emails processed.',
   ai_batch_account: 'Account:',
   ai_batch_limit: 'Emails to analyze:',
   ai_batch_limit_hint: 'Newest first',
@@ -230,15 +235,18 @@ export const en: Translations = {
   ai_batch_skipped_count: '{count} emails skipped (already analyzed)',
   ai_batch_marking: 'Marking emails as analyzed...',
   ai_batch_chat_user: 'Analyze my {count} most recent emails and suggest classification rules.',
-  ai_batch_chat_result: 'I analyzed **{total} emails** in {batches} batches and detected **{rules} classification patterns**. Here are the suggested rules:',
-  ai_batch_chat_no_results: 'I analyzed **{total} emails** but found no clear classification patterns. You can try with more emails or manually describe the rules you need.',
+  ai_batch_chat_result:
+    'I analyzed **{total} emails** in {batches} batches and detected **{rules} classification patterns**. Here are the suggested rules:',
+  ai_batch_chat_no_results:
+    'I analyzed **{total} emails** but found no clear classification patterns. You can try with more emails or manually describe the rules you need.',
   ai_folder_context: 'Selected folder',
   ai_folder_context_label: 'Context:',
   ai_folder_context_clear: 'Clear filter',
 
   // Chat welcome
   chat_welcome_title: 'Email organization consultant',
-  chat_welcome_desc: 'I\'m your organization assistant. I can analyze your emails, suggest new folder structures, create classification rules and reorganize your entire mailbox.',
+  chat_welcome_desc:
+    "I'm your organization assistant. I can analyze your emails, suggest new folder structures, create classification rules and reorganize your entire mailbox.",
   chat_welcome_action_analyze: 'Analyze and reorganize',
   chat_welcome_action_analyze_desc: 'I analyze your emails and propose a complete structure',
   chat_welcome_action_folders: 'Suggest folder structure',
@@ -325,7 +333,8 @@ export const en: Translations = {
   conflict_merge_all: 'Merge duplicates',
   conflict_merged: 'Merged',
   conflict_resolve_ai: 'Resolve with AI',
-  conflict_ai_prompt: 'I have {n} rule conflicts that need resolving. Analyze each conflict and propose consolidations or changes to eliminate them:\n\n{conflicts}\n\nPropose consolidated rules that resolve these conflicts.',
+  conflict_ai_prompt:
+    'I have {n} rule conflicts that need resolving. Analyze each conflict and propose consolidations or changes to eliminate them:\n\n{conflicts}\n\nPropose consolidated rules that resolve these conflicts.',
 
   // Template editor
   tmpl_edit_title: 'Edit template',
@@ -417,7 +426,8 @@ export const en: Translations = {
   options_limits: 'Limits',
   options_max_responses: 'Max automatic responses per hour',
   options_log_retention: 'Log retention days',
-  options_log_retention_hint: 'Log entries older than this number of days are automatically removed.',
+  options_log_retention_hint:
+    'Log entries older than this number of days are automatically removed.',
   options_notifications: 'Notifications',
   options_notify_classification: 'Notify on email classification',
   options_notify_auto_response: 'Notify on automatic response',
@@ -471,7 +481,8 @@ export const en: Translations = {
   action_autorespond: 'Auto-respond',
   logic_and: ' AND ',
   logic_or: ' OR ',
-  rules_test_note: 'Note: this test does NOT execute actions. It only checks which emails would match.',
+  rules_test_note:
+    'Note: this test does NOT execute actions. It only checks which emails would match.',
   rules_broken_folder: 'Folder not found: {id}',
   rules_broken_tag: 'Tag not found: {key}',
   rules_broken_template: 'Template not found',
@@ -516,17 +527,20 @@ export const en: Translations = {
 
   // Empty states
   empty_rules_title: 'No classification rules',
-  empty_rules_desc: 'Rules organize your email automatically. Create your first rule or explore the preset gallery.',
+  empty_rules_desc:
+    'Rules organize your email automatically. Create your first rule or explore the preset gallery.',
   empty_rules_cta: 'Create first rule',
   empty_templates_title: 'No response templates',
-  empty_templates_desc: 'Templates generate automatic responses to incoming emails. Create your first template.',
+  empty_templates_desc:
+    'Templates generate automatic responses to incoming emails. Create your first template.',
   empty_templates_cta: 'Create first template',
   empty_log_title: 'No activity recorded',
   empty_log_desc: 'Classifications and automatic responses will appear here.',
 
   // Template AI suggestion
   templates_suggest_ai: 'Suggest with AI',
-  templates_ai_prompt: 'Analyze my recent emails and propose useful auto-response templates. I have {n} rule{s} configured and {t} template{s} existing. Suggest templates that complement my current setup, such as acknowledgements, frequent inquiry replies or out-of-office messages.',
+  templates_ai_prompt:
+    'Analyze my recent emails and propose useful auto-response templates. I have {n} rule{s} configured and {t} template{s} existing. Suggest templates that complement my current setup, such as acknowledgements, frequent inquiry replies or out-of-office messages.',
 
   // Popup enhancements
   popup_total_rules: 'Rules',
@@ -574,11 +588,14 @@ export const en: Translations = {
 
   // Confirm dialog
   confirm_delete_rule_title: 'Delete rule',
-  confirm_delete_rule_msg: 'Are you sure you want to delete the rule "{name}"? This action cannot be undone.',
+  confirm_delete_rule_msg:
+    'Are you sure you want to delete the rule "{name}"? This action cannot be undone.',
   confirm_clear_log_title: 'Clear log',
-  confirm_clear_log_msg: 'Are you sure you want to delete all activity history? This action cannot be undone.',
+  confirm_clear_log_msg:
+    'Are you sure you want to delete all activity history? This action cannot be undone.',
   confirm_delete_conversation_title_dialog: 'Delete conversation',
-  confirm_delete_conversation_msg: 'Are you sure you want to delete this conversation? All messages will be lost.',
+  confirm_delete_conversation_msg:
+    'Are you sure you want to delete this conversation? All messages will be lost.',
 
   // Hardcoded string fixes
   rules_imported_suffix: '(imported)',
@@ -600,9 +617,12 @@ export const en: Translations = {
   folder_tree_title_unread: 'Unread',
 
   // ChatWelcome quick-action prompts
-  chat_welcome_prompt_analyze: 'Analyze my recent emails and propose a folder structure and rules to organize everything optimally. Be aggressive with your proposals.',
-  chat_welcome_prompt_folders: 'What folder structure do you recommend to better organize my professional email?',
-  chat_welcome_prompt_audit: 'Review my current rules and tell me if they can be improved or if important rules are missing.',
+  chat_welcome_prompt_analyze:
+    'Analyze my recent emails and propose a folder structure and rules to organize everything optimally. Be aggressive with your proposals.',
+  chat_welcome_prompt_folders:
+    'What folder structure do you recommend to better organize my professional email?',
+  chat_welcome_prompt_audit:
+    'Review my current rules and tell me if they can be improved or if important rules are missing.',
 
   // TemplateEditor defaults
   tmpl_default_subject: 'Re: {{originalSubject}}',
@@ -620,17 +640,21 @@ export const en: Translations = {
 
   // AI consent
   ai_consent_title: 'Privacy Notice — AI Features',
-  ai_consent_message: 'AI features send data from your emails (sender, subject, body snippets) to external artificial intelligence services ({provider}). This data is transmitted only to the provider you configure and only on your request. By continuing, you accept this data transmission.',
+  ai_consent_message:
+    'AI features send data from your emails (sender, subject, body snippets) to external artificial intelligence services ({provider}). This data is transmitted only to the provider you configure and only on your request. By continuing, you accept this data transmission.',
   ai_consent_accept: 'Understood, continue',
   ai_consent_decline: 'Cancel',
 
   // API key notice
-  options_api_key_notice: 'API keys are stored locally in your Thunderbird profile. They are not shared with third parties.',
+  options_api_key_notice:
+    'API keys are stored locally in your Thunderbird profile. They are not shared with third parties.',
 
   // AI prompt language
   ai_lang_name: 'English',
-  ai_prompt_analyze_emails: 'Analyze these recent emails and suggest classification rules based on patterns you detect (frequent senders, common topics, newsletters, etc.).\n\nEMAILS:\n{emailList}\n\nGenerate between 1 and 5 useful rules. Prioritize clear and frequent patterns. Do not repeat rules that already exist.',
-  ai_prompt_generate_from_desc: 'The user wants this email rule: "{description}"\n\nGenerate 1 or 2 rules that match exactly what the user is asking for. If the description is ambiguous, generate the most likely interpretation. Consider existing rules to avoid duplication.',
+  ai_prompt_analyze_emails:
+    'Analyze these recent emails and suggest classification rules based on patterns you detect (frequent senders, common topics, newsletters, etc.).\n\nEMAILS:\n{emailList}\n\nGenerate between 1 and 5 useful rules. Prioritize clear and frequent patterns. Do not repeat rules that already exist.',
+  ai_prompt_generate_from_desc:
+    'The user wants this email rule: "{description}"\n\nGenerate 1 or 2 rules that match exactly what the user is asking for. If the description is ambiguous, generate the most likely interpretation. Consider existing rules to avoid duplication.',
   ai_prompt_respond_ok: 'Reply only "ok"',
 
   // AI error messages (background)

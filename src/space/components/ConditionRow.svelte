@@ -12,7 +12,6 @@
 
   let { condition, onchange, onremove }: Props = $props();
 
-
   let fieldOptions = $derived([
     { value: 'from', label: $t('cond_from') },
     { value: 'to', label: $t('cond_to') },
@@ -33,7 +32,13 @@
 
   function updateField(field: string) {
     if (field === 'hasAttachments') {
-      onchange({ ...condition, field: field as Condition['field'], operator: 'is', boolValue: true, value: '' });
+      onchange({
+        ...condition,
+        field: field as Condition['field'],
+        operator: 'is',
+        boolValue: true,
+        value: '',
+      });
     } else {
       onchange({ ...condition, field: field as Condition['field'], operator: 'contains' });
     }
@@ -53,7 +58,8 @@
   {#if isBoolean}
     <select
       value={condition.boolValue ? 'true' : 'false'}
-      onchange={(e) => onchange({ ...condition, boolValue: (e.target as HTMLSelectElement).value === 'true' })}
+      onchange={(e) =>
+        onchange({ ...condition, boolValue: (e.target as HTMLSelectElement).value === 'true' })}
     >
       <option value="true">{$t('cond_has_attachments')}</option>
       <option value="false">{$t('cond_no_attachments')}</option>
@@ -61,7 +67,11 @@
   {:else}
     <select
       value={condition.operator}
-      onchange={(e) => onchange({ ...condition, operator: (e.target as HTMLSelectElement).value as Condition['operator'] })}
+      onchange={(e) =>
+        onchange({
+          ...condition,
+          operator: (e.target as HTMLSelectElement).value as Condition['operator'],
+        })}
     >
       {#each textOperators as op}
         <option value={op.value}>{op.label}</option>
@@ -79,14 +89,17 @@
       <input
         type="checkbox"
         checked={condition.caseSensitive}
-        onchange={(e) => onchange({ ...condition, caseSensitive: (e.target as HTMLInputElement).checked })}
+        onchange={(e) =>
+          onchange({ ...condition, caseSensitive: (e.target as HTMLInputElement).checked })}
         aria-label={$t('a11y_case_sensitive')}
       />
       Aa
     </label>
   {/if}
 
-  <Button size="sm" variant="danger" onclick={onremove} aria-label={$t('a11y_remove_condition')}>x</Button>
+  <Button size="sm" variant="danger" onclick={onremove} aria-label={$t('a11y_remove_condition')}
+    >x</Button
+  >
 </div>
 
 <style>
@@ -96,14 +109,15 @@
     align-items: center;
     margin-bottom: 8px;
   }
-  select, input[type="text"] {
+  select,
+  input[type='text'] {
     padding: 5px 8px;
     border: 1px solid var(--border-color, #ccc);
     border-radius: 4px;
     font-size: 13px;
     font-family: inherit;
   }
-  input[type="text"] {
+  input[type='text'] {
     flex: 1;
   }
   .case-toggle {

@@ -143,7 +143,13 @@ describe('classifyMessage (integration)', () => {
 
     const rule = makeRule({
       conditions: [
-        { field: 'hasAttachments', operator: 'is', value: '', boolValue: true, caseSensitive: false },
+        {
+          field: 'hasAttachments',
+          operator: 'is',
+          value: '',
+          boolValue: true,
+          caseSensitive: false,
+        },
       ],
     });
     mockGetRules.mockResolvedValue([rule]);

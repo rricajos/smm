@@ -61,13 +61,16 @@ export function renderMarkdown(text: string): string {
 
     // Headers
     if (trimmed.startsWith('### ')) {
-      closeList(output, inList); inList = null;
+      closeList(output, inList);
+      inList = null;
       output.push(`<h4>${applyInline(trimmed.slice(4))}</h4>`);
     } else if (trimmed.startsWith('## ')) {
-      closeList(output, inList); inList = null;
+      closeList(output, inList);
+      inList = null;
       output.push(`<h3>${applyInline(trimmed.slice(3))}</h3>`);
     } else if (trimmed.startsWith('# ')) {
-      closeList(output, inList); inList = null;
+      closeList(output, inList);
+      inList = null;
       output.push(`<h3>${applyInline(trimmed.slice(2))}</h3>`);
     }
     // Bullet lists: - or *

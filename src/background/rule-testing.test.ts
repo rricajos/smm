@@ -140,7 +140,14 @@ describe('testSingleRule', () => {
     id: 'test-rule',
     name: 'Test Rule',
     enabled: false,
-    conditions: [{ field: 'from' as const, operator: 'contains' as const, value: 'test', caseSensitive: false }],
+    conditions: [
+      {
+        field: 'from' as const,
+        operator: 'contains' as const,
+        value: 'test',
+        caseSensitive: false,
+      },
+    ],
     conditionLogic: 'all' as const,
     actions: [{ type: 'addTag' as const, tagKey: 'important' }],
     stopProcessing: false,

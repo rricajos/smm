@@ -22,24 +22,41 @@
     TemplateProposal,
     RuleConsolidationProposal,
   } from '../../lib/services/openai';
-  import { OPENAI_MODELS, OPENAI_DIRECT_MODELS, ANTHROPIC_DIRECT_MODELS, GOOGLE_DIRECT_MODELS, AI_PROVIDERS } from '../../lib/utils/constants';
+  import {
+    OPENAI_MODELS,
+    OPENAI_DIRECT_MODELS,
+    ANTHROPIC_DIRECT_MODELS,
+    GOOGLE_DIRECT_MODELS,
+    AI_PROVIDERS,
+  } from '../../lib/utils/constants';
   import type { AiProvider } from '../../types/settings';
   import { t, locale } from '../../lib/i18n';
-  import { chatStore, activeConversation, allConversations, storeReady, type ChatConversation } from '../../lib/stores/chat';
+  import {
+    chatStore,
+    activeConversation,
+    allConversations,
+    storeReady,
+    type ChatConversation,
+  } from '../../lib/stores/chat';
   import Toast from '../../lib/components/Toast.svelte';
   import Button from '../../lib/components/Button.svelte';
   import RuleEditor from '../components/RuleEditor.svelte';
   import ChatPanel from '../components/ChatPanel.svelte';
   import QuickPanel from '../components/QuickPanel.svelte';
+  import { getErrorMessage } from '../../lib/utils/error';
 
-  const openrouterProviders = [...new Set(OPENAI_MODELS.map(m => m.provider))];
+  const openrouterProviders = [...new Set(OPENAI_MODELS.map((m) => m.provider))];
 
   function getDirectModels(provider: AiProvider) {
     switch (provider) {
-      case 'openai': return OPENAI_DIRECT_MODELS;
-      case 'anthropic': return ANTHROPIC_DIRECT_MODELS;
-      case 'google': return GOOGLE_DIRECT_MODELS;
-      default: return [];
+      case 'openai':
+        return OPENAI_DIRECT_MODELS;
+      case 'anthropic':
+        return ANTHROPIC_DIRECT_MODELS;
+      case 'google':
+        return GOOGLE_DIRECT_MODELS;
+      default:
+        return [];
     }
   }
 
@@ -50,12 +67,23 @@
     onclearfolder?: () => void;
   }
 
-  let { pendingPrompt = '', onconsumeprompt, selectedFolder = null, onclearfolder }: Props = $props();
+  let {
+    pendingPrompt = '',
+    onconsumeprompt,
+    selectedFolder = null,
+    onclearfolder,
+  }: Props = $props();
 
-  declare const browser: any;
+  /// <reference path="../../lib/utils/messenger.d.ts" />
 
   // --- Chat store subscriptions ---
-  let currentConversation = $state<ChatConversation>({ id: '', title: '', createdAt: 0, displayMessages: [], apiHistory: [] });
+  let currentConversation = $state<ChatConversation>({
+    id: '',
+    title: '',
+    createdAt: 0,
+    displayMessages: [],
+    apiHistory: [],
+  });
   let conversations = $state<ChatConversation[]>([]);
   activeConversation.subscribe((v) => (currentConversation = v));
   allConversations.subscribe((v) => (conversations = v));
@@ -70,12 +98,22 @@
   let apiHealth = $state<'unknown' | 'checking' | 'ok' | 'error'>('unknown');
 
   async function checkApiHealth() {
-    if (!$settings.openaiApiKey) { apiHealth = 'error'; return; }
+    if (!$settings.openaiApiKey) {
+      apiHealth = 'error';
+      return;
+    }
     apiHealth = 'checking';
     try {
-      const ok = await testConnection($settings.openaiApiKey, $settings.openaiModel || 'openai/gpt-4o-mini', $settings.aiProvider || 'openrouter', $settings.customBaseUrl);
+      const ok = await testConnection(
+        $settings.openaiApiKey,
+        $settings.openaiModel || 'openai/gpt-4o-mini',
+        $settings.aiProvider || 'openrouter',
+        $settings.customBaseUrl,
+      );
       apiHealth = ok ? 'ok' : 'error';
-    } catch { apiHealth = 'error'; }
+    } catch {
+      apiHealth = 'error';
+    }
   }
 
   $effect(() => {
@@ -98,7 +136,12 @@
       tagInfos = data.tags || [];
       folders = await browser.runtime.sendMessage({ type: 'GET_FOLDERS' });
       tags = await browser.runtime.sendMessage({ type: 'GET_TAGS' });
-    } catch { folderInfos = []; tagInfos = []; folders = []; tags = []; }
+    } catch {
+      folderInfos = [];
+      tagInfos = [];
+      folders = [];
+      tags = [];
+    }
   }
 
   async function loadEmails() {
@@ -107,7 +150,9 @@
       const emails = await browser.runtime.sendMessage({ type: 'GET_RECENT_EMAILS' });
       cachedEmails = emails || [];
       return cachedEmails;
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }
 
   loadMetadata();
@@ -129,7 +174,8 @@
 
   // --- Undo system ---
   let undoToast = $state<{
-    show: boolean; message: string;
+    show: boolean;
+    message: string;
     undoFn: (() => Promise<void>) | null;
     timerId: ReturnType<typeof setTimeout> | null;
   }>({ show: false, message: '', undoFn: null, timerId: null });
@@ -147,16 +193,25 @@
   async function handleUndo() {
     if (undoToast.timerId) clearTimeout(undoToast.timerId);
     if (undoToast.undoFn) {
-      try { await undoToast.undoFn(); }
-      catch (err: any) { error = $t('ai_error_undo', { msg: err.message }); }
+      try {
+        await undoToast.undoFn();
+      } catch (err: unknown) {
+        error = $t('ai_error_undo', { msg: getErrorMessage(err) });
+      }
     }
     undoToast = { show: false, message: '', undoFn: null, timerId: null };
   }
 
   // --- Helpers ---
-  function clearMessages() { error = ''; successMessage = ''; }
+  function clearMessages() {
+    error = '';
+    successMessage = '';
+  }
   function checkApiKey(): boolean {
-    if (!$settings.openaiApiKey) { error = $t('ai_error_no_api_key'); return false; }
+    if (!$settings.openaiApiKey) {
+      error = $t('ai_error_no_api_key');
+      return false;
+    }
     return true;
   }
   function showSuccess(msg: string) {
@@ -181,7 +236,9 @@
     try {
       const accounts = await browser.runtime.sendMessage({ type: 'GET_ACCOUNT_INFO' });
       accountList = accounts || [];
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   })();
 
   // --- Chat functions ---
@@ -208,7 +265,11 @@
       const emails = await loadEmails();
       await loadMetadata();
       const response = await chatWithAssistant(
-        currentConversation.apiHistory, folderInfos, tagInfos, $rules, emails,
+        currentConversation.apiHistory,
+        folderInfos,
+        tagInfos,
+        $rules,
+        emails,
         $settings.openaiApiKey,
         $settings.openaiModel || 'openai/gpt-4o-mini',
         $settings.aiProvider || 'openrouter',
@@ -216,39 +277,57 @@
         $templates,
       );
       chatStore.addAssistantMessage(
-        response.message, response.folderProposals, response.ruleProposals,
-        response.moveProposals, response.templateProposals, response.ruleConsolidationProposals,
+        response.message,
+        response.folderProposals,
+        response.ruleProposals,
+        response.moveProposals,
+        response.templateProposals,
+        response.ruleConsolidationProposals,
       );
-    } catch (err: any) {
-      error = $t('ai_error_generic', { msg: err.message || $t('ai_error_openrouter') });
-    } finally { chatLoading = false; }
+    } catch (err: unknown) {
+      error = $t('ai_error_generic', { msg: getErrorMessage(err) || $t('ai_error_openrouter') });
+    } finally {
+      chatLoading = false;
+    }
   }
 
   // --- Proposal handlers ---
 
   function resolveParentFolderId(parentId: string): string {
-    if (parentId.startsWith('NEW:') && createdFolderMap[parentId]) return createdFolderMap[parentId];
+    if (parentId.startsWith('NEW:') && createdFolderMap[parentId])
+      return createdFolderMap[parentId];
     return parentId;
   }
 
   function resolveActionRefs(actions: Rule['actions']) {
-    return actions.map(a => {
+    return actions.map((a) => {
       let resolved = { ...a };
-      if (resolved.folderId?.startsWith('NEW:') && createdFolderMap[resolved.folderId]) resolved.folderId = createdFolderMap[resolved.folderId];
-      if (resolved.templateId?.startsWith('NEW_TPL:') && createdTemplateMap[resolved.templateId]) resolved.templateId = createdTemplateMap[resolved.templateId];
+      if (resolved.folderId?.startsWith('NEW:') && createdFolderMap[resolved.folderId])
+        resolved.folderId = createdFolderMap[resolved.folderId];
+      if (resolved.templateId?.startsWith('NEW_TPL:') && createdTemplateMap[resolved.templateId])
+        resolved.templateId = createdTemplateMap[resolved.templateId];
       return resolved;
     });
   }
 
-  async function acceptFolderProposal(msgIdx: number, proposalIdx: number, proposal: FolderProposal) {
+  async function acceptFolderProposal(
+    msgIdx: number,
+    proposalIdx: number,
+    proposal: FolderProposal,
+  ) {
     try {
       const resolvedParentId = resolveParentFolderId(proposal.parentFolderId);
       if (resolvedParentId.startsWith('NEW:')) {
-        error = $t('ai_error_parent_folder', { parent: resolvedParentId.replace('NEW:', ''), name: proposal.name });
+        error = $t('ai_error_parent_folder', {
+          parent: resolvedParentId.replace('NEW:', ''),
+          name: proposal.name,
+        });
         return;
       }
       const result = await browser.runtime.sendMessage({
-        type: 'CREATE_FOLDER', parentFolderId: resolvedParentId, folderName: proposal.name,
+        type: 'CREATE_FOLDER',
+        parentFolderId: resolvedParentId,
+        folderName: proposal.name,
       });
       if (result.success) {
         const folderId = result.folder.id;
@@ -264,17 +343,28 @@
         });
       } else {
         const errMsg: string = result.error || '';
-        if (errMsg.toLowerCase().includes('already exists') || errMsg.toLowerCase().includes('ya existe')) {
+        if (
+          errMsg.toLowerCase().includes('already exists') ||
+          errMsg.toLowerCase().includes('ya existe')
+        ) {
           await loadMetadata();
-          const existing = folderInfos.find(f => f.name === proposal.name && f.path.includes(proposal.name));
+          const existing = folderInfos.find(
+            (f) => f.name === proposal.name && f.path.includes(proposal.name),
+          );
           if (existing) {
             chatStore.setFolderMapping(`NEW:${proposal.name}`, existing.id);
             chatStore.markFolderAccepted(msgIdx, proposalIdx);
             showSuccess($t('ai_success_folder_existed', { name: proposal.name }));
-          } else { error = $t('ai_error_folder_id', { name: proposal.name }); }
-        } else { error = $t('ai_error_folder_create', { msg: errMsg }); }
+          } else {
+            error = $t('ai_error_folder_id', { name: proposal.name });
+          }
+        } else {
+          error = $t('ai_error_folder_create', { msg: errMsg });
+        }
       }
-    } catch (err: any) { error = $t('ai_error_generic', { msg: err.message }); }
+    } catch (err: unknown) {
+      error = $t('ai_error_generic', { msg: getErrorMessage(err) });
+    }
   }
 
   function acceptRuleProposal(msgIdx: number, proposalIdx: number, proposal: RuleProposal) {
@@ -298,20 +388,25 @@
   async function acceptAllFolders(msgIdx: number, proposals: FolderProposal[]) {
     const msgs = currentConversation.displayMessages;
     for (let i = 0; i < proposals.length; i++) {
-      if (!msgs[msgIdx]?.acceptedFolders?.includes(i)) await acceptFolderProposal(msgIdx, i, proposals[i]);
+      if (!msgs[msgIdx]?.acceptedFolders?.includes(i))
+        await acceptFolderProposal(msgIdx, i, proposals[i]);
     }
   }
 
   function acceptAllRules(msgIdx: number, proposals: RuleProposal[]) {
     const msgs = currentConversation.displayMessages;
-    proposals.forEach((p, i) => { if (!msgs[msgIdx]?.acceptedRules?.includes(i)) acceptRuleProposal(msgIdx, i, p); });
+    proposals.forEach((p, i) => {
+      if (!msgs[msgIdx]?.acceptedRules?.includes(i)) acceptRuleProposal(msgIdx, i, p);
+    });
   }
 
   async function acceptMoveProposal(msgIdx: number, proposalIdx: number, proposal: MoveProposal) {
     try {
       const result = await browser.runtime.sendMessage({
         type: 'MOVE_FOLDER_CONTENTS',
-        sourceFolderId: proposal.sourceFolderId, destFolderId: proposal.destFolderId, deleteSource: proposal.deleteSource,
+        sourceFolderId: proposal.sourceFolderId,
+        destFolderId: proposal.destFolderId,
+        deleteSource: proposal.deleteSource,
       });
       if (result.success) {
         chatStore.markMoveAccepted(msgIdx, proposalIdx);
@@ -319,24 +414,35 @@
         const movedCount = result.movedCount || 0;
         const srcName = proposal.sourceFolderPath.split('/').pop() || proposal.sourceFolderPath;
         const destName = proposal.destFolderPath.split('/').pop() || proposal.destFolderPath;
-        showUndoToast($t('ai_success_move_done', { count: movedCount, source: srcName, dest: destName }), async () => {
-          if (!proposal.deleteSource) {
-            await browser.runtime.sendMessage({
-              type: 'MOVE_FOLDER_CONTENTS', sourceFolderId: proposal.destFolderId, destFolderId: proposal.sourceFolderId, deleteSource: false,
-            });
-          }
-          chatStore.unmarkMoveAccepted(msgIdx, proposalIdx);
-          await loadMetadata();
-          showSuccess($t('ai_success_move_undo'));
-        });
-      } else { error = $t('ai_error_move', { msg: result.error || '' }); }
-    } catch (err: any) { error = $t('ai_error_move', { msg: err.message }); }
+        showUndoToast(
+          $t('ai_success_move_done', { count: movedCount, source: srcName, dest: destName }),
+          async () => {
+            if (!proposal.deleteSource) {
+              await browser.runtime.sendMessage({
+                type: 'MOVE_FOLDER_CONTENTS',
+                sourceFolderId: proposal.destFolderId,
+                destFolderId: proposal.sourceFolderId,
+                deleteSource: false,
+              });
+            }
+            chatStore.unmarkMoveAccepted(msgIdx, proposalIdx);
+            await loadMetadata();
+            showSuccess($t('ai_success_move_undo'));
+          },
+        );
+      } else {
+        error = $t('ai_error_move', { msg: result.error || '' });
+      }
+    } catch (err: unknown) {
+      error = $t('ai_error_move', { msg: getErrorMessage(err) });
+    }
   }
 
   async function acceptAllMoves(msgIdx: number, proposals: MoveProposal[]) {
     const msgs = currentConversation.displayMessages;
     for (let i = 0; i < proposals.length; i++) {
-      if (!msgs[msgIdx]?.acceptedMoves?.includes(i)) await acceptMoveProposal(msgIdx, i, proposals[i]);
+      if (!msgs[msgIdx]?.acceptedMoves?.includes(i))
+        await acceptMoveProposal(msgIdx, i, proposals[i]);
     }
   }
 
@@ -353,39 +459,64 @@
         chatStore.unmarkTemplateAccepted(msgIdx, proposalIdx);
         showSuccess($t('ai_success_template_undo', { name: tplName }));
       });
-    } catch (err: any) { error = $t('ai_error_template', { msg: err.message }); }
+    } catch (err: unknown) {
+      error = $t('ai_error_template', { msg: getErrorMessage(err) });
+    }
   }
 
   function acceptAllTemplates(msgIdx: number, proposals: TemplateProposal[]) {
     const msgs = currentConversation.displayMessages;
-    proposals.forEach((p, i) => { if (!msgs[msgIdx]?.acceptedTemplates?.includes(i)) acceptTemplateProposal(msgIdx, i, p); });
+    proposals.forEach((p, i) => {
+      if (!msgs[msgIdx]?.acceptedTemplates?.includes(i)) acceptTemplateProposal(msgIdx, i, p);
+    });
   }
 
-  function acceptConsolidationProposal(msgIdx: number, proposalIdx: number, proposal: RuleConsolidationProposal) {
+  function acceptConsolidationProposal(
+    msgIdx: number,
+    proposalIdx: number,
+    proposal: RuleConsolidationProposal,
+  ) {
     try {
       const resolvedIds: string[] = [];
       for (let i = 0; i < proposal.sourceRuleIds.length; i++) {
         const idOrRef = proposal.sourceRuleIds[i];
         const name = proposal.sourceRuleNames[i];
-        const byId = $rules.find(r => r.id === idOrRef);
-        if (byId) { resolvedIds.push(byId.id); continue; }
+        const byId = $rules.find((r) => r.id === idOrRef);
+        if (byId) {
+          resolvedIds.push(byId.id);
+          continue;
+        }
         if (idOrRef.startsWith('NEW_RULE:')) {
           const refName = idOrRef.slice(9).toLowerCase();
-          const byName = $rules.find(r => r.name.toLowerCase() === refName);
-          if (byName) { resolvedIds.push(byName.id); continue; }
+          const byName = $rules.find((r) => r.name.toLowerCase() === refName);
+          if (byName) {
+            resolvedIds.push(byName.id);
+            continue;
+          }
         }
         if (name) {
-          const byName = $rules.find(r => r.name.toLowerCase() === name.toLowerCase());
-          if (byName) { resolvedIds.push(byName.id); continue; }
+          const byName = $rules.find((r) => r.name.toLowerCase() === name.toLowerCase());
+          if (byName) {
+            resolvedIds.push(byName.id);
+            continue;
+          }
         }
-        const byRawName = $rules.find(r => r.name.toLowerCase() === idOrRef.toLowerCase());
-        if (byRawName) { resolvedIds.push(byRawName.id); continue; }
+        const byRawName = $rules.find((r) => r.name.toLowerCase() === idOrRef.toLowerCase());
+        if (byRawName) {
+          resolvedIds.push(byRawName.id);
+          continue;
+        }
       }
 
-      const originalRules = resolvedIds.map(id => $rules.find(r => r.id === id)).filter(Boolean) as Rule[];
-      resolvedIds.forEach(id => rules.deleteRule(id));
+      const originalRules = resolvedIds
+        .map((id) => $rules.find((r) => r.id === id))
+        .filter(Boolean) as Rule[];
+      resolvedIds.forEach((id) => rules.deleteRule(id));
 
-      const mergedRule = { ...proposal.mergedRule, actions: resolveActionRefs(proposal.mergedRule.actions) };
+      const mergedRule = {
+        ...proposal.mergedRule,
+        actions: resolveActionRefs(proposal.mergedRule.actions),
+      };
       rules.addRule(mergedRule);
       chatStore.markConsolidationAccepted(msgIdx, proposalIdx);
 
@@ -393,16 +524,21 @@
       const mergedName = mergedRule.name;
       showUndoToast($t('ai_success_rules_consolidated', { name: mergedName }), async () => {
         rules.deleteRule(mergedId);
-        originalRules.forEach(r => rules.addRule(r));
+        originalRules.forEach((r) => rules.addRule(r));
         chatStore.unmarkConsolidationAccepted(msgIdx, proposalIdx);
         showSuccess($t('ai_success_rules_consolidated_undo', { name: mergedName }));
       });
-    } catch (err: any) { error = $t('ai_error_consolidation', { msg: err.message }); }
+    } catch (err: unknown) {
+      error = $t('ai_error_consolidation', { msg: getErrorMessage(err) });
+    }
   }
 
   function acceptAllConsolidations(msgIdx: number, proposals: RuleConsolidationProposal[]) {
     const msgs = currentConversation.displayMessages;
-    proposals.forEach((p, i) => { if (!msgs[msgIdx]?.acceptedConsolidations?.includes(i)) acceptConsolidationProposal(msgIdx, i, p); });
+    proposals.forEach((p, i) => {
+      if (!msgs[msgIdx]?.acceptedConsolidations?.includes(i))
+        acceptConsolidationProposal(msgIdx, i, p);
+    });
   }
 
   // --- Quick panel handlers ---
@@ -414,11 +550,27 @@
     suggestions = [];
     try {
       const emails = await browser.runtime.sendMessage({ type: 'GET_RECENT_EMAILS' });
-      if (!emails || emails.length === 0) { error = $t('ai_error_no_emails'); loading = false; return; }
-      suggestions = await generateRulesFromEmails(emails, folderInfos, tagInfos, $rules, $settings.openaiApiKey, $settings.openaiModel || 'openai/gpt-4o-mini', $settings.aiProvider || 'openrouter', $settings.customBaseUrl);
+      if (!emails || emails.length === 0) {
+        error = $t('ai_error_no_emails');
+        loading = false;
+        return;
+      }
+      suggestions = await generateRulesFromEmails(
+        emails,
+        folderInfos,
+        tagInfos,
+        $rules,
+        $settings.openaiApiKey,
+        $settings.openaiModel || 'openai/gpt-4o-mini',
+        $settings.aiProvider || 'openrouter',
+        $settings.customBaseUrl,
+      );
       if (suggestions.length === 0) error = $t('ai_error_no_patterns');
-    } catch (err: any) { error = $t('ai_error_generic', { msg: err.message || $t('ai_error_openrouter') }); }
-    finally { loading = false; }
+    } catch (err: unknown) {
+      error = $t('ai_error_generic', { msg: getErrorMessage(err) || $t('ai_error_openrouter') });
+    } finally {
+      loading = false;
+    }
   }
 
   async function analyzeAllEmails(accountId: string, limit: number, skipAnalyzed: boolean) {
@@ -437,8 +589,13 @@
         skipAnalyzed,
       });
       const allEmails = result?.emails || [];
-      if (result?.skippedAnalyzed > 0) showSuccess($t('ai_batch_skipped_count', { count: result.skippedAnalyzed }));
-      if (allEmails.length === 0) { error = $t('ai_batch_no_emails'); batchLoading = false; return; }
+      if (result?.skippedAnalyzed > 0)
+        showSuccess($t('ai_batch_skipped_count', { count: result.skippedAnalyzed }));
+      if (allEmails.length === 0) {
+        error = $t('ai_batch_no_emails');
+        batchLoading = false;
+        return;
+      }
 
       const BATCH_SIZE = 64;
       const totalBatches = Math.ceil(allEmails.length / BATCH_SIZE);
@@ -450,22 +607,43 @@
         batchProgress = { current: i + 1, total: totalBatches, processed: i * BATCH_SIZE };
         try {
           const batchSuggestions = await generateRulesFromEmails(
-            batch, folderInfos, tagInfos, $rules, $settings.openaiApiKey,
-            $settings.openaiModel || 'openai/gpt-4o-mini', $settings.aiProvider || 'openrouter', $settings.customBaseUrl,
+            batch,
+            folderInfos,
+            tagInfos,
+            $rules,
+            $settings.openaiApiKey,
+            $settings.openaiModel || 'openai/gpt-4o-mini',
+            $settings.aiProvider || 'openrouter',
+            $settings.customBaseUrl,
           );
           for (const s of batchSuggestions) {
-            if (!allSuggestions.some(existing => existing.rule.name.toLowerCase() === s.rule.name.toLowerCase())) allSuggestions.push(s);
+            if (
+              !allSuggestions.some(
+                (existing) => existing.rule.name.toLowerCase() === s.rule.name.toLowerCase(),
+              )
+            )
+              allSuggestions.push(s);
           }
-        } catch (err: any) { console.error(`[SMM] Batch ${i + 1} error:`, err); }
+        } catch (err: unknown) {
+          console.error(`[SMM] Batch ${i + 1} error:`, err);
+        }
       }
 
       suggestions = allSuggestions;
-      const processed = batchCancelled ? (batchProgress?.current || 0) * BATCH_SIZE : allEmails.length;
+      const processed = batchCancelled
+        ? (batchProgress?.current || 0) * BATCH_SIZE
+        : allEmails.length;
 
-      const analyzedIds = allEmails.slice(0, processed).map((e: any) => e.id).filter(Boolean);
+      const analyzedIds = allEmails
+        .slice(0, processed)
+        .map((e: EmailSummary & { id?: number }) => e.id)
+        .filter(Boolean);
       if (analyzedIds.length > 0) {
         batchProgress = { current: 0, total: 0, processed: 0 };
-        await browser.runtime.sendMessage({ type: 'MARK_EMAILS_ANALYZED', messageIds: analyzedIds });
+        await browser.runtime.sendMessage({
+          type: 'MARK_EMAILS_ANALYZED',
+          messageIds: analyzedIds,
+        });
       }
 
       batchLoading = false;
@@ -475,33 +653,61 @@
 
       chatStore.addUserMessage($t('ai_batch_chat_user', { count: processed }));
       if (allSuggestions.length > 0) {
-        const ruleProposals: RuleProposal[] = allSuggestions.map(s => ({ rule: s.rule, description: s.explanation }));
-        chatStore.addAssistantMessage($t('ai_batch_chat_result', {
-          total: processed, batches: batchCancelled ? (batchProgress?.current || totalBatches) : totalBatches, rules: allSuggestions.length,
-        }), [], ruleProposals);
+        const ruleProposals: RuleProposal[] = allSuggestions.map((s) => ({
+          rule: s.rule,
+          description: s.explanation,
+        }));
+        chatStore.addAssistantMessage(
+          $t('ai_batch_chat_result', {
+            total: processed,
+            batches: batchCancelled ? batchProgress?.current || totalBatches : totalBatches,
+            rules: allSuggestions.length,
+          }),
+          [],
+          ruleProposals,
+        );
       } else {
         chatStore.addAssistantMessage($t('ai_batch_chat_no_results', { total: processed }), [], []);
       }
-    } catch (err: any) { error = $t('ai_error_generic', { msg: err.message || $t('ai_error_openrouter') }); }
-    finally { batchLoading = false; batchProgress = null; }
+    } catch (err: unknown) {
+      error = $t('ai_error_generic', { msg: getErrorMessage(err) || $t('ai_error_openrouter') });
+    } finally {
+      batchLoading = false;
+      batchProgress = null;
+    }
   }
 
   async function generateFromDescription(desc: string) {
     clearMessages();
     if (!checkApiKey()) return;
-    if (!desc) { error = $t('ai_error_description_empty'); return; }
+    if (!desc) {
+      error = $t('ai_error_description_empty');
+      return;
+    }
     loading = true;
     suggestions = [];
     try {
-      suggestions = await generateRuleFromDescription(desc, folderInfos, tagInfos, $rules, $settings.openaiApiKey, $settings.openaiModel || 'openai/gpt-4o-mini', $settings.aiProvider || 'openrouter', $settings.customBaseUrl);
+      suggestions = await generateRuleFromDescription(
+        desc,
+        folderInfos,
+        tagInfos,
+        $rules,
+        $settings.openaiApiKey,
+        $settings.openaiModel || 'openai/gpt-4o-mini',
+        $settings.aiProvider || 'openrouter',
+        $settings.customBaseUrl,
+      );
       if (suggestions.length === 0) error = $t('ai_error_no_rule');
-    } catch (err: any) { error = $t('ai_error_generic', { msg: err.message || $t('ai_error_openrouter') }); }
-    finally { loading = false; }
+    } catch (err: unknown) {
+      error = $t('ai_error_generic', { msg: getErrorMessage(err) || $t('ai_error_openrouter') });
+    } finally {
+      loading = false;
+    }
   }
 
   function acceptSuggestion(suggestion: RuleSuggestion) {
     rules.addRule(suggestion.rule);
-    suggestions = suggestions.filter(s => s !== suggestion);
+    suggestions = suggestions.filter((s) => s !== suggestion);
     showSuccess($t('ai_success_accepted', { name: suggestion.rule.name }));
   }
 
@@ -511,7 +717,7 @@
   }
 
   function discardSuggestion(suggestion: RuleSuggestion) {
-    suggestions = suggestions.filter(s => s !== suggestion);
+    suggestions = suggestions.filter((s) => s !== suggestion);
   }
 
   function acceptConsent() {
@@ -519,14 +725,16 @@
   }
 
   let providerName = $derived(
-    AI_PROVIDERS[$settings.aiProvider || 'openrouter']?.name || $settings.aiProvider || 'OpenRouter'
+    AI_PROVIDERS[$settings.aiProvider || 'openrouter']?.name ||
+      $settings.aiProvider ||
+      'OpenRouter',
   );
 
   function handleEditorSave(rule: Rule) {
     rules.addRule(rule);
     showEditor = false;
     editingRule = null;
-    suggestions = suggestions.filter(s => s.rule.id !== rule.id);
+    suggestions = suggestions.filter((s) => s.rule.id !== rule.id);
     showSuccess($t('ai_success_accepted', { name: rule.name }));
   }
 </script>
@@ -536,7 +744,16 @@
     <div class="consent-screen">
       <div class="consent-card">
         <div class="consent-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg
+          >
         </div>
         <h3>{$t('ai_consent_title')}</h3>
         <p>{$t('ai_consent_message', { provider: providerName })}</p>
@@ -546,183 +763,339 @@
       </div>
     </div>
   {:else}
-  <div class="header">
-    <h3>{$t('ai_title')}</h3>
-    <div class="model-selector">
-      <label for="ai-model-select">{$t('ai_model_label')}</label>
-      {#if $settings.aiProvider === 'openrouter' || !$settings.aiProvider}
-        <select
-          id="ai-model-select"
-          value={$settings.openaiModel || 'openai/gpt-4o-mini'}
-          onchange={(e) => settings.update({ openaiModel: (e.target as HTMLSelectElement).value })}
-        >
-          {#each openrouterProviders as provider}
-            <optgroup label={provider}>
-              {#each OPENAI_MODELS.filter(m => m.provider === provider) as model}
-                <option value={model.id}>{model.label}</option>
-              {/each}
-            </optgroup>
-          {/each}
-        </select>
-      {:else if $settings.aiProvider === 'custom'}
-        <input
-          id="ai-model-select"
-          type="text"
-          value={$settings.openaiModel || ''}
-          onchange={(e) => settings.update({ openaiModel: (e.target as HTMLInputElement).value })}
-          placeholder="llama3, mistral, etc."
-          class="model-input"
-        />
-      {:else}
-        <select
-          id="ai-model-select"
-          value={$settings.openaiModel || ''}
-          onchange={(e) => settings.update({ openaiModel: (e.target as HTMLSelectElement).value })}
-        >
-          {#each getDirectModels($settings.aiProvider) as model}
-            <option value={model.id}>{model.label}</option>
-          {/each}
-        </select>
+    <div class="header">
+      <h3>{$t('ai_title')}</h3>
+      <div class="model-selector">
+        <label for="ai-model-select">{$t('ai_model_label')}</label>
+        {#if $settings.aiProvider === 'openrouter' || !$settings.aiProvider}
+          <select
+            id="ai-model-select"
+            value={$settings.openaiModel || 'openai/gpt-4o-mini'}
+            onchange={(e) =>
+              settings.update({ openaiModel: (e.target as HTMLSelectElement).value })}
+          >
+            {#each openrouterProviders as provider}
+              <optgroup label={provider}>
+                {#each OPENAI_MODELS.filter((m) => m.provider === provider) as model}
+                  <option value={model.id}>{model.label}</option>
+                {/each}
+              </optgroup>
+            {/each}
+          </select>
+        {:else if $settings.aiProvider === 'custom'}
+          <input
+            id="ai-model-select"
+            type="text"
+            value={$settings.openaiModel || ''}
+            onchange={(e) => settings.update({ openaiModel: (e.target as HTMLInputElement).value })}
+            placeholder="llama3, mistral, etc."
+            class="model-input"
+          />
+        {:else}
+          <select
+            id="ai-model-select"
+            value={$settings.openaiModel || ''}
+            onchange={(e) =>
+              settings.update({ openaiModel: (e.target as HTMLSelectElement).value })}
+          >
+            {#each getDirectModels($settings.aiProvider) as model}
+              <option value={model.id}>{model.label}</option>
+            {/each}
+          </select>
+        {/if}
+        <button
+          class="health-dot health-{apiHealth}"
+          onclick={checkApiHealth}
+          title={apiHealth === 'ok'
+            ? $t('ai_health_ok')
+            : apiHealth === 'error'
+              ? $t('ai_health_error')
+              : apiHealth === 'checking'
+                ? $t('ai_health_checking')
+                : $t('ai_health_unknown')}
+          aria-label={apiHealth === 'ok'
+            ? $t('ai_health_ok')
+            : apiHealth === 'error'
+              ? $t('ai_health_error')
+              : apiHealth === 'checking'
+                ? $t('ai_health_checking')
+                : $t('ai_health_unknown')}
+        ></button>
+      </div>
+      {#if !$settings.openaiApiKey}
+        <p class="warning">{$t('ai_no_api_key')}</p>
       {/if}
-      <button
-        class="health-dot health-{apiHealth}"
-        onclick={checkApiHealth}
-        title={apiHealth === 'ok' ? $t('ai_health_ok') : apiHealth === 'error' ? $t('ai_health_error') : apiHealth === 'checking' ? $t('ai_health_checking') : $t('ai_health_unknown')}
-        aria-label={apiHealth === 'ok' ? $t('ai_health_ok') : apiHealth === 'error' ? $t('ai_health_error') : apiHealth === 'checking' ? $t('ai_health_checking') : $t('ai_health_unknown')}
-      ></button>
     </div>
-    {#if !$settings.openaiApiKey}
-      <p class="warning">{$t('ai_no_api_key')}</p>
+
+    <div class="mode-tabs">
+      <button
+        class="mode-tab"
+        class:active={activeMode === 'chat'}
+        onclick={() => (activeMode = 'chat')}>{$t('ai_tab_chat')}</button
+      >
+      <button
+        class="mode-tab"
+        class:active={activeMode === 'quick'}
+        onclick={() => (activeMode = 'quick')}>{$t('ai_tab_quick')}</button
+      >
+    </div>
+
+    {#if error}<div class="message error">{error}</div>{/if}
+    {#if successMessage}<div class="message success">{successMessage}</div>{/if}
+
+    {#if activeMode === 'chat'}
+      <ChatPanel
+        {currentConversation}
+        {conversations}
+        {chatLoading}
+        {selectedFolder}
+        onsend={sendChatMessage}
+        onnewconversation={newConversation}
+        onswitchconversation={(id) => {
+          chatStore.switchConversation(id);
+          cachedEmails = [];
+        }}
+        ondeleteconversation={(id) => chatStore.deleteConversation(id)}
+        {onclearfolder}
+        onacceptfolder={acceptFolderProposal}
+        onacceptallfolder={acceptAllFolders}
+        onacceptmove={acceptMoveProposal}
+        onacceptallmoves={acceptAllMoves}
+        onacceptrule={acceptRuleProposal}
+        oneditrule={editRuleProposal}
+        onacceptallrules={acceptAllRules}
+        onaccepttemplate={acceptTemplateProposal}
+        onacceptalltemplates={acceptAllTemplates}
+        onacceptconsolidation={acceptConsolidationProposal}
+        onacceptallconsolidations={acceptAllConsolidations}
+      />
+    {:else}
+      <QuickPanel
+        {loading}
+        {batchLoading}
+        {batchProgress}
+        {accountList}
+        {suggestions}
+        onanalyze={analyzeEmails}
+        onanalyzeall={analyzeAllEmails}
+        ongeneratefromdescription={generateFromDescription}
+        onaccept={acceptSuggestion}
+        onedit={editSuggestion}
+        ondiscard={discardSuggestion}
+        onbatchcancel={() => {
+          batchCancelled = true;
+        }}
+      />
     {/if}
-  </div>
 
-  <div class="mode-tabs">
-    <button class="mode-tab" class:active={activeMode === 'chat'} onclick={() => (activeMode = 'chat')}>{$t('ai_tab_chat')}</button>
-    <button class="mode-tab" class:active={activeMode === 'quick'} onclick={() => (activeMode = 'quick')}>{$t('ai_tab_quick')}</button>
-  </div>
-
-  {#if error}<div class="message error">{error}</div>{/if}
-  {#if successMessage}<div class="message success">{successMessage}</div>{/if}
-
-  {#if activeMode === 'chat'}
-    <ChatPanel
-      {currentConversation}
-      {conversations}
-      {chatLoading}
-      {selectedFolder}
-      onsend={sendChatMessage}
-      onnewconversation={newConversation}
-      onswitchconversation={(id) => { chatStore.switchConversation(id); cachedEmails = []; }}
-      ondeleteconversation={(id) => chatStore.deleteConversation(id)}
-      onclearfolder={onclearfolder}
-      onacceptfolder={acceptFolderProposal}
-      onacceptallfolder={acceptAllFolders}
-      onacceptmove={acceptMoveProposal}
-      onacceptallmoves={acceptAllMoves}
-      onacceptrule={acceptRuleProposal}
-      oneditrule={editRuleProposal}
-      onacceptallrules={acceptAllRules}
-      onaccepttemplate={acceptTemplateProposal}
-      onacceptalltemplates={acceptAllTemplates}
-      onacceptconsolidation={acceptConsolidationProposal}
-      onacceptallconsolidations={acceptAllConsolidations}
+    <RuleEditor
+      show={showEditor}
+      rule={editingRule}
+      {folders}
+      {tags}
+      templates={$templates}
+      onsave={handleEditorSave}
+      onclose={() => {
+        showEditor = false;
+        editingRule = null;
+      }}
     />
-  {:else}
-    <QuickPanel
-      {loading}
-      {batchLoading}
-      {batchProgress}
-      {accountList}
-      {suggestions}
-      onanalyze={analyzeEmails}
-      onanalyzeall={analyzeAllEmails}
-      ongeneratefromdescription={generateFromDescription}
-      onaccept={acceptSuggestion}
-      onedit={editSuggestion}
-      ondiscard={discardSuggestion}
-      onbatchcancel={() => { batchCancelled = true; }}
+
+    <Toast
+      message={undoToast.message}
+      type="success"
+      show={undoToast.show}
+      actionLabel={$t('ai_undo_label')}
+      onaction={handleUndo}
+      ondismiss={() => {
+        if (undoToast.timerId) clearTimeout(undoToast.timerId);
+        undoToast = { show: false, message: '', undoFn: null, timerId: null };
+      }}
+      duration={UNDO_DURATION}
     />
-  {/if}
-
-  <RuleEditor
-    show={showEditor}
-    rule={editingRule}
-    {folders}
-    {tags}
-    templates={$templates}
-    onsave={handleEditorSave}
-    onclose={() => { showEditor = false; editingRule = null; }}
-  />
-
-  <Toast
-    message={undoToast.message}
-    type="success"
-    show={undoToast.show}
-    actionLabel={$t('ai_undo_label')}
-    onaction={handleUndo}
-    ondismiss={() => { if (undoToast.timerId) clearTimeout(undoToast.timerId); undoToast = { show: false, message: '', undoFn: null, timerId: null }; }}
-    duration={UNDO_DURATION}
-  />
   {/if}
 </div>
 
 <style>
-  .ai-page { display: flex; flex-direction: column; gap: 12px; height: 100%; }
-  .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .header h3 { margin: 0; font-size: 15px; }
+  .ai-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
   .model-selector {
-    display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary, #666);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
   }
-  .model-selector label { white-space: nowrap; }
-  .model-selector select, .model-selector .model-input {
-    padding: 4px 8px; border: 1px solid var(--border-color, #ccc); border-radius: 4px;
-    font-size: 12px; font-family: inherit; background: var(--bg-secondary, #f0f0f4); color: inherit;
+  .model-selector label {
+    white-space: nowrap;
   }
-  .model-input { width: 160px; }
+  .model-selector select,
+  .model-selector .model-input {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--bg-secondary, #f0f0f4);
+    color: inherit;
+  }
+  .model-input {
+    width: 160px;
+  }
   .health-dot {
-    width: 10px; height: 10px; border-radius: 50%; border: none; cursor: pointer;
-    flex-shrink: 0; padding: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
   }
-  .health-unknown { background: #bbb; }
-  .health-checking { background: #ffc107; animation: pulse-dot 1s infinite; }
-  .health-ok { background: #4caf50; }
-  .health-error { background: #f44336; }
-  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .health-unknown {
+    background: #bbb;
+  }
+  .health-checking {
+    background: #ffc107;
+    animation: pulse-dot 1s infinite;
+  }
+  .health-ok {
+    background: #4caf50;
+  }
+  .health-error {
+    background: #f44336;
+  }
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
   .warning {
-    margin: 4px 0 0 0; font-size: 12px; color: #cd411d;
-    background: #fff3e0; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffcc80;
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #cd411d;
+    background: #fff3e0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ffcc80;
   }
 
-  .mode-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-color, #e0e0e6); }
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-color, #e0e0e6);
+  }
   .mode-tab {
-    padding: 8px 16px; background: none; border: none; border-bottom: 2px solid transparent;
-    cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text-secondary, #666);
-    transition: color 0.15s, border-color 0.15s;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-secondary, #666);
+    transition:
+      color 0.15s,
+      border-color 0.15s;
   }
-  .mode-tab:hover { color: var(--text-color, #15141a); }
-  .mode-tab.active { color: var(--primary-color, #0060df); border-bottom-color: var(--primary-color, #0060df); font-weight: 600; }
+  .mode-tab:hover {
+    color: var(--text-color, #15141a);
+  }
+  .mode-tab.active {
+    color: var(--primary-color, #0060df);
+    border-bottom-color: var(--primary-color, #0060df);
+    font-weight: 600;
+  }
 
-  .message { padding: 10px 14px; border-radius: 6px; font-size: 13px; }
-  .message.error { background: #ffeef0; border: 1px solid #ffa4a2; color: #c62828; }
-  .message.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+  .message {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .message.error {
+    background: #ffeef0;
+    border: 1px solid #ffa4a2;
+    color: #c62828;
+  }
+  .message.success {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    color: #2e7d32;
+  }
 
   /* Consent screen */
   .consent-screen {
-    display: flex; align-items: center; justify-content: center; flex: 1; padding: 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 20px;
   }
   .consent-card {
-    max-width: 440px; text-align: center; padding: 32px; border: 1px solid var(--border-color, #e0e0e6);
-    border-radius: 12px; background: var(--bg-primary, white);
+    max-width: 440px;
+    text-align: center;
+    padding: 32px;
+    border: 1px solid var(--border-color, #e0e0e6);
+    border-radius: 12px;
+    background: var(--bg-primary, white);
   }
-  .consent-icon { color: var(--primary-color, #0060df); margin-bottom: 16px; }
-  .consent-card h3 { margin: 0 0 12px 0; font-size: 16px; }
-  .consent-card p { margin: 0 0 20px 0; font-size: 13px; color: var(--text-secondary, #666); line-height: 1.6; }
-  .consent-actions { display: flex; justify-content: center; gap: 10px; }
+  .consent-icon {
+    color: var(--primary-color, #0060df);
+    margin-bottom: 16px;
+  }
+  .consent-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+  }
+  .consent-card p {
+    margin: 0 0 20px 0;
+    font-size: 13px;
+    color: var(--text-secondary, #666);
+    line-height: 1.6;
+  }
+  .consent-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
 
   @media (prefers-color-scheme: dark) {
-    .warning { background: #332d00; border-color: #8d6e00; color: #ffb74d; }
-    .message.error { background: #4a1c1c; border-color: #7f2020; color: #ef9a9a; }
-    .message.success { background: #1b3320; border-color: #2e5e3e; color: #81c784; }
-    .model-selector select { background: #1c1b22; border-color: #4a4a5a; }
+    .warning {
+      background: #332d00;
+      border-color: #8d6e00;
+      color: #ffb74d;
+    }
+    .message.error {
+      background: #4a1c1c;
+      border-color: #7f2020;
+      color: #ef9a9a;
+    }
+    .message.success {
+      background: #1b3320;
+      border-color: #2e5e3e;
+      color: #81c784;
+    }
+    .model-selector select {
+      background: #1c1b22;
+      border-color: #4a4a5a;
+    }
   }
 </style>

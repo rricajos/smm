@@ -1,7 +1,14 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
 import { writable, derived } from 'svelte/store';
-import type { FolderProposal, MoveProposal, RuleProposal, TemplateProposal, RuleConsolidationProposal, ChatMessage } from '../services/openai';
+import type {
+  FolderProposal,
+  MoveProposal,
+  RuleProposal,
+  TemplateProposal,
+  RuleConsolidationProposal,
+  ChatMessage,
+} from '../services/openai';
 import { STORAGE_KEYS } from '../utils/constants';
 
 /// <reference path="../utils/messenger.d.ts" />
@@ -67,30 +74,34 @@ function createChatStore() {
   // Load from storage (backward compatible with old single-conversation format)
   try {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
-      browser.storage.local.get(STORAGE_KEYS.CHAT_HISTORY).then((result: Record<string, unknown>) => {
-        const saved = result[STORAGE_KEYS.CHAT_HISTORY] as any;
-        if (saved) {
-          if (saved.conversations && saved.activeId) {
-            // Ensure createdFolderMap exists on each conversation
-            for (const conv of saved.conversations) {
-              if (!conv.createdFolderMap) conv.createdFolderMap = {};
+      browser.storage.local
+        .get(STORAGE_KEYS.CHAT_HISTORY)
+        .then((result: Record<string, unknown>) => {
+          const saved = result[STORAGE_KEYS.CHAT_HISTORY] as any;
+          if (saved) {
+            if (saved.conversations && saved.activeId) {
+              // Ensure createdFolderMap exists on each conversation
+              for (const conv of saved.conversations) {
+                if (!conv.createdFolderMap) conv.createdFolderMap = {};
+              }
+              set(saved);
+            } else if (saved.displayMessages || saved.apiHistory) {
+              // Old single-conversation format — migrate
+              const migrated = createEmptyConversation();
+              migrated.displayMessages = saved.displayMessages || [];
+              migrated.apiHistory = saved.apiHistory || [];
+              if (migrated.displayMessages.length > 0) {
+                const first = migrated.displayMessages.find((m) => m.role === 'user');
+                if (first)
+                  migrated.title =
+                    first.content.substring(0, 50) + (first.content.length > 50 ? '...' : '');
+              }
+              set({ conversations: [migrated], activeId: migrated.id });
             }
-            set(saved);
-          } else if (saved.displayMessages || saved.apiHistory) {
-            // Old single-conversation format — migrate
-            const migrated = createEmptyConversation();
-            migrated.displayMessages = saved.displayMessages || [];
-            migrated.apiHistory = saved.apiHistory || [];
-            if (migrated.displayMessages.length > 0) {
-              const first = migrated.displayMessages.find(m => m.role === 'user');
-              if (first) migrated.title = first.content.substring(0, 50) + (first.content.length > 50 ? '...' : '');
-            }
-            set({ conversations: [migrated], activeId: migrated.id });
           }
-        }
-        loaded = true;
-        storeReady.set(true);
-      });
+          loaded = true;
+          storeReady.set(true);
+        });
     } else {
       loaded = true;
       storeReady.set(true);
@@ -107,11 +118,13 @@ function createChatStore() {
       browser.storage.local.set({
         [STORAGE_KEYS.CHAT_HISTORY]: JSON.parse(JSON.stringify(state)),
       });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   function getActive(state: ChatStoreState): ChatConversation | undefined {
-    return state.conversations.find(c => c.id === state.activeId);
+    return state.conversations.find((c) => c.id === state.activeId);
   }
 
   function updateActive(state: ChatStoreState, fn: (conv: ChatConversation) => void) {
@@ -128,14 +141,16 @@ function createChatStore() {
     // --- Conversation management ---
 
     newConversation() {
-      update(state => {
+      update((state) => {
         const conv = createEmptyConversation();
         state.conversations = [...state.conversations, conv];
         // Prune oldest conversations when limit is exceeded
         if (state.conversations.length > MAX_CONVERSATIONS) {
           const sorted = [...state.conversations].sort((a, b) => a.createdAt - b.createdAt);
-          const toRemove = new Set(sorted.slice(0, state.conversations.length - MAX_CONVERSATIONS).map(c => c.id));
-          state.conversations = state.conversations.filter(c => !toRemove.has(c.id));
+          const toRemove = new Set(
+            sorted.slice(0, state.conversations.length - MAX_CONVERSATIONS).map((c) => c.id),
+          );
+          state.conversations = state.conversations.filter((c) => !toRemove.has(c.id));
         }
         state.activeId = conv.id;
         persist(state);
@@ -144,8 +159,8 @@ function createChatStore() {
     },
 
     switchConversation(id: string) {
-      update(state => {
-        if (state.conversations.some(c => c.id === id)) {
+      update((state) => {
+        if (state.conversations.some((c) => c.id === id)) {
           state.activeId = id;
           persist(state);
         }
@@ -154,8 +169,8 @@ function createChatStore() {
     },
 
     deleteConversation(id: string) {
-      update(state => {
-        state.conversations = state.conversations.filter(c => c.id !== id);
+      update((state) => {
+        state.conversations = state.conversations.filter((c) => c.id !== id);
         if (state.conversations.length === 0) {
           const fresh = createEmptyConversation();
           state.conversations = [fresh];
@@ -169,8 +184,8 @@ function createChatStore() {
     },
 
     renameConversation(id: string, title: string) {
-      update(state => {
-        const conv = state.conversations.find(c => c.id === id);
+      update((state) => {
+        const conv = state.conversations.find((c) => c.id === id);
         if (conv) conv.title = title;
         state.conversations = [...state.conversations];
         persist(state);
@@ -181,8 +196,8 @@ function createChatStore() {
     // --- Folder map methods (operate on active conversation) ---
 
     setFolderMapping(key: string, folderId: string) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           if (!conv.createdFolderMap) conv.createdFolderMap = {};
           conv.createdFolderMap = { ...conv.createdFolderMap, [key]: folderId };
         });
@@ -190,8 +205,8 @@ function createChatStore() {
     },
 
     removeFolderMapping(key: string) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           if (conv.createdFolderMap) {
             const { [key]: _, ...rest } = conv.createdFolderMap;
             conv.createdFolderMap = rest;
@@ -203,12 +218,12 @@ function createChatStore() {
     // --- Message methods (operate on active conversation) ---
 
     addUserMessage(content: string) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           conv.displayMessages = [...conv.displayMessages, { role: 'user' as const, content }];
           conv.apiHistory = [...conv.apiHistory, { role: 'user' as const, content }];
           // Auto-title from first user message
-          if (conv.displayMessages.filter(m => m.role === 'user').length === 1) {
+          if (conv.displayMessages.filter((m) => m.role === 'user').length === 1) {
             conv.title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
           }
         });
@@ -223,30 +238,33 @@ function createChatStore() {
       templateProposals?: TemplateProposal[],
       ruleConsolidationProposals?: RuleConsolidationProposal[],
     ) {
-      update(state => {
-        return updateActive(state, conv => {
-          conv.displayMessages = [...conv.displayMessages, {
-            role: 'assistant' as const,
-            content,
-            folderProposals,
-            moveProposals,
-            ruleProposals,
-            templateProposals,
-            ruleConsolidationProposals,
-            acceptedFolders: [],
-            acceptedMoves: [],
-            acceptedRules: [],
-            acceptedTemplates: [],
-            acceptedConsolidations: [],
-          }];
+      update((state) => {
+        return updateActive(state, (conv) => {
+          conv.displayMessages = [
+            ...conv.displayMessages,
+            {
+              role: 'assistant' as const,
+              content,
+              folderProposals,
+              moveProposals,
+              ruleProposals,
+              templateProposals,
+              ruleConsolidationProposals,
+              acceptedFolders: [],
+              acceptedMoves: [],
+              acceptedRules: [],
+              acceptedTemplates: [],
+              acceptedConsolidations: [],
+            },
+          ];
           conv.apiHistory = [...conv.apiHistory, { role: 'assistant' as const, content }];
         });
       });
     },
 
     markFolderAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedFolders && !msg.acceptedFolders.includes(proposalIdx)) {
             msg.acceptedFolders = [...msg.acceptedFolders, proposalIdx];
@@ -257,8 +275,8 @@ function createChatStore() {
     },
 
     markRuleAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedRules && !msg.acceptedRules.includes(proposalIdx)) {
             msg.acceptedRules = [...msg.acceptedRules, proposalIdx];
@@ -269,8 +287,8 @@ function createChatStore() {
     },
 
     markMoveAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedMoves && !msg.acceptedMoves.includes(proposalIdx)) {
             msg.acceptedMoves = [...msg.acceptedMoves, proposalIdx];
@@ -281,11 +299,11 @@ function createChatStore() {
     },
 
     unmarkMoveAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedMoves) {
-            msg.acceptedMoves = msg.acceptedMoves.filter(i => i !== proposalIdx);
+            msg.acceptedMoves = msg.acceptedMoves.filter((i) => i !== proposalIdx);
             conv.displayMessages = [...conv.displayMessages];
           }
         });
@@ -293,11 +311,11 @@ function createChatStore() {
     },
 
     unmarkFolderAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedFolders) {
-            msg.acceptedFolders = msg.acceptedFolders.filter(i => i !== proposalIdx);
+            msg.acceptedFolders = msg.acceptedFolders.filter((i) => i !== proposalIdx);
             conv.displayMessages = [...conv.displayMessages];
           }
         });
@@ -305,11 +323,11 @@ function createChatStore() {
     },
 
     unmarkRuleAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedRules) {
-            msg.acceptedRules = msg.acceptedRules.filter(i => i !== proposalIdx);
+            msg.acceptedRules = msg.acceptedRules.filter((i) => i !== proposalIdx);
             conv.displayMessages = [...conv.displayMessages];
           }
         });
@@ -317,8 +335,8 @@ function createChatStore() {
     },
 
     markTemplateAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedTemplates && !msg.acceptedTemplates.includes(proposalIdx)) {
             msg.acceptedTemplates = [...msg.acceptedTemplates, proposalIdx];
@@ -329,11 +347,11 @@ function createChatStore() {
     },
 
     unmarkTemplateAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedTemplates) {
-            msg.acceptedTemplates = msg.acceptedTemplates.filter(i => i !== proposalIdx);
+            msg.acceptedTemplates = msg.acceptedTemplates.filter((i) => i !== proposalIdx);
             conv.displayMessages = [...conv.displayMessages];
           }
         });
@@ -341,10 +359,14 @@ function createChatStore() {
     },
 
     markConsolidationAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
-          if (msg && msg.acceptedConsolidations && !msg.acceptedConsolidations.includes(proposalIdx)) {
+          if (
+            msg &&
+            msg.acceptedConsolidations &&
+            !msg.acceptedConsolidations.includes(proposalIdx)
+          ) {
             msg.acceptedConsolidations = [...msg.acceptedConsolidations, proposalIdx];
             conv.displayMessages = [...conv.displayMessages];
           }
@@ -353,11 +375,13 @@ function createChatStore() {
     },
 
     unmarkConsolidationAccepted(msgIdx: number, proposalIdx: number) {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           const msg = conv.displayMessages[msgIdx];
           if (msg && msg.acceptedConsolidations) {
-            msg.acceptedConsolidations = msg.acceptedConsolidations.filter(i => i !== proposalIdx);
+            msg.acceptedConsolidations = msg.acceptedConsolidations.filter(
+              (i) => i !== proposalIdx,
+            );
             conv.displayMessages = [...conv.displayMessages];
           }
         });
@@ -365,8 +389,8 @@ function createChatStore() {
     },
 
     clear() {
-      update(state => {
-        return updateActive(state, conv => {
+      update((state) => {
+        return updateActive(state, (conv) => {
           conv.displayMessages = [];
           conv.apiHistory = [];
           conv.title = 'New conversation';
@@ -380,10 +404,10 @@ function createChatStore() {
 export const chatStore = createChatStore();
 
 // Derived stores for easy access
-export const activeConversation = derived(chatStore, $state => {
-  return $state.conversations.find(c => c.id === $state.activeId) || $state.conversations[0];
+export const activeConversation = derived(chatStore, ($state) => {
+  return $state.conversations.find((c) => c.id === $state.activeId) || $state.conversations[0];
 });
 
-export const allConversations = derived(chatStore, $state => {
+export const allConversations = derived(chatStore, ($state) => {
   return [...$state.conversations].sort((a, b) => b.createdAt - a.createdAt);
 });

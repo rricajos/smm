@@ -16,7 +16,6 @@
 
   let { action, folders, tags, templates, onchange, onremove }: Props = $props();
 
-
   let actionTypes = $derived([
     { value: 'moveToFolder', label: $t('action_move_to_folder') },
     { value: 'addTag', label: $t('action_add_tag') },
@@ -54,10 +53,7 @@
 </script>
 
 <div class="action-row">
-  <select
-    value={action.type}
-    onchange={(e) => updateType((e.target as HTMLSelectElement).value)}
-  >
+  <select value={action.type} onchange={(e) => updateType((e.target as HTMLSelectElement).value)}>
     {#each actionTypes as at}
       <option value={at.value}>{at.label}</option>
     {/each}
@@ -87,7 +83,11 @@
   {:else if action.type === 'setPriority'}
     <select
       value={action.priority || 'high'}
-      onchange={(e) => onchange({ ...action, priority: (e.target as HTMLSelectElement).value as Action['priority'] })}
+      onchange={(e) =>
+        onchange({
+          ...action,
+          priority: (e.target as HTMLSelectElement).value as Action['priority'],
+        })}
     >
       {#each priorities as p}
         <option value={p.value}>{p.label}</option>
@@ -107,7 +107,9 @@
     </select>
   {/if}
 
-  <Button size="sm" variant="danger" onclick={onremove} aria-label={$t('a11y_remove_action')}>x</Button>
+  <Button size="sm" variant="danger" onclick={onremove} aria-label={$t('a11y_remove_action')}
+    >x</Button
+  >
 </div>
 
 <style>

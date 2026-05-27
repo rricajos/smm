@@ -91,13 +91,13 @@ describe('validateImportData', () => {
   it('rejects missing rules field', () => {
     const result = validateImportData({ templates: [] });
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('rules'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('rules'))).toBe(true);
   });
 
   it('rejects missing templates field', () => {
     const result = validateImportData({ rules: [] });
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('templates'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('templates'))).toBe(true);
   });
 
   it('rejects rules missing required fields', () => {
@@ -106,7 +106,7 @@ describe('validateImportData', () => {
       templates: [],
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('Regla 1'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('rules'))).toBe(true);
   });
 
   it('rejects templates missing required fields', () => {
@@ -115,7 +115,7 @@ describe('validateImportData', () => {
       templates: [{ name: 'T1' }], // missing id
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('Plantilla 1'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('templates'))).toBe(true);
   });
 
   it('validates correct data successfully', () => {
@@ -141,11 +141,12 @@ describe('validateImportData', () => {
     expect(result.data!.version).toBe(1);
   });
 
-  it('defaults settings to empty object if missing', () => {
+  it('defaults settings when missing', () => {
     const data = { rules: [sampleRule], templates: [sampleTemplate] };
     const result = validateImportData(data);
     expect(result.valid).toBe(true);
-    expect(result.data!.settings).toEqual({});
+    expect(result.data!.settings.classificationEnabled).toBe(true);
+    expect(result.data!.settings.openaiApiKey).toBe('');
   });
 
   it('reports multiple errors at once', () => {
@@ -154,7 +155,90 @@ describe('validateImportData', () => {
       templates: [{ name: 'y' }],
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBe(2);
+    expect(result.errors.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('applies defaults for missing optional rule fields', () => {
+    const minimalRule = {
+      id: 'r1',
+      name: 'Minimal',
+      conditions: [{ field: 'from', operator: 'contains', value: 'test' }],
+      actions: [{ type: 'markRead' }],
+    };
+    const result = validateImportData({
+      rules: [minimalRule],
+      templates: [],
+    });
+    expect(result.valid).toBe(true);
+    const rule = result.data!.rules[0];
+    expect(rule.enabled).toBe(true);
+    expect(rule.conditionLogic).toBe('all');
+    expect(rule.stopProcessing).toBe(false);
+    expect(typeof rule.createdAt).toBe('number');
+  });
+
+  it('applies defaults for missing optional template fields', () => {
+    const minimalTemplate = { id: 't1', name: 'Minimal' };
+    const result = validateImportData({
+      rules: [],
+      templates: [minimalTemplate],
+    });
+    expect(result.valid).toBe(true);
+    const tmpl = result.data!.templates[0];
+    expect(tmpl.subject).toBe('');
+    expect(tmpl.body).toBe('');
+    expect(tmpl.isPlainText).toBe(true);
+    expect(tmpl.sendMode).toBe('draft');
+    expect(tmpl.replyType).toBe('replyToSender');
+  });
+
+  it('coerces invalid field types via .catch()', () => {
+    const data = {
+      rules: [
+        {
+          id: 'r1',
+          name: 'Test',
+          conditions: [{ field: 'INVALID', operator: 'contains', value: 'x' }],
+          actions: [{ type: 'markRead' }],
+        },
+      ],
+      templates: [],
+    };
+    const result = validateImportData(data);
+    expect(result.valid).toBe(true);
+    expect(result.data!.rules[0].conditions[0].field).toBe('subject'); // default
+  });
+
+  it('rejects rule without id (empty string)', () => {
+    const result = validateImportData({
+      rules: [
+        {
+          id: '',
+          name: 'Test',
+          conditions: [{ field: 'from', operator: 'contains', value: 'x' }],
+          actions: [{ type: 'markRead' }],
+        },
+      ],
+      templates: [],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects completely empty JSON object', () => {
+    const result = validateImportData({});
+    expect(result.valid).toBe(false);
+  });
+
+  it('validates settings fields with correct types', () => {
+    const data = {
+      rules: [sampleRule],
+      templates: [sampleTemplate],
+      settings: { ...sampleSettings, maxAutoResponsesPerHour: 'not a number' },
+    };
+    const result = validateImportData(data);
+    expect(result.valid).toBe(true);
+    // .catch() coerces bad type to default
+    expect(result.data!.settings.maxAutoResponsesPerHour).toBe(10);
   });
 });
 
@@ -186,7 +270,11 @@ describe('detectConflicts', () => {
   });
 
   it('detects template conflicts by name (case-insensitive)', () => {
-    const importedTmpl: ResponseTemplate = { ...sampleTemplate, id: 'diff-id', name: 'TEST TEMPLATE' };
+    const importedTmpl: ResponseTemplate = {
+      ...sampleTemplate,
+      id: 'diff-id',
+      name: 'TEST TEMPLATE',
+    };
     const importData = exportConfiguration([], [importedTmpl], sampleSettings);
     const result = detectConflicts(importData, existingRules, existingTemplates);
     expect(result.conflicts.templates).toHaveLength(1);

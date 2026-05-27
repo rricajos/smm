@@ -7,7 +7,6 @@
   import Modal from '../../lib/components/Modal.svelte';
   import Button from '../../lib/components/Button.svelte';
 
-
   interface Props {
     show: boolean;
     template: ResponseTemplate | null;
@@ -37,7 +36,12 @@
     my_name: 'tpl_var_my_name',
     my_email: 'tpl_var_my_email',
   };
-  let variables = $derived(TEMPLATE_VARIABLES.map(v => ({ key: v.key, label: variableKeys[v.key] ? $t(variableKeys[v.key]) : v.label })));
+  let variables = $derived(
+    TEMPLATE_VARIABLES.map((v) => ({
+      key: v.key,
+      label: variableKeys[v.key] ? $t(variableKeys[v.key]) : v.label,
+    })),
+  );
 
   // Build example variables for preview
   const exampleVars: Record<string, string> = {};
@@ -55,10 +59,10 @@
   let showPreview = $state(false);
 
   let previewSubject = $derived(
-    subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => exampleVars[key] || `{{${key}}}`)
+    subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => exampleVars[key] || `{{${key}}}`),
   );
   let previewBody = $derived(
-    body.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => exampleVars[key] || `{{${key}}}`)
+    body.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => exampleVars[key] || `{{${key}}}`),
   );
 
   // Keep legacy example vars updated with i18n
@@ -94,11 +98,22 @@
       const before = el.value.slice(0, start);
       const after = el.value.slice(end);
       const newValue = before + tag + after;
-      if (target === 'subject') { subject = newValue; } else { body = newValue; }
+      if (target === 'subject') {
+        subject = newValue;
+      } else {
+        body = newValue;
+      }
       const cursorPos = start + tag.length;
-      setTimeout(() => { el.focus(); el.setSelectionRange(cursorPos, cursorPos); }, 0);
+      setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(cursorPos, cursorPos);
+      }, 0);
     } else {
-      if (target === 'subject') { subject += tag; } else { body += tag; }
+      if (target === 'subject') {
+        subject += tag;
+      } else {
+        body += tag;
+      }
     }
   }
 
@@ -122,7 +137,12 @@
   <div class="form">
     <div class="field">
       <label for="tmpl-name">{$t('tmpl_name_label')}</label>
-      <input id="tmpl-name" type="text" bind:value={name} placeholder={$t('tmpl_name_placeholder')} />
+      <input
+        id="tmpl-name"
+        type="text"
+        bind:value={name}
+        placeholder={$t('tmpl_name_placeholder')}
+      />
     </div>
 
     <div class="field">
@@ -185,8 +205,13 @@
     {#if showPreview}
       <div class="preview-box">
         <div class="preview-label">{$t('tmpl_preview_label')}</div>
-        <div class="preview-subject"><strong>{$t('tmpl_preview_subject')}</strong> {previewSubject}</div>
-        <div class="preview-body">{#each previewBody.split('\n') as line}<p class="preview-line">{line}</p>{/each}</div>
+        <div class="preview-subject">
+          <strong>{$t('tmpl_preview_subject')}</strong>
+          {previewSubject}
+        </div>
+        <div class="preview-body">
+          {#each previewBody.split('\n') as line}<p class="preview-line">{line}</p>{/each}
+        </div>
       </div>
     {/if}
 
@@ -216,7 +241,7 @@
     font-weight: 500;
     color: var(--text-secondary, #555);
   }
-  .field input[type="text"],
+  .field input[type='text'],
   .field textarea,
   .field select {
     width: 100%;
@@ -318,10 +343,17 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .preview-box { background: #2b2a33; }
-    .field input[type="text"],
+    .preview-box {
+      background: #2b2a33;
+    }
+    .field input[type='text'],
     .field textarea,
-    .field select { background: var(--bg-primary, #1c1b22); color: var(--text-color, #fbfbfe); }
-    .var-btn { color: var(--text-color, #fbfbfe); }
+    .field select {
+      background: var(--bg-primary, #1c1b22);
+      color: var(--text-color, #fbfbfe);
+    }
+    .var-btn {
+      color: var(--text-color, #fbfbfe);
+    }
   }
 </style>

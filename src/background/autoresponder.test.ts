@@ -65,11 +65,7 @@ import {
   incrementAutoResponseCount,
   appendActivityLog,
 } from '../lib/utils/storage';
-import {
-  isAutoSubmitted,
-  isMailingList,
-  getOwnAddresses,
-} from './message-utils';
+import { isAutoSubmitted, isMailingList, getOwnAddresses } from './message-utils';
 import { renderTemplate } from '../lib/utils/template-engine';
 
 function makeHeader(overrides = {}) {
@@ -237,9 +233,7 @@ describe('triggerAutoResponse', () => {
 
       await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
 
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Template not found'),
-      );
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Template not found'));
       expect(mockMessenger.compose.beginReply).not.toHaveBeenCalled();
     });
 

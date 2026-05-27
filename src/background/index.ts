@@ -6,7 +6,13 @@ import { getSettings, cleanupOldActivityEntries } from '../lib/utils/storage';
 import { getLocaleFromStorage, translate } from '../lib/i18n';
 import { getAllFolders } from './message-utils';
 import { logger } from '../lib/utils/logger';
-import { createFolder, deleteFolder, renameFolder, moveFolderContents, getFolderTree } from './folder-ops';
+import {
+  createFolder,
+  deleteFolder,
+  renameFolder,
+  moveFolderContents,
+  getFolderTree,
+} from './folder-ops';
 import { getRecentEmails, getAllEmailHeaders, markEmailsAnalyzed } from './email-queries';
 import { testRule, processExisting, testSingleRule } from './rule-testing';
 import type { Settings } from '../types/settings';
@@ -31,7 +37,12 @@ type BackgroundMessage =
   | { type: 'GET_ALL_EMAILS_HEADERS'; limit?: number; accountId?: string; skipAnalyzed?: boolean }
   | { type: 'RENAME_FOLDER'; folderId: string; newName: string }
   | { type: 'MARK_EMAILS_ANALYZED'; messageIds?: number[] }
-  | { type: 'MOVE_FOLDER_CONTENTS'; sourceFolderId: string; destFolderId: string; deleteSource?: boolean }
+  | {
+      type: 'MOVE_FOLDER_CONTENTS';
+      sourceFolderId: string;
+      destFolderId: string;
+      deleteSource?: boolean;
+    }
   | { type: 'OPEN_SPACE' };
 
 const SMM_ANALYZED_TAG = 'smm_analyzed';
@@ -63,10 +74,16 @@ messenger.spacesToolbar.addButton('smartMailManager', {
   // Ensure the "Analyzed" tag exists so it shows up in Thunderbird settings
   try {
     const existingTags = await messenger.messages.tags.list();
-    const found = existingTags.find((t: messenger.messages.MessageTag) => t.key === SMM_ANALYZED_TAG);
+    const found = existingTags.find(
+      (t: messenger.messages.MessageTag) => t.key === SMM_ANALYZED_TAG,
+    );
     if (!found) {
       const tagLoc = await getLocaleFromStorage();
-      await messenger.messages.tags.create(SMM_ANALYZED_TAG, translate(tagLoc, 'tag_analyzed'), '#90CAF9');
+      await messenger.messages.tags.create(
+        SMM_ANALYZED_TAG,
+        translate(tagLoc, 'tag_analyzed'),
+        '#90CAF9',
+      );
       logger.debug('Created analyzed tag');
     }
   } catch (err) {
@@ -74,14 +91,19 @@ messenger.spacesToolbar.addButton('smartMailManager', {
   }
 })();
 
-setInterval(async () => {
-  try {
-    const s = await getSettings();
-    if (s.logRetentionDays > 0) {
-      await cleanupOldActivityEntries(s.logRetentionDays);
+setInterval(
+  async () => {
+    try {
+      const s = await getSettings();
+      if (s.logRetentionDays > 0) {
+        await cleanupOldActivityEntries(s.logRetentionDays);
+      }
+    } catch (err) {
+      logger.error('Periodic log cleanup failed', err);
     }
-  } catch (err) { logger.error('Periodic log cleanup failed', err); }
-}, 6 * 60 * 60 * 1000);
+  },
+  6 * 60 * 60 * 1000,
+);
 
 // Listen for new mail (all accounts)
 messenger.messages.onNewMailReceived.addListener(
@@ -95,7 +117,10 @@ messenger.messages.onNewMailReceived.addListener(
   },
 );
 
-async function processMessage(header: messenger.messages.MessageHeader, settings: Settings): Promise<void> {
+async function processMessage(
+  header: messenger.messages.MessageHeader,
+  settings: Settings,
+): Promise<void> {
   try {
     let fullMessage: messenger.messages.MessagePart | null = null;
 
@@ -109,8 +134,10 @@ async function processMessage(header: messenger.messages.MessageHeader, settings
       try {
         const countResult = await messenger.storage.local.get('smm_unread_classifications');
         const current = (countResult['smm_unread_classifications'] as number) || 0;
-        await messenger.storage.local.set({ 'smm_unread_classifications': current + 1 });
-      } catch (err) { logger.error('Badge counter update failed', err); }
+        await messenger.storage.local.set({ smm_unread_classifications: current + 1 });
+      } catch (err) {
+        logger.error('Badge counter update failed', err);
+      }
 
       // Handle auto-respond actions
       for (const { rule } of results) {
@@ -133,7 +160,11 @@ async function processMessage(header: messenger.messages.MessageHeader, settings
         messenger.notifications.create(`smm-classify-${Date.now()}`, {
           type: 'basic',
           title: 'Smart Mail Manager',
-          message: translate(loc, 'notif_classified', { subject: header.subject, n: results.length, s: results.length > 1 ? 's' : '' }),
+          message: translate(loc, 'notif_classified', {
+            subject: header.subject,
+            n: results.length,
+            s: results.length > 1 ? 's' : '',
+          }),
         });
       }
     }
@@ -143,119 +174,123 @@ async function processMessage(header: messenger.messages.MessageHeader, settings
 }
 
 // Handle messages from UI
-messenger.runtime.onMessage.addListener(
-  async (msg: unknown, _sender: unknown) => {
-    const message = msg as BackgroundMessage;
-    switch (message.type) {
-      case 'CLASSIFY_MESSAGE': {
-        const header = await messenger.messages.get(message.messageId);
-        const settings = await getSettings();
-        await processMessage(header, settings);
-        return { success: true };
+messenger.runtime.onMessage.addListener(async (msg: unknown, _sender: unknown) => {
+  const message = msg as BackgroundMessage;
+  switch (message.type) {
+    case 'CLASSIFY_MESSAGE': {
+      const header = await messenger.messages.get(message.messageId);
+      const settings = await getSettings();
+      await processMessage(header, settings);
+      return { success: true };
+    }
+
+    case 'GET_FOLDERS':
+      return getAllFolders();
+
+    case 'GET_TAGS': {
+      try {
+        return await messenger.messages.tags.list();
+      } catch (err) {
+        logger.error('Failed to list tags', err);
+        return [];
       }
+    }
 
-      case 'GET_FOLDERS':
-        return getAllFolders();
-
-      case 'GET_TAGS': {
-        try {
-          return await messenger.messages.tags.list();
-        } catch (err) {
-          logger.error('Failed to list tags', err);
-          return [];
+    case 'GET_DISPLAYED_MESSAGE': {
+      try {
+        const tabs = await messenger.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length > 0) {
+          const messages = await messenger.messageDisplay.getDisplayedMessages(tabs[0].id);
+          return messages.length > 0 ? messages[0] : null;
         }
-      }
-
-      case 'GET_DISPLAYED_MESSAGE': {
-        try {
-          const tabs = await messenger.tabs.query({ active: true, currentWindow: true });
-          if (tabs.length > 0) {
-            const messages = await messenger.messageDisplay.getDisplayedMessages(tabs[0].id);
-            return messages.length > 0 ? messages[0] : null;
-          }
-        } catch (err) {
-          logger.error('Failed to get displayed message', err);
-          return null;
-        }
+      } catch (err) {
+        logger.error('Failed to get displayed message', err);
         return null;
       }
-
-      case 'TEST_RULE':
-        return testRule(message.messageId, message.ruleId);
-
-      case 'GET_RECENT_EMAILS':
-        return getRecentEmails();
-
-      case 'GET_FOLDERS_AND_TAGS': {
-        const allFolders = await getAllFolders();
-        const folderInfos = allFolders.map((f) => ({
-          id: f.id || `${f.accountId}:/${f.path}`,
-          name: f.name,
-          path: f.accountName ? `${f.accountName}/${f.path}` : f.path,
-        }));
-        let tags: messenger.messages.MessageTag[] = [];
-        try {
-          tags = await messenger.messages.tags.list();
-        } catch { /* fallback to empty */ }
-        return { folders: folderInfos, tags };
-      }
-
-      case 'GET_ACCOUNT_INFO': {
-        try {
-          const accounts = await messenger.accounts.list();
-          if (accounts.length === 0) return [];
-          return accounts.map((account: messenger.accounts.MailAccount) => ({
-            name: account.identities?.[0]?.name || account.name || '',
-            email: account.identities?.[0]?.email || '',
-            accountId: account.id,
-          }));
-        } catch {
-          return [];
-        }
-      }
-
-      case 'PROCESS_EXISTING':
-        return processExisting(message.limit || 50);
-
-      case 'TEST_SINGLE_RULE':
-        return testSingleRule(message.rule, message.limit || 50);
-
-      case 'CREATE_FOLDER':
-        return createFolder(message.parentFolderId, message.folderName);
-
-      case 'DELETE_FOLDER':
-        return deleteFolder(message.folderId);
-
-      case 'GET_FOLDER_TREE':
-        return getFolderTree();
-
-      case 'GET_ALL_EMAILS_HEADERS':
-        return getAllEmailHeaders({
-          limit: message.limit,
-          accountId: message.accountId,
-          skipAnalyzed: message.skipAnalyzed,
-        });
-
-      case 'RENAME_FOLDER':
-        return renameFolder(message.folderId, message.newName);
-
-      case 'MARK_EMAILS_ANALYZED':
-        return markEmailsAnalyzed(message.messageIds || []);
-
-      case 'MOVE_FOLDER_CONTENTS':
-        return moveFolderContents(message.sourceFolderId, message.destFolderId, message.deleteSource ?? false);
-
-      case 'OPEN_SPACE': {
-        try {
-          await messenger.spacesToolbar.clickButton('smartMailManager');
-          return { success: true };
-        } catch {
-          return { success: false };
-        }
-      }
-
-      default:
-        return { error: 'Unknown message type' };
+      return null;
     }
-  },
-);
+
+    case 'TEST_RULE':
+      return testRule(message.messageId, message.ruleId);
+
+    case 'GET_RECENT_EMAILS':
+      return getRecentEmails();
+
+    case 'GET_FOLDERS_AND_TAGS': {
+      const allFolders = await getAllFolders();
+      const folderInfos = allFolders.map((f) => ({
+        id: f.id || `${f.accountId}:/${f.path}`,
+        name: f.name,
+        path: f.accountName ? `${f.accountName}/${f.path}` : f.path,
+      }));
+      let tags: messenger.messages.MessageTag[] = [];
+      try {
+        tags = await messenger.messages.tags.list();
+      } catch {
+        /* fallback to empty */
+      }
+      return { folders: folderInfos, tags };
+    }
+
+    case 'GET_ACCOUNT_INFO': {
+      try {
+        const accounts = await messenger.accounts.list();
+        if (accounts.length === 0) return [];
+        return accounts.map((account: messenger.accounts.MailAccount) => ({
+          name: account.identities?.[0]?.name || account.name || '',
+          email: account.identities?.[0]?.email || '',
+          accountId: account.id,
+        }));
+      } catch {
+        return [];
+      }
+    }
+
+    case 'PROCESS_EXISTING':
+      return processExisting(message.limit || 50);
+
+    case 'TEST_SINGLE_RULE':
+      return testSingleRule(message.rule, message.limit || 50);
+
+    case 'CREATE_FOLDER':
+      return createFolder(message.parentFolderId, message.folderName);
+
+    case 'DELETE_FOLDER':
+      return deleteFolder(message.folderId);
+
+    case 'GET_FOLDER_TREE':
+      return getFolderTree();
+
+    case 'GET_ALL_EMAILS_HEADERS':
+      return getAllEmailHeaders({
+        limit: message.limit,
+        accountId: message.accountId,
+        skipAnalyzed: message.skipAnalyzed,
+      });
+
+    case 'RENAME_FOLDER':
+      return renameFolder(message.folderId, message.newName);
+
+    case 'MARK_EMAILS_ANALYZED':
+      return markEmailsAnalyzed(message.messageIds || []);
+
+    case 'MOVE_FOLDER_CONTENTS':
+      return moveFolderContents(
+        message.sourceFolderId,
+        message.destFolderId,
+        message.deleteSource ?? false,
+      );
+
+    case 'OPEN_SPACE': {
+      try {
+        await messenger.spacesToolbar.clickButton('smartMailManager');
+        return { success: true };
+      } catch {
+        return { success: false };
+      }
+    }
+
+    default:
+      return { error: 'Unknown message type' };
+  }
+});

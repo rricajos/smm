@@ -79,8 +79,16 @@ export async function triggerAutoResponse(
   // Build template variables
   const now = new Date();
   const loc = await getLocaleFromStorage();
-  const dayKeys = ['day_sunday', 'day_monday', 'day_tuesday', 'day_wednesday', 'day_thursday', 'day_friday', 'day_saturday'] as const;
-  const days = dayKeys.map(k => translate(loc, k));
+  const dayKeys = [
+    'day_sunday',
+    'day_monday',
+    'day_tuesday',
+    'day_wednesday',
+    'day_thursday',
+    'day_friday',
+    'day_saturday',
+  ] as const;
+  const days = dayKeys.map((k) => translate(loc, k));
 
   // Get body text if full message available
   let bodyText = '';
@@ -100,7 +108,9 @@ export async function triggerAutoResponse(
       myName = identity?.name || msgAccount.name || '';
       myEmail = identity?.email || '';
     }
-  } catch (err) { logger.warn('Could not fetch account info for auto-response', err); }
+  } catch (err) {
+    logger.warn('Could not fetch account info for auto-response', err);
+  }
 
   const variables: Record<string, string> = {
     // Legacy keys (backwards compatible)
@@ -108,7 +118,10 @@ export async function triggerAutoResponse(
     senderEmail: senderEmail,
     originalSubject: header.subject || '',
     date: now.toLocaleDateString(loc === 'en' ? 'en-US' : 'es-ES'),
-    time: now.toLocaleTimeString(loc === 'en' ? 'en-US' : 'es-ES', { hour: '2-digit', minute: '2-digit' }),
+    time: now.toLocaleTimeString(loc === 'en' ? 'en-US' : 'es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
     // New variable keys
     sender_name: extractName(header.author || ''),
     sender_email: senderEmail,
@@ -173,7 +186,8 @@ export async function triggerAutoResponse(
     await appendActivityLog(logEntry);
 
     if (settings.notifyOnAutoResponse) {
-      const notifKey = template.sendMode === 'draft' ? 'notif_auto_response_draft' : 'notif_auto_response_sent';
+      const notifKey =
+        template.sendMode === 'draft' ? 'notif_auto_response_draft' : 'notif_auto_response_sent';
       messenger.notifications.create(`smm-auto-${Date.now()}`, {
         type: 'basic',
         title: 'Smart Mail Manager',

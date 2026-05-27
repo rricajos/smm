@@ -59,7 +59,11 @@ export const OPENAI_MODELS = [
   { id: 'deepseek/deepseek-chat-v3-0324', label: 'DeepSeek V3 (affordable)', provider: 'DeepSeek' },
   { id: 'deepseek/deepseek-r1', label: 'DeepSeek R1 (reasoning)', provider: 'DeepSeek' },
   // --- Mistral ---
-  { id: 'mistralai/mistral-small-3.1-24b-instruct', label: 'Mistral Small 3.1', provider: 'Mistral' },
+  {
+    id: 'mistralai/mistral-small-3.1-24b-instruct',
+    label: 'Mistral Small 3.1',
+    provider: 'Mistral',
+  },
   // --- Qwen ---
   { id: 'qwen/qwen3-235b-a22b', label: 'Qwen3 235B', provider: 'Qwen' },
   { id: 'qwen/qwen3-30b-a3b', label: 'Qwen3 30B (light)', provider: 'Qwen' },

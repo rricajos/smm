@@ -1,7 +1,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
 import { describe, it, expect } from 'vitest';
-import { computeWeeklyData, computeRuleStats, computeTopSenders, filterByTimeRange } from './analytics';
+import {
+  computeWeeklyData,
+  computeRuleStats,
+  computeTopSenders,
+  filterByTimeRange,
+} from './analytics';
 import type { ActivityEntry } from '../../types/settings';
 
 function makeEntry(overrides: Partial<ActivityEntry> = {}): ActivityEntry {
@@ -40,9 +45,7 @@ describe('computeWeeklyData', () => {
   it('places entries in correct day buckets', () => {
     const now = new Date(2024, 5, 15, 12, 0, 0).getTime(); // June 15, noon
     const yesterday = new Date(2024, 5, 14, 10, 0, 0).getTime();
-    const entries = [
-      makeEntry({ timestamp: yesterday, type: 'classification' }),
-    ];
+    const entries = [makeEntry({ timestamp: yesterday, type: 'classification' })];
     const result = computeWeeklyData(entries, now);
     expect(result[5].classifications).toBe(1); // dayIndex 5 = yesterday
     expect(result[6].classifications).toBe(0); // today
@@ -102,9 +105,7 @@ describe('computeTopSenders', () => {
   });
 
   it('respects limit', () => {
-    const entries = Array.from({ length: 10 }, (_, i) =>
-      makeEntry({ from: `user${i}@t.com` }),
-    );
+    const entries = Array.from({ length: 10 }, (_, i) => makeEntry({ from: `user${i}@t.com` }));
     expect(computeTopSenders(entries, 2)).toHaveLength(2);
   });
 
@@ -117,7 +118,7 @@ describe('computeTopSenders', () => {
 describe('filterByTimeRange', () => {
   const now = Date.now();
   const entries = [
-    makeEntry({ timestamp: now - 1 * 86400000 }),  // 1 day ago
+    makeEntry({ timestamp: now - 1 * 86400000 }), // 1 day ago
     makeEntry({ timestamp: now - 10 * 86400000 }), // 10 days ago
     makeEntry({ timestamp: now - 40 * 86400000 }), // 40 days ago
   ];

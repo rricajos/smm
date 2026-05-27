@@ -26,17 +26,12 @@ describe('getOwnAddresses', () => {
       {
         id: 'acc1',
         name: 'Work',
-        identities: [
-          { email: 'alice@work.com' },
-          { email: 'alice.backup@work.com' },
-        ],
+        identities: [{ email: 'alice@work.com' }, { email: 'alice.backup@work.com' }],
       },
       {
         id: 'acc2',
         name: 'Personal',
-        identities: [
-          { email: 'alice@personal.com' },
-        ],
+        identities: [{ email: 'alice@personal.com' }],
       },
     ]);
 
@@ -49,10 +44,7 @@ describe('getOwnAddresses', () => {
       {
         id: 'acc1',
         name: 'Work',
-        identities: [
-          { email: 'Alice@Work.COM' },
-          { email: 'BOB@Example.Org' },
-        ],
+        identities: [{ email: 'Alice@Work.COM' }, { email: 'BOB@Example.Org' }],
       },
     ]);
 

@@ -11,7 +11,10 @@ vi.mock('../i18n', () => ({
 
 vi.stubGlobal('browser', {
   permissions: { request: vi.fn(async () => true) },
-  storage: { local: { get: vi.fn(async () => ({})), set: vi.fn(async () => {}) }, onChanged: { addListener: vi.fn() } },
+  storage: {
+    local: { get: vi.fn(async () => ({})), set: vi.fn(async () => {}) },
+    onChanged: { addListener: vi.fn() },
+  },
 });
 
 const mockFetch = vi.fn();
@@ -112,24 +115,36 @@ describe('generateRulesFromEmails', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              rules: [{
-                name: 'Newsletter',
-                conditions: [{ field: 'from', operator: 'contains', value: 'news' }],
-                actions: [{ type: 'moveToFolder', folderId: 'f1' }],
-                conditionLogic: 'all',
-                confidence: 0.85,
-                explanation: 'Newsletters detected',
-              }],
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                rules: [
+                  {
+                    name: 'Newsletter',
+                    conditions: [{ field: 'from', operator: 'contains', value: 'news' }],
+                    actions: [{ type: 'moveToFolder', folderId: 'f1' }],
+                    conditionLogic: 'all',
+                    confidence: 0.85,
+                    explanation: 'Newsletters detected',
+                  },
+                ],
+              }),
+            },
           },
-        }],
+        ],
       }),
     });
 
-    const result = await generateRulesFromEmails(emails, folders, tags, [], 'key', 'model', 'openai');
+    const result = await generateRulesFromEmails(
+      emails,
+      folders,
+      tags,
+      [],
+      'key',
+      'model',
+      'openai',
+    );
     expect(result).toHaveLength(1);
     expect(result[0].rule.name).toBe('Newsletter');
     expect(result[0].confidence).toBe(0.85);
@@ -155,25 +170,34 @@ describe('generateRuleFromDescription', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              rules: [{
-                name: 'Custom Rule',
-                conditions: [{ field: 'subject', operator: 'contains', value: 'urgent' }],
-                actions: [{ type: 'setPriority', priority: 'high' }],
-                conditionLogic: 'all',
-                confidence: 0.9,
-              }],
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                rules: [
+                  {
+                    name: 'Custom Rule',
+                    conditions: [{ field: 'subject', operator: 'contains', value: 'urgent' }],
+                    actions: [{ type: 'setPriority', priority: 'high' }],
+                    conditionLogic: 'all',
+                    confidence: 0.9,
+                  },
+                ],
+              }),
+            },
           },
-        }],
+        ],
       }),
     });
 
     const result = await generateRuleFromDescription(
       'Mark urgent emails as high priority',
-      [{ id: 'f1', name: 'Inbox', path: 'Inbox' }], [], [], 'key', 'model', 'openai',
+      [{ id: 'f1', name: 'Inbox', path: 'Inbox' }],
+      [],
+      [],
+      'key',
+      'model',
+      'openai',
     );
     expect(result).toHaveLength(1);
     expect(result[0].rule.name).toBe('Custom Rule');
@@ -191,35 +215,47 @@ describe('chatWithAssistant', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              message: 'Here are my suggestions',
-              folder_proposals: [{
-                name: 'Newsletters',
-                parentFolderId: 'f1',
-                parentPath: 'Inbox',
-                description: 'For newsletter emails',
-              }],
-              rule_proposals: [{
-                name: 'Auto-classify newsletters',
-                conditionLogic: 'any',
-                conditions: [{ field: 'from', operator: 'contains', value: 'newsletter' }],
-                actions: [{ type: 'moveToFolder', folderId: 'NEW:Newsletters' }],
-                description: 'Moves newsletters',
-              }],
-              move_proposals: [],
-              template_proposals: [],
-              rule_consolidation_proposals: [],
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                message: 'Here are my suggestions',
+                folder_proposals: [
+                  {
+                    name: 'Newsletters',
+                    parentFolderId: 'f1',
+                    parentPath: 'Inbox',
+                    description: 'For newsletter emails',
+                  },
+                ],
+                rule_proposals: [
+                  {
+                    name: 'Auto-classify newsletters',
+                    conditionLogic: 'any',
+                    conditions: [{ field: 'from', operator: 'contains', value: 'newsletter' }],
+                    actions: [{ type: 'moveToFolder', folderId: 'NEW:Newsletters' }],
+                    description: 'Moves newsletters',
+                  },
+                ],
+                move_proposals: [],
+                template_proposals: [],
+                rule_consolidation_proposals: [],
+              }),
+            },
           },
-        }],
+        ],
       }),
     });
 
     const result = await chatWithAssistant(
       [{ role: 'user', content: 'Organize my inbox' }],
-      folders, tags, [], emails, 'key', 'model', 'openai',
+      folders,
+      tags,
+      [],
+      emails,
+      'key',
+      'model',
+      'openai',
     );
     expect(result.message).toBe('Here are my suggestions');
     expect(result.folderProposals).toHaveLength(1);
@@ -232,19 +268,27 @@ describe('chatWithAssistant', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              message: 'Your inbox looks good!',
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                message: 'Your inbox looks good!',
+              }),
+            },
           },
-        }],
+        ],
       }),
     });
 
     const result = await chatWithAssistant(
       [{ role: 'user', content: 'How is my inbox?' }],
-      folders, tags, [], emails, 'key', 'model', 'openai',
+      folders,
+      tags,
+      [],
+      emails,
+      'key',
+      'model',
+      'openai',
     );
     expect(result.message).toBe('Your inbox looks good!');
     expect(result.folderProposals).toEqual([]);
@@ -258,32 +302,42 @@ describe('chatWithAssistant', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              message: 'Auto-reply template created',
-              folder_proposals: [],
-              rule_proposals: [],
-              move_proposals: [],
-              template_proposals: [{
-                name: 'OOO Reply',
-                subject: 'Re: {{subject}}',
-                body: 'I am out of office until Monday.',
-                isPlainText: true,
-                sendMode: 'draft',
-                replyType: 'replyToSender',
-                description: 'Out of office auto-reply',
-              }],
-              rule_consolidation_proposals: [],
-            }),
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                message: 'Auto-reply template created',
+                folder_proposals: [],
+                rule_proposals: [],
+                move_proposals: [],
+                template_proposals: [
+                  {
+                    name: 'OOO Reply',
+                    subject: 'Re: {{subject}}',
+                    body: 'I am out of office until Monday.',
+                    isPlainText: true,
+                    sendMode: 'draft',
+                    replyType: 'replyToSender',
+                    description: 'Out of office auto-reply',
+                  },
+                ],
+                rule_consolidation_proposals: [],
+              }),
+            },
           },
-        }],
+        ],
       }),
     });
 
     const result = await chatWithAssistant(
       [{ role: 'user', content: 'Create an out of office reply' }],
-      folders, tags, [], emails, 'key', 'model', 'openai',
+      folders,
+      tags,
+      [],
+      emails,
+      'key',
+      'model',
+      'openai',
     );
     expect(result.templateProposals).toHaveLength(1);
     expect(result.templateProposals[0].template.name).toBe('OOO Reply');
@@ -294,22 +348,30 @@ describe('chatWithAssistant', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        content: [{
-          text: JSON.stringify({
-            message: 'Anthropic response',
-            folder_proposals: [],
-            rule_proposals: [],
-            move_proposals: [],
-            template_proposals: [],
-            rule_consolidation_proposals: [],
-          }),
-        }],
+        content: [
+          {
+            text: JSON.stringify({
+              message: 'Anthropic response',
+              folder_proposals: [],
+              rule_proposals: [],
+              move_proposals: [],
+              template_proposals: [],
+              rule_consolidation_proposals: [],
+            }),
+          },
+        ],
       }),
     });
 
     const result = await chatWithAssistant(
       [{ role: 'user', content: 'Help' }],
-      folders, tags, [], emails, 'key', 'claude-3', 'anthropic',
+      folders,
+      tags,
+      [],
+      emails,
+      'key',
+      'claude-3',
+      'anthropic',
     );
     expect(result.message).toBe('Anthropic response');
     // Verify Anthropic-specific headers
@@ -334,7 +396,12 @@ describe('API routing', () => {
 
     await generateRulesFromEmails(
       [{ from: 'x@t.com', subject: 'T', snippet: 'S' }],
-      [], [], [], 'key', 'model', 'openai',
+      [],
+      [],
+      [],
+      'key',
+      'model',
+      'openai',
     );
     const openaiBody = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(openaiBody.response_format).toEqual({ type: 'json_object' });
@@ -350,7 +417,12 @@ describe('API routing', () => {
 
     await generateRulesFromEmails(
       [{ from: 'x@t.com', subject: 'T', snippet: 'S' }],
-      [], [], [], 'key', 'model', 'google',
+      [],
+      [],
+      [],
+      'key',
+      'model',
+      'google',
     );
     const googleBody = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(googleBody.response_format).toBeUndefined();
@@ -366,7 +438,12 @@ describe('API routing', () => {
 
     await generateRulesFromEmails(
       [{ from: 'x@t.com', subject: 'T', snippet: 'S' }],
-      [], [], [], 'key', 'model', 'openrouter',
+      [],
+      [],
+      [],
+      'key',
+      'model',
+      'openrouter',
     );
     const headers = mockFetch.mock.calls[0][1].headers;
     expect(headers['HTTP-Referer']).toBe('https://addons.thunderbird.net');

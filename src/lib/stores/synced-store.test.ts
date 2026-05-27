@@ -66,7 +66,7 @@ describe('createSyncedStore', () => {
 
   it('update() transforms value correctly', () => {
     const store = createSyncedStore<number[]>('test_key', [1], 'test');
-    store.update(arr => [...arr, 2, 3]);
+    store.update((arr) => [...arr, 2, 3]);
     expect(get(store)).toEqual([1, 2, 3]);
   });
 
@@ -75,10 +75,7 @@ describe('createSyncedStore', () => {
     createSyncedStore('my_key', 'old', 'test');
     // Simulate external change
     expect(onChangedListeners.length).toBeGreaterThan(0);
-    onChangedListeners[onChangedListeners.length - 1](
-      { my_key: { newValue: 'updated' } },
-      'local',
-    );
+    onChangedListeners[onChangedListeners.length - 1]({ my_key: { newValue: 'updated' } }, 'local');
   });
 
   it('onChanged listener ignores changes to different keys', () => {

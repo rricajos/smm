@@ -27,7 +27,7 @@ beforeEach(async () => {
   await vi.waitFor(() => expect(get(storeReady)).toBe(true));
   // Full reset: delete all conversations except one, then clear messages
   const state = get(chatStore);
-  const ids = state.conversations.map(c => c.id);
+  const ids = state.conversations.map((c) => c.id);
   // Delete all except the last one (which creates a fresh one)
   for (const id of ids) {
     chatStore.deleteConversation(id);
@@ -138,7 +138,9 @@ describe('message methods', () => {
   });
 
   it('addAssistantMessage() appends with empty accepted arrays', () => {
-    chatStore.addAssistantMessage('Response', [{ name: 'Folder', parentFolderId: 'f1', parentPath: 'Inbox', description: 'test' }]);
+    chatStore.addAssistantMessage('Response', [
+      { name: 'Folder', parentFolderId: 'f1', parentPath: 'Inbox', description: 'test' },
+    ]);
     const msg = getActive().displayMessages[0];
     expect(msg.role).toBe('assistant');
     expect(msg.folderProposals).toHaveLength(1);
@@ -162,7 +164,16 @@ describe('mark/unmark acceptance', () => {
       'Suggestions',
       [{ name: 'F1', parentFolderId: 'p', parentPath: 'P', description: 'd' }],
       [{ rule: {} as any, description: 'r' }],
-      [{ sourceFolderId: 's', sourceFolderPath: 'sp', destFolderId: 'd', destFolderPath: 'dp', deleteSource: false, description: 'm' }],
+      [
+        {
+          sourceFolderId: 's',
+          sourceFolderPath: 'sp',
+          destFolderId: 'd',
+          destFolderPath: 'dp',
+          deleteSource: false,
+          description: 'm',
+        },
+      ],
       [{ template: {} as any, description: 't' }],
       [{ mergedRule: {} as any, sourceRuleIds: [], sourceRuleNames: [], description: 'c' }],
     );

@@ -28,14 +28,16 @@ try {
 
 // Sync across contexts via storage.onChanged
 try {
-  browser.storage.onChanged.addListener((changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
-    if (area === 'local' && changes[STORAGE_KEYS.LOCALE]) {
-      const newVal = changes[STORAGE_KEYS.LOCALE].newValue;
-      if (newVal === 'es' || newVal === 'en') {
-        locale.set(newVal);
+  browser.storage.onChanged.addListener(
+    (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
+      if (area === 'local' && changes[STORAGE_KEYS.LOCALE]) {
+        const newVal = changes[STORAGE_KEYS.LOCALE].newValue;
+        if (newVal === 'es' || newVal === 'en') {
+          locale.set(newVal);
+        }
       }
-    }
-  });
+    },
+  );
 } catch {
   // Not in extension context
 }
@@ -70,12 +72,18 @@ export async function getLocaleFromStorage(): Promise<SupportedLocale> {
     const result = await browser.storage.local.get(STORAGE_KEYS.LOCALE);
     const stored = result[STORAGE_KEYS.LOCALE];
     if (stored === 'es' || stored === 'en') return stored;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return 'es';
 }
 
 /** Get translation for a key using a given locale (for background scripts) */
-export function translate(loc: SupportedLocale, key: keyof Translations, params?: Record<string, string | number>): string {
+export function translate(
+  loc: SupportedLocale,
+  key: keyof Translations,
+  params?: Record<string, string | number>,
+): string {
   const dict = dictionaries[loc] || dictionaries.es;
   let str = dict[key] || key;
   if (params) {

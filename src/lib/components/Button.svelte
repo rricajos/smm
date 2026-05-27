@@ -10,15 +10,17 @@
     children?: Snippet;
   }
 
-  let { variant = 'secondary', size = 'md', disabled = false, onclick, children, ...rest }: Props & Record<string, any> = $props();
+  let {
+    variant = 'secondary',
+    size = 'md',
+    disabled = false,
+    onclick,
+    children,
+    ...rest
+  }: Props & Record<string, any> = $props();
 </script>
 
-<button
-  class="btn btn-{variant} btn-{size}"
-  {disabled}
-  {onclick}
-  {...rest}
->
+<button class="btn btn-{variant} btn-{size}" {disabled} {onclick} {...rest}>
   {#if children}{@render children()}{/if}
 </button>
 
@@ -35,7 +37,10 @@
     font-size: 13px;
     line-height: 1.2;
     white-space: nowrap;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s,
+      color 0.15s;
   }
   .btn:disabled {
     opacity: 0.5;

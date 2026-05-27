@@ -14,7 +14,16 @@
     oncancel: () => void;
   }
 
-  let { show, title, message, confirmLabel, cancelLabel, variant = 'danger', onconfirm, oncancel }: Props = $props();
+  let {
+    show,
+    title,
+    message,
+    confirmLabel,
+    cancelLabel,
+    variant = 'danger',
+    onconfirm,
+    oncancel,
+  }: Props = $props();
 
   let dialogEl: HTMLDivElement | undefined = $state(undefined);
 
@@ -53,12 +62,19 @@
 {#if show}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="confirm-backdrop" onclick={handleBackdrop} role="presentation">
-    <div class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-msg" bind:this={dialogEl}>
+    <div
+      class="confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      aria-describedby="confirm-msg"
+      bind:this={dialogEl}
+    >
       <h3 id="confirm-title">{title}</h3>
       <p id="confirm-msg">{message}</p>
       <div class="confirm-actions">
         <Button onclick={oncancel}>{cancelLabel || $t('common_cancel')}</Button>
-        <Button variant={variant} onclick={onconfirm}>{confirmLabel || $t('common_delete')}</Button>
+        <Button {variant} onclick={onconfirm}>{confirmLabel || $t('common_delete')}</Button>
       </div>
     </div>
   </div>
@@ -76,8 +92,12 @@
     animation: fadeIn 0.1s ease;
   }
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   .confirm-dialog {
     background: var(--bg-primary, white);

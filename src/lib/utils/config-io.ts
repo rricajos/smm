@@ -3,6 +3,7 @@
 import type { Rule } from '../../types/rules';
 import type { ResponseTemplate } from '../../types/templates';
 import type { Settings } from '../../types/settings';
+import { importDataSchema } from './import-schemas';
 
 export interface ExportData {
   version: 1;
@@ -52,49 +53,35 @@ export function exportConfiguration(
   };
 }
 
-export function validateImportData(raw: unknown): { valid: boolean; errors: string[]; data: ExportData | null } {
-  const errors: string[] = [];
+export function validateImportData(raw: unknown): {
+  valid: boolean;
+  errors: string[];
+  data: ExportData | null;
+} {
   if (!raw || typeof raw !== 'object') {
     return { valid: false, errors: ['El archivo no contiene JSON valido.'], data: null };
   }
 
-  const obj = raw as Record<string, unknown>;
+  const result = importDataSchema.safeParse(raw);
 
-  if (!Array.isArray(obj.rules)) {
-    errors.push('Falta el campo "rules" o no es un array.');
-  } else {
-    for (let i = 0; i < obj.rules.length; i++) {
-      const r = obj.rules[i];
-      if (!r.id || !r.name || !Array.isArray(r.conditions) || !Array.isArray(r.actions)) {
-        errors.push(`Regla ${i + 1}: faltan campos requeridos (id, name, conditions, actions).`);
-      }
-    }
-  }
-
-  if (!Array.isArray(obj.templates)) {
-    errors.push('Falta el campo "templates" o no es un array.');
-  } else {
-    for (let i = 0; i < obj.templates.length; i++) {
-      const t = obj.templates[i];
-      if (!t.id || !t.name) {
-        errors.push(`Plantilla ${i + 1}: faltan campos requeridos (id, name).`);
-      }
-    }
-  }
-
-  if (errors.length > 0) {
+  if (!result.success) {
+    const errors = result.error.issues.map((issue) => {
+      const path = issue.path.join('.');
+      return `${path}: ${issue.message}`;
+    });
     return { valid: false, errors, data: null };
   }
 
+  const data = result.data;
   return {
     valid: true,
     errors: [],
     data: {
-      version: ((obj.version as number) || 1) as ExportData['version'],
-      exportedAt: (obj.exportedAt as string) || '',
-      rules: obj.rules as Rule[],
-      templates: obj.templates as ResponseTemplate[],
-      settings: (obj.settings || {}) as Settings,
+      version: data.version,
+      exportedAt: data.exportedAt,
+      rules: data.rules as Rule[],
+      templates: data.templates as ResponseTemplate[],
+      settings: data.settings as Settings,
     },
   };
 }
@@ -104,16 +91,14 @@ export function detectConflicts(
   existingRules: Rule[],
   existingTemplates: ResponseTemplate[],
 ): ImportValidationResult {
-  const ruleIds = new Set(existingRules.map(r => r.id));
-  const ruleNames = new Map(existingRules.map(r => [r.name.toLowerCase(), r]));
-  const templateIds = new Set(existingTemplates.map(t => t.id));
-  const templateNames = new Map(existingTemplates.map(t => [t.name.toLowerCase(), t]));
+  const ruleNames = new Map(existingRules.map((r) => [r.name.toLowerCase(), r]));
+  const templateNames = new Map(existingTemplates.map((t) => [t.name.toLowerCase(), t]));
 
   const ruleConflicts: ConflictItem<Rule>[] = [];
   const newRules: Rule[] = [];
 
   for (const imported of data.rules) {
-    const existingById = existingRules.find(r => r.id === imported.id);
+    const existingById = existingRules.find((r) => r.id === imported.id);
     const existingByName = ruleNames.get(imported.name.toLowerCase());
     const existing = existingById || existingByName;
     if (existing) {
@@ -127,7 +112,7 @@ export function detectConflicts(
   const newTemplates: ResponseTemplate[] = [];
 
   for (const imported of data.templates) {
-    const existingById = existingTemplates.find(t => t.id === imported.id);
+    const existingById = existingTemplates.find((t) => t.id === imported.id);
     const existingByName = templateNames.get(imported.name.toLowerCase());
     const existing = existingById || existingByName;
     if (existing) {

@@ -51,23 +51,29 @@ declare namespace messenger {
     function list(folderId: string): Promise<MessageList>;
     function continueList(listId: string): Promise<MessageList>;
     function move(messageIds: number[], destination: string): Promise<void>;
-    function update(messageId: number, newProperties: Partial<{
-      read: boolean;
-      flagged: boolean;
-      tags: string[];
-    }>): Promise<void>;
+    function update(
+      messageId: number,
+      newProperties: Partial<{
+        read: boolean;
+        flagged: boolean;
+        tags: string[];
+      }>,
+    ): Promise<void>;
     function listAttachments(messageId: number): Promise<Attachment[]>;
 
     namespace tags {
       function list(): Promise<MessageTag[]>;
       function create(key: string, tag: string, color: string): Promise<void>;
-      function update(key: string, updateProperties: { tag?: string; color?: string }): Promise<void>;
+      function update(
+        key: string,
+        updateProperties: { tag?: string; color?: string },
+      ): Promise<void>;
       // 'delete' is a reserved word, declared via interface
     }
 
     const onNewMailReceived: {
       addListener(callback: (folder: folders.MailFolder, messages: MessageList) => void): void;
-      removeListener(callback: Function): void;
+      removeListener(callback: (...args: unknown[]) => void): void;
     };
   }
 
@@ -164,7 +170,13 @@ declare namespace messenger {
   namespace runtime {
     function sendMessage(message: unknown): Promise<unknown>;
     const onMessage: {
-      addListener(callback: (message: unknown, sender: unknown, sendResponse: Function) => boolean | void | Promise<unknown>): void;
+      addListener(
+        callback: (
+          message: unknown,
+          sender: unknown,
+          sendResponse: (...args: unknown[]) => void,
+        ) => boolean | void | Promise<unknown>,
+      ): void;
     };
   }
 
@@ -175,7 +187,12 @@ declare namespace messenger {
       remove(keys: string | string[]): Promise<void>;
     };
     const onChanged: {
-      addListener(callback: (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, areaName: string) => void): void;
+      addListener(
+        callback: (
+          changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+          areaName: string,
+        ) => void,
+      ): void;
     };
   }
 

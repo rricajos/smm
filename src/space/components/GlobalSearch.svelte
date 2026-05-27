@@ -2,6 +2,7 @@
   /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Rule } from '../../types/rules';
   import type { ResponseTemplate } from '../../types/templates';
+  import type { ActivityEntry } from '../../types/settings';
   import { t } from '../../lib/i18n';
 
   interface SearchResult {
@@ -15,12 +16,11 @@
   interface Props {
     rules: Rule[];
     templates: ResponseTemplate[];
-    activity: any[];
+    activity: ActivityEntry[];
     onnavigate: (tabId: string, searchQuery: string) => void;
   }
 
   let { rules, templates, activity, onnavigate }: Props = $props();
-
 
   let query = $state('');
   let showResults = $state(false);
@@ -38,10 +38,13 @@
     let count = 0;
     for (const rule of rules) {
       if (count >= MAX) break;
-      if (rule.name.toLowerCase().includes(q) ||
-          rule.conditions.some(c => (c.value || '').toLowerCase().includes(q))) {
+      if (
+        rule.name.toLowerCase().includes(q) ||
+        rule.conditions.some((c) => (c.value || '').toLowerCase().includes(q))
+      ) {
         items.push({
-          type: 'rule', id: rule.id,
+          type: 'rule',
+          id: rule.id,
           title: rule.name,
           subtitle: rule.enabled ? $t('common_active') : $t('common_inactive'),
           tabId: 'rules',
@@ -53,10 +56,10 @@
     count = 0;
     for (const tmpl of templates) {
       if (count >= MAX) break;
-      if (tmpl.name.toLowerCase().includes(q) ||
-          tmpl.subject.toLowerCase().includes(q)) {
+      if (tmpl.name.toLowerCase().includes(q) || tmpl.subject.toLowerCase().includes(q)) {
         items.push({
-          type: 'template', id: tmpl.id,
+          type: 'template',
+          id: tmpl.id,
           title: tmpl.name,
           subtitle: tmpl.subject,
           tabId: 'templates',
@@ -68,11 +71,14 @@
     count = 0;
     for (const entry of activity) {
       if (count >= MAX) break;
-      if ((entry.subject || '').toLowerCase().includes(q) ||
-          (entry.from || '').toLowerCase().includes(q) ||
-          (entry.ruleName || '').toLowerCase().includes(q)) {
+      if (
+        (entry.subject || '').toLowerCase().includes(q) ||
+        (entry.from || '').toLowerCase().includes(q) ||
+        (entry.ruleName || '').toLowerCase().includes(q)
+      ) {
         items.push({
-          type: 'log', id: String(entry.timestamp),
+          type: 'log',
+          id: String(entry.timestamp),
           title: entry.subject || $t('editor_no_subject'),
           subtitle: `${entry.ruleName} - ${entry.from}`,
           tabId: 'log',
@@ -143,7 +149,11 @@
           aria-selected={i === selectedIndex}
         >
           <span class="result-type-badge result-type-{result.type}">
-            {result.type === 'rule' ? $t('search_rule') : result.type === 'template' ? $t('search_template') : $t('search_log')}
+            {result.type === 'rule'
+              ? $t('search_rule')
+              : result.type === 'template'
+                ? $t('search_template')
+                : $t('search_log')}
           </span>
           <div class="result-text">
             <span class="result-title">{result.title}</span>
@@ -218,9 +228,18 @@
     flex-shrink: 0;
     white-space: nowrap;
   }
-  .result-type-rule { background: #d4edda; color: #155724; }
-  .result-type-template { background: #cce5ff; color: #004085; }
-  .result-type-log { background: #fff3cd; color: #856404; }
+  .result-type-rule {
+    background: #d4edda;
+    color: #155724;
+  }
+  .result-type-template {
+    background: #cce5ff;
+    color: #004085;
+  }
+  .result-type-log {
+    background: #fff3cd;
+    color: #856404;
+  }
   .result-text {
     display: flex;
     flex-direction: column;
@@ -242,9 +261,20 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .search-results { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
-    .result-type-rule { background: #1b4332; color: #95d5b2; }
-    .result-type-template { background: #1a3a5c; color: #90caf9; }
-    .result-type-log { background: #332d00; color: #ffb74d; }
+    .search-results {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    .result-type-rule {
+      background: #1b4332;
+      color: #95d5b2;
+    }
+    .result-type-template {
+      background: #1a3a5c;
+      color: #90caf9;
+    }
+    .result-type-log {
+      background: #332d00;
+      color: #ffb74d;
+    }
   }
 </style>

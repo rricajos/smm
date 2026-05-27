@@ -87,7 +87,9 @@ describe('getRecentEmails', () => {
     ]);
     mockMessenger.messages.list.mockResolvedValue({
       messages: Array.from({ length: 10 }, (_, i) => ({
-        id: i, author: `user${i}@test.com`, subject: `Msg ${i}`,
+        id: i,
+        author: `user${i}@test.com`,
+        subject: `Msg ${i}`,
       })),
     });
     mockMessenger.messages.getFull.mockResolvedValue({ contentType: 'text/plain', body: 'x' });
@@ -119,13 +121,25 @@ describe('getRecentEmails', () => {
 
 describe('getAllEmailHeaders', () => {
   it('fetches and sorts emails by date descending', async () => {
-    mockMessenger.accounts.list.mockResolvedValue([
-      { id: 'acc1', name: 'Work' },
-    ]);
+    mockMessenger.accounts.list.mockResolvedValue([{ id: 'acc1', name: 'Work' }]);
     mockMessenger.messages.query.mockResolvedValue({
       messages: [
-        { id: 1, author: 'a@t.com', subject: 'Old', date: new Date('2024-01-01'), folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' }, tags: [] },
-        { id: 2, author: 'b@t.com', subject: 'New', date: new Date('2024-06-01'), folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' }, tags: [] },
+        {
+          id: 1,
+          author: 'a@t.com',
+          subject: 'Old',
+          date: new Date('2024-01-01'),
+          folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' },
+          tags: [],
+        },
+        {
+          id: 2,
+          author: 'b@t.com',
+          subject: 'New',
+          date: new Date('2024-06-01'),
+          folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' },
+          tags: [],
+        },
       ],
     });
 
@@ -138,9 +152,30 @@ describe('getAllEmailHeaders', () => {
     mockMessenger.accounts.list.mockResolvedValue([{ id: 'acc1', name: 'Work' }]);
     mockMessenger.messages.query.mockResolvedValue({
       messages: [
-        { id: 1, author: 'a@t.com', subject: 'Inbox msg', date: new Date(), folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' }, tags: [] },
-        { id: 2, author: 'b@t.com', subject: 'Trash msg', date: new Date(), folder: { name: 'Trash', accountId: 'acc1', type: 'trash' }, tags: [] },
-        { id: 3, author: 'c@t.com', subject: 'Sent msg', date: new Date(), folder: { name: 'Sent', accountId: 'acc1', type: 'sent' }, tags: [] },
+        {
+          id: 1,
+          author: 'a@t.com',
+          subject: 'Inbox msg',
+          date: new Date(),
+          folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' },
+          tags: [],
+        },
+        {
+          id: 2,
+          author: 'b@t.com',
+          subject: 'Trash msg',
+          date: new Date(),
+          folder: { name: 'Trash', accountId: 'acc1', type: 'trash' },
+          tags: [],
+        },
+        {
+          id: 3,
+          author: 'c@t.com',
+          subject: 'Sent msg',
+          date: new Date(),
+          folder: { name: 'Sent', accountId: 'acc1', type: 'sent' },
+          tags: [],
+        },
       ],
     });
 
@@ -153,8 +188,22 @@ describe('getAllEmailHeaders', () => {
     mockMessenger.accounts.list.mockResolvedValue([{ id: 'acc1', name: 'Work' }]);
     mockMessenger.messages.query.mockResolvedValue({
       messages: [
-        { id: 1, author: 'a@t.com', subject: 'New', date: new Date(), folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' }, tags: [] },
-        { id: 2, author: 'b@t.com', subject: 'Analyzed', date: new Date(), folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' }, tags: ['smm_analyzed'] },
+        {
+          id: 1,
+          author: 'a@t.com',
+          subject: 'New',
+          date: new Date(),
+          folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' },
+          tags: [],
+        },
+        {
+          id: 2,
+          author: 'b@t.com',
+          subject: 'Analyzed',
+          date: new Date(),
+          folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' },
+          tags: ['smm_analyzed'],
+        },
       ],
     });
 
@@ -173,8 +222,12 @@ describe('getAllEmailHeaders', () => {
   it('applies limit', async () => {
     mockMessenger.accounts.list.mockResolvedValue([{ id: 'acc1', name: 'Work' }]);
     const msgs = Array.from({ length: 20 }, (_, i) => ({
-      id: i, author: 'x@t.com', subject: `M${i}`, date: new Date(2024, 0, i + 1),
-      folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' }, tags: [],
+      id: i,
+      author: 'x@t.com',
+      subject: `M${i}`,
+      date: new Date(2024, 0, i + 1),
+      folder: { name: 'Inbox', accountId: 'acc1', type: 'inbox' },
+      tags: [],
     }));
     mockMessenger.messages.query.mockResolvedValue({ messages: msgs });
 
@@ -203,7 +256,11 @@ describe('markEmailsAnalyzed', () => {
     mockMessenger.messages.update.mockResolvedValue(undefined);
 
     await markEmailsAnalyzed([1]);
-    expect(mockMessenger.messages.tags.create).toHaveBeenCalledWith('smm_analyzed', expect.any(String), '#90CAF9');
+    expect(mockMessenger.messages.tags.create).toHaveBeenCalledWith(
+      'smm_analyzed',
+      expect.any(String),
+      '#90CAF9',
+    );
   });
 
   it('skips already-analyzed emails', async () => {

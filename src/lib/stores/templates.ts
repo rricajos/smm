@@ -6,7 +6,11 @@ import { createSyncedStore } from './synced-store';
 const STORAGE_KEY = 'smm_templates';
 
 function createTemplatesStore() {
-  const { subscribe, set, update, persist } = createSyncedStore<ResponseTemplate[]>(STORAGE_KEY, [], 'templates');
+  const { subscribe, set, update, persist } = createSyncedStore<ResponseTemplate[]>(
+    STORAGE_KEY,
+    [],
+    'templates',
+  );
 
   return {
     subscribe,
@@ -21,9 +25,7 @@ function createTemplatesStore() {
 
     async updateTemplate(id: string, partial: Partial<ResponseTemplate>) {
       update((templates) => {
-        const updated = templates.map((t) =>
-          t.id === id ? { ...t, ...partial } : t,
-        );
+        const updated = templates.map((t) => (t.id === id ? { ...t, ...partial } : t));
         persist(updated);
         return updated;
       });

@@ -14,14 +14,20 @@ function createSettingsStore() {
 
   try {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
-      browser.storage.local.get(STORAGE_KEY).then((result: Record<string, unknown>) => {
-        set({ ...DEFAULT_SETTINGS, ...((result[STORAGE_KEY] as Partial<Settings>) || {}) });
-      }).catch((e: unknown) => logger.error('settings load error', e));
+      browser.storage.local
+        .get(STORAGE_KEY)
+        .then((result: Record<string, unknown>) => {
+          set({ ...DEFAULT_SETTINGS, ...((result[STORAGE_KEY] as Partial<Settings>) || {}) });
+        })
+        .catch((e: unknown) => logger.error('settings load error', e));
 
       browser.storage.onChanged.addListener(
         (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
           if (area === 'local' && changes[STORAGE_KEY]) {
-            set({ ...DEFAULT_SETTINGS, ...((changes[STORAGE_KEY].newValue as Partial<Settings>) || {}) });
+            set({
+              ...DEFAULT_SETTINGS,
+              ...((changes[STORAGE_KEY].newValue as Partial<Settings>) || {}),
+            });
           }
         },
       );

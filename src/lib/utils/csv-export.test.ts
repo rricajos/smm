@@ -48,16 +48,37 @@ describe('activityToCSV', () => {
   });
 
   it('uses custom headers when provided', () => {
-    const csv = activityToCSV([], ['Fecha', 'Tipo', 'Regla', 'Asunto', 'De', 'Acciones', 'Detalles']);
+    const csv = activityToCSV(
+      [],
+      ['Fecha', 'Tipo', 'Regla', 'Asunto', 'De', 'Acciones', 'Detalles'],
+    );
     expect(csv).toContain('Fecha');
   });
 });
 
 describe('filterAndSortActivity', () => {
   const entries = [
-    makeEntry({ timestamp: 100, type: 'classification', subject: 'Alpha', from: 'alice@t.com', ruleName: 'Rule A' }),
-    makeEntry({ timestamp: 200, type: 'autoResponse', subject: 'Beta', from: 'bob@t.com', ruleName: 'Rule B' }),
-    makeEntry({ timestamp: 300, type: 'classification', subject: 'Gamma', from: 'carol@t.com', ruleName: 'Rule C' }),
+    makeEntry({
+      timestamp: 100,
+      type: 'classification',
+      subject: 'Alpha',
+      from: 'alice@t.com',
+      ruleName: 'Rule A',
+    }),
+    makeEntry({
+      timestamp: 200,
+      type: 'autoResponse',
+      subject: 'Beta',
+      from: 'bob@t.com',
+      ruleName: 'Rule B',
+    }),
+    makeEntry({
+      timestamp: 300,
+      type: 'classification',
+      subject: 'Gamma',
+      from: 'carol@t.com',
+      ruleName: 'Rule C',
+    }),
   ];
 
   it('filters by type', () => {
@@ -68,7 +89,7 @@ describe('filterAndSortActivity', () => {
       sortDir: 'desc',
     });
     expect(result).toHaveLength(2);
-    expect(result.every(e => e.type === 'classification')).toBe(true);
+    expect(result.every((e) => e.type === 'classification')).toBe(true);
   });
 
   it('filters by search query across subject, from, ruleName', () => {

@@ -57,7 +57,9 @@ export async function getRecentEmails(maxCount: number = 50): Promise<RecentEmai
             const full = await messenger.messages.getFull(msg.id);
             const bodyText = extractBodyText(full);
             snippet = bodyText.substring(0, MAX_EMAIL_SNIPPET_LENGTH);
-          } catch { /* continue without snippet */ }
+          } catch {
+            /* continue without snippet */
+          }
           emails.push({
             from: msg.author || '',
             subject: msg.subject || '',
@@ -133,20 +135,31 @@ export async function getAllEmailHeaders(opts: {
     emails.sort((a, b) => b.date - a.date);
     const limited = emails.slice(0, limit);
 
-    return { emails: limited, total: limited.length, totalAvailable: emails.length, skippedAnalyzed };
+    return {
+      emails: limited,
+      total: limited.length,
+      totalAvailable: emails.length,
+      skippedAnalyzed,
+    };
   } catch (err: unknown) {
     logger.error('Error fetching all emails', err);
     return { emails: [], total: 0, error: getErrorMessage(err) };
   }
 }
 
-export async function markEmailsAnalyzed(messageIds: number[]): Promise<{ success: boolean; marked?: number; error?: string }> {
+export async function markEmailsAnalyzed(
+  messageIds: number[],
+): Promise<{ success: boolean; marked?: number; error?: string }> {
   try {
     // Ensure the tag exists
     const existingTags = await messenger.messages.tags.list();
     if (!existingTags.find((t: messenger.messages.MessageTag) => t.key === SMM_ANALYZED_TAG)) {
       const tagLoc = await getLocaleFromStorage();
-      await messenger.messages.tags.create(SMM_ANALYZED_TAG, translate(tagLoc, 'tag_analyzed'), '#90CAF9');
+      await messenger.messages.tags.create(
+        SMM_ANALYZED_TAG,
+        translate(tagLoc, 'tag_analyzed'),
+        '#90CAF9',
+      );
     }
 
     let marked = 0;
@@ -159,7 +172,9 @@ export async function markEmailsAnalyzed(messageIds: number[]): Promise<{ succes
           });
           marked++;
         }
-      } catch (e) { logger.debug(`Could not tag message ${msgId}`, e); }
+      } catch (e) {
+        logger.debug(`Could not tag message ${msgId}`, e);
+      }
     }
     return { success: true, marked };
   } catch (err: unknown) {

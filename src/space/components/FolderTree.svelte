@@ -3,9 +3,9 @@
   import { t } from '../../lib/i18n';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
+  import { getErrorMessage } from '../../lib/utils/error';
 
-  declare const browser: any;
-
+  /// <reference path="../../lib/utils/messenger.d.ts" />
 
   interface FolderNode {
     id: string;
@@ -39,8 +39,18 @@
   let hasLoaded = $state(false);
 
   // Context menu state
-  let contextMenu = $state<{ show: boolean; x: number; y: number; node: FolderNode | null; accountId: string }>({
-    show: false, x: 0, y: 0, node: null, accountId: '',
+  let contextMenu = $state<{
+    show: boolean;
+    x: number;
+    y: number;
+    node: FolderNode | null;
+    accountId: string;
+  }>({
+    show: false,
+    x: 0,
+    y: 0,
+    node: null,
+    accountId: '',
   });
 
   // Inline editing state
@@ -49,7 +59,10 @@
   let renameValue = $state('');
   let actionError = $state('');
   let actionSuccess = $state('');
-  let confirmDeleteNode = $state<{ show: boolean; node: FolderNode | null }>({ show: false, node: null });
+  let confirmDeleteNode = $state<{ show: boolean; node: FolderNode | null }>({
+    show: false,
+    node: null,
+  });
 
   export async function loadTree() {
     if (loading) return;
@@ -67,8 +80,8 @@
       }
       expandedIds = newExpanded;
       hasLoaded = true;
-    } catch (err: any) {
-      error = err?.message || $t('folder_tree_load_error');
+    } catch (err: unknown) {
+      error = getErrorMessage(err) || $t('folder_tree_load_error');
     } finally {
       loading = false;
     }
@@ -109,13 +122,20 @@
 
   function folderIcon(type: string): string {
     switch (type) {
-      case 'inbox': return '\u{1F4E5}';
-      case 'sent': return '\u{1F4E4}';
-      case 'drafts': return '\u{1F4DD}';
-      case 'trash': return '\u{1F5D1}';
-      case 'junk': return '\u26A0';
-      case 'archives': return '\u{1F4E6}';
-      default: return '\u{1F4C1}';
+      case 'inbox':
+        return '\u{1F4E5}';
+      case 'sent':
+        return '\u{1F4E4}';
+      case 'drafts':
+        return '\u{1F4DD}';
+      case 'trash':
+        return '\u{1F5D1}';
+      case 'junk':
+        return '\u26A0';
+      case 'archives':
+        return '\u{1F4E6}';
+      default:
+        return '\u{1F4C1}';
     }
   }
 
@@ -136,10 +156,10 @@
   }
 
   let totalMessages = $derived(
-    trees.reduce((sum, acc) => sum + acc.folders.reduce((s, f) => s + subtreeTotal(f), 0), 0)
+    trees.reduce((sum, acc) => sum + acc.folders.reduce((s, f) => s + subtreeTotal(f), 0), 0),
   );
   let totalUnread = $derived(
-    trees.reduce((sum, acc) => sum + acc.folders.reduce((s, f) => s + subtreeUnread(f), 0), 0)
+    trees.reduce((sum, acc) => sum + acc.folders.reduce((s, f) => s + subtreeUnread(f), 0), 0),
   );
 
   // --- Context menu handlers ---
@@ -162,7 +182,10 @@
     if (e.key === 'Escape') {
       if (contextMenu.show) closeContextMenu();
       if (creatingIn) creatingIn = null;
-      if (renamingId) { renamingId = null; renameValue = ''; }
+      if (renamingId) {
+        renamingId = null;
+        renameValue = '';
+      }
     }
   }
 
@@ -197,7 +220,10 @@
     if (!node) return;
     actionError = '';
     try {
-      const result = await browser.runtime.sendMessage({ type: 'DELETE_FOLDER', folderId: node.id });
+      const result = await browser.runtime.sendMessage({
+        type: 'DELETE_FOLDER',
+        folderId: node.id,
+      });
       if (result.success) {
         actionSuccess = $t('folder_tree_deleted', { name: node.name });
         setTimeout(() => (actionSuccess = ''), 3000);
@@ -205,8 +231,8 @@
       } else {
         actionError = result.error || $t('folder_tree_delete_error');
       }
-    } catch (err: any) {
-      actionError = err.message || $t('folder_tree_delete_error');
+    } catch (err: unknown) {
+      actionError = getErrorMessage(err) || $t('folder_tree_delete_error');
     }
   }
 
@@ -215,7 +241,9 @@
     actionError = '';
     try {
       const result = await browser.runtime.sendMessage({
-        type: 'CREATE_FOLDER', parentFolderId: creatingIn.parentId, folderName: creatingIn.name.trim(),
+        type: 'CREATE_FOLDER',
+        parentFolderId: creatingIn.parentId,
+        folderName: creatingIn.name.trim(),
       });
       if (result.success) {
         actionSuccess = $t('folder_tree_created', { name: creatingIn.name.trim() });
@@ -225,8 +253,8 @@
       } else {
         actionError = result.error || $t('folder_tree_create_error');
       }
-    } catch (err: any) {
-      actionError = err.message || $t('folder_tree_create_error');
+    } catch (err: unknown) {
+      actionError = getErrorMessage(err) || $t('folder_tree_create_error');
     }
   }
 
@@ -235,7 +263,9 @@
     actionError = '';
     try {
       const result = await browser.runtime.sendMessage({
-        type: 'RENAME_FOLDER', folderId: renamingId, newName: renameValue.trim(),
+        type: 'RENAME_FOLDER',
+        folderId: renamingId,
+        newName: renameValue.trim(),
       });
       if (result.success) {
         actionSuccess = $t('folder_tree_renamed', { name: renameValue.trim() });
@@ -246,8 +276,8 @@
       } else {
         actionError = result.error || $t('folder_tree_rename_error');
       }
-    } catch (err: any) {
-      actionError = err.message || $t('folder_tree_rename_error');
+    } catch (err: unknown) {
+      actionError = getErrorMessage(err) || $t('folder_tree_rename_error');
     }
   }
 
@@ -258,7 +288,10 @@
 
   function handleRenameKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') confirmRename();
-    else if (e.key === 'Escape') { renamingId = null; renameValue = ''; }
+    else if (e.key === 'Escape') {
+      renamingId = null;
+      renameValue = '';
+    }
   }
 </script>
 
@@ -270,7 +303,8 @@
       {$t('folder_tree_title')}
       {#if hasLoaded}
         <span class="tree-summary">
-          {totalMessages.toLocaleString()} {$t('folder_tree_msgs')}
+          {totalMessages.toLocaleString()}
+          {$t('folder_tree_msgs')}
           {#if totalUnread > 0}
             <span class="tree-summary-unread">{totalUnread}</span>
           {/if}
@@ -280,7 +314,9 @@
     <div class="tree-actions">
       {#if hasLoaded && trees.length > 0}
         <Button size="xs" onclick={expandAll} title={$t('folder_tree_expand_all')}>+</Button>
-        <Button size="xs" onclick={collapseAll} title={$t('folder_tree_collapse_all')}>&minus;</Button>
+        <Button size="xs" onclick={collapseAll} title={$t('folder_tree_collapse_all')}
+          >&minus;</Button
+        >
       {/if}
       <Button size="xs" onclick={loadTree} disabled={loading} title={$t('folder_tree_refresh')}>
         {loading ? '...' : '\u21BB'}
@@ -311,7 +347,13 @@
 
 {#if contextMenu.show && contextMenu.node}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="context-menu" role="menu" tabindex="-1" style="left: {contextMenu.x}px; top: {contextMenu.y}px" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="context-menu"
+    role="menu"
+    tabindex="-1"
+    style="left: {contextMenu.x}px; top: {contextMenu.y}px"
+    onclick={(e) => e.stopPropagation()}
+  >
     <button onclick={startCreateSubfolder}>{$t('folder_tree_create_subfolder')}</button>
     {#if !SYSTEM_FOLDER_TYPES.includes(contextMenu.node.type)}
       <button onclick={startRename}>{$t('folder_tree_rename')}</button>
@@ -343,11 +385,22 @@
     role="button"
     tabindex="0"
     onclick={() => onfolderselect?.(node.id, node.name, node.path)}
-    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onfolderselect?.(node.id, node.name, node.path); } }}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onfolderselect?.(node.id, node.name, node.path);
+      }
+    }}
     oncontextmenu={(e) => handleContextMenu(e, node, accountId)}
   >
     {#if hasChildren}
-      <button class="expand-btn" aria-label={expandedIds.has(node.id) ? $t('folder_tree_collapse_all') : $t('folder_tree_expand_all')} onclick={() => toggleExpand(node.id)}>
+      <button
+        class="expand-btn"
+        aria-label={expandedIds.has(node.id)
+          ? $t('folder_tree_collapse_all')
+          : $t('folder_tree_expand_all')}
+        onclick={() => toggleExpand(node.id)}
+      >
         {expandedIds.has(node.id) ? '\u25BC' : '\u25B6'}
       </button>
     {:else}
@@ -363,16 +416,26 @@
         autofocus
       />
       <Button size="xs" onclick={confirmRename}>OK</Button>
-      <Button size="xs" onclick={() => { renamingId = null; renameValue = ''; }}>X</Button>
+      <Button
+        size="xs"
+        onclick={() => {
+          renamingId = null;
+          renameValue = '';
+        }}>X</Button
+      >
     {:else}
       <span class="folder-name">{node.name}</span>
       <span class="folder-counts">
         {#if hasChildren && expandedIds.has(node.id)}
-          <span class="msg-count" title={$t('folder_tree_title_folder_msgs')}>{node.totalMessages}</span>
+          <span class="msg-count" title={$t('folder_tree_title_folder_msgs')}
+            >{node.totalMessages}</span
+          >
         {:else if hasChildren}
           <span class="msg-count" title={$t('folder_tree_title_subtree_total')}>{childTotal}</span>
         {:else}
-          <span class="msg-count" title={$t('folder_tree_title_total_msgs')}>{node.totalMessages}</span>
+          <span class="msg-count" title={$t('folder_tree_title_total_msgs')}
+            >{node.totalMessages}</span
+          >
         {/if}
         {#if childUnread > 0}
           <span class="unread-count" title={$t('folder_tree_title_unread')}>{childUnread}</span>
@@ -462,8 +525,14 @@
     padding: 4px 10px;
     font-size: 11px;
   }
-  .tree-msg.error { color: #c62828; background: #ffeef0; }
-  .tree-msg.success { color: #2e7d32; background: #e8f5e9; }
+  .tree-msg.error {
+    color: #c62828;
+    background: #ffeef0;
+  }
+  .tree-msg.success {
+    color: #2e7d32;
+    background: #e8f5e9;
+  }
   .tree-error {
     padding: 12px;
     color: #c62828;
@@ -532,7 +601,9 @@
     justify-content: center;
     flex-shrink: 0;
   }
-  .expand-btn:hover { color: var(--text-color, #15141a); }
+  .expand-btn:hover {
+    color: var(--text-color, #15141a);
+  }
   .expand-spacer {
     width: 16px;
     flex-shrink: 0;
@@ -598,7 +669,7 @@
     background: var(--bg-primary, white);
     border: 1px solid var(--border-color, #e0e0e6);
     border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     padding: 4px 0;
     min-width: 160px;
   }
@@ -614,9 +685,16 @@
     font-family: inherit;
     color: var(--text-color, #15141a);
   }
-  .context-menu button:hover { background: var(--bg-hover, #e0e0e6); }
-  .context-menu button.danger { color: var(--text-color, #15141a); }
-  .context-menu button.danger:hover { background: #fce4ec; color: #c62828; }
+  .context-menu button:hover {
+    background: var(--bg-hover, #e0e0e6);
+  }
+  .context-menu button.danger {
+    color: var(--text-color, #15141a);
+  }
+  .context-menu button.danger:hover {
+    background: #fce4ec;
+    color: #c62828;
+  }
   .context-separator {
     height: 1px;
     background: var(--border-color, #e0e0e6);
@@ -624,13 +702,35 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .folder-row:hover { background: #38374a; }
-    .context-menu { background: #2b2a33; border-color: #4a4a5a; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-    .context-menu button { color: #fbfbfe; }
-    .context-menu button:hover { background: #38374a; }
-    .context-menu button.danger:hover { background: #4a1c1c; color: #ef9a9a; }
-    .tree-msg.error { background: #4a1c1c; color: #ef9a9a; }
-    .tree-msg.success { background: #1b3320; color: #81c784; }
-    .inline-input { background: #1c1b22; border-color: #45a1ff; }
+    .folder-row:hover {
+      background: #38374a;
+    }
+    .context-menu {
+      background: #2b2a33;
+      border-color: #4a4a5a;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    .context-menu button {
+      color: #fbfbfe;
+    }
+    .context-menu button:hover {
+      background: #38374a;
+    }
+    .context-menu button.danger:hover {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
+    .tree-msg.error {
+      background: #4a1c1c;
+      color: #ef9a9a;
+    }
+    .tree-msg.success {
+      background: #1b3320;
+      color: #81c784;
+    }
+    .inline-input {
+      background: #1c1b22;
+      border-color: #45a1ff;
+    }
   }
 </style>

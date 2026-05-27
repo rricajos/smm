@@ -7,10 +7,35 @@ import { DEFAULT_SETTINGS } from './constants';
 
 // ── Allowed values ──────────────────────────────────────────────────────
 
-const CONDITION_FIELDS = new Set<Condition['field']>(['from', 'to', 'subject', 'body', 'hasAttachments']);
-const CONDITION_OPERATORS = new Set<Condition['operator']>(['contains', 'equals', 'startsWith', 'endsWith', 'matches', 'is']);
-const ACTION_TYPES = new Set<Action['type']>(['moveToFolder', 'addTag', 'setPriority', 'markRead', 'autoRespond']);
-const PRIORITIES = new Set<NonNullable<Action['priority']>>(['highest', 'high', 'normal', 'low', 'lowest']);
+const CONDITION_FIELDS = new Set<Condition['field']>([
+  'from',
+  'to',
+  'subject',
+  'body',
+  'hasAttachments',
+]);
+const CONDITION_OPERATORS = new Set<Condition['operator']>([
+  'contains',
+  'equals',
+  'startsWith',
+  'endsWith',
+  'matches',
+  'is',
+]);
+const ACTION_TYPES = new Set<Action['type']>([
+  'moveToFolder',
+  'addTag',
+  'setPriority',
+  'markRead',
+  'autoRespond',
+]);
+const PRIORITIES = new Set<NonNullable<Action['priority']>>([
+  'highest',
+  'high',
+  'normal',
+  'low',
+  'lowest',
+]);
 const SEND_MODES = new Set<ResponseTemplate['sendMode']>(['draft', 'sendNow', 'sendLater']);
 const REPLY_TYPES = new Set<ResponseTemplate['replyType']>(['replyToSender', 'replyToAll']);
 const ACTIVITY_TYPES = new Set<ActivityEntry['type']>(['classification', 'autoResponse', 'error']);
@@ -36,7 +61,8 @@ export function isValidAction(v: unknown): v is Action {
   if (!ACTION_TYPES.has(v.type as Action['type'])) return false;
   if (v.folderId !== undefined && typeof v.folderId !== 'string') return false;
   if (v.tagKey !== undefined && typeof v.tagKey !== 'string') return false;
-  if (v.priority !== undefined && !PRIORITIES.has(v.priority as NonNullable<Action['priority']>)) return false;
+  if (v.priority !== undefined && !PRIORITIES.has(v.priority as NonNullable<Action['priority']>))
+    return false;
   if (v.templateId !== undefined && typeof v.templateId !== 'string') return false;
   return true;
 }
@@ -79,8 +105,12 @@ export function isValidActivityEntry(v: unknown): v is ActivityEntry {
 
 function repairCondition(c: Record<string, unknown>): Condition {
   return {
-    field: CONDITION_FIELDS.has(c.field as Condition['field']) ? (c.field as Condition['field']) : 'subject',
-    operator: CONDITION_OPERATORS.has(c.operator as Condition['operator']) ? (c.operator as Condition['operator']) : 'contains',
+    field: CONDITION_FIELDS.has(c.field as Condition['field'])
+      ? (c.field as Condition['field'])
+      : 'subject',
+    operator: CONDITION_OPERATORS.has(c.operator as Condition['operator'])
+      ? (c.operator as Condition['operator'])
+      : 'contains',
     value: typeof c.value === 'string' ? c.value : '',
     ...(c.boolValue !== undefined ? { boolValue: Boolean(c.boolValue) } : {}),
     caseSensitive: typeof c.caseSensitive === 'boolean' ? c.caseSensitive : false,
@@ -93,7 +123,8 @@ function repairAction(a: Record<string, unknown>): Action {
   };
   if (typeof a.folderId === 'string') action.folderId = a.folderId;
   if (typeof a.tagKey === 'string') action.tagKey = a.tagKey;
-  if (PRIORITIES.has(a.priority as NonNullable<Action['priority']>)) action.priority = a.priority as Action['priority'];
+  if (PRIORITIES.has(a.priority as NonNullable<Action['priority']>))
+    action.priority = a.priority as Action['priority'];
   if (typeof a.templateId === 'string') action.templateId = a.templateId;
   return action;
 }
@@ -131,8 +162,12 @@ function repairTemplate(t: Record<string, unknown>): ResponseTemplate {
     subject: typeof t.subject === 'string' ? t.subject : '',
     body: typeof t.body === 'string' ? t.body : '',
     isPlainText: typeof t.isPlainText === 'boolean' ? t.isPlainText : true,
-    sendMode: SEND_MODES.has(t.sendMode as ResponseTemplate['sendMode']) ? (t.sendMode as ResponseTemplate['sendMode']) : 'draft',
-    replyType: REPLY_TYPES.has(t.replyType as ResponseTemplate['replyType']) ? (t.replyType as ResponseTemplate['replyType']) : 'replyToSender',
+    sendMode: SEND_MODES.has(t.sendMode as ResponseTemplate['sendMode'])
+      ? (t.sendMode as ResponseTemplate['sendMode'])
+      : 'draft',
+    replyType: REPLY_TYPES.has(t.replyType as ResponseTemplate['replyType'])
+      ? (t.replyType as ResponseTemplate['replyType'])
+      : 'replyToSender',
   };
 }
 
@@ -145,18 +180,46 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (!isObject(raw)) return { ...DEFAULT_SETTINGS };
   const s = raw;
   return {
-    classificationEnabled: typeof s.classificationEnabled === 'boolean' ? s.classificationEnabled : DEFAULT_SETTINGS.classificationEnabled,
-    autoResponseEnabled: typeof s.autoResponseEnabled === 'boolean' ? s.autoResponseEnabled : DEFAULT_SETTINGS.autoResponseEnabled,
-    processExistingOnStartup: typeof s.processExistingOnStartup === 'boolean' ? s.processExistingOnStartup : DEFAULT_SETTINGS.processExistingOnStartup,
-    maxAutoResponsesPerHour: typeof s.maxAutoResponsesPerHour === 'number' ? s.maxAutoResponsesPerHour : DEFAULT_SETTINGS.maxAutoResponsesPerHour,
-    logRetentionDays: typeof s.logRetentionDays === 'number' ? s.logRetentionDays : DEFAULT_SETTINGS.logRetentionDays,
-    notifyOnClassification: typeof s.notifyOnClassification === 'boolean' ? s.notifyOnClassification : DEFAULT_SETTINGS.notifyOnClassification,
-    notifyOnAutoResponse: typeof s.notifyOnAutoResponse === 'boolean' ? s.notifyOnAutoResponse : DEFAULT_SETTINGS.notifyOnAutoResponse,
-    aiProvider: AI_PROVIDERS.has(s.aiProvider as string) ? (s.aiProvider as Settings['aiProvider']) : DEFAULT_SETTINGS.aiProvider,
-    openaiApiKey: typeof s.openaiApiKey === 'string' ? s.openaiApiKey : DEFAULT_SETTINGS.openaiApiKey,
+    classificationEnabled:
+      typeof s.classificationEnabled === 'boolean'
+        ? s.classificationEnabled
+        : DEFAULT_SETTINGS.classificationEnabled,
+    autoResponseEnabled:
+      typeof s.autoResponseEnabled === 'boolean'
+        ? s.autoResponseEnabled
+        : DEFAULT_SETTINGS.autoResponseEnabled,
+    processExistingOnStartup:
+      typeof s.processExistingOnStartup === 'boolean'
+        ? s.processExistingOnStartup
+        : DEFAULT_SETTINGS.processExistingOnStartup,
+    maxAutoResponsesPerHour:
+      typeof s.maxAutoResponsesPerHour === 'number'
+        ? s.maxAutoResponsesPerHour
+        : DEFAULT_SETTINGS.maxAutoResponsesPerHour,
+    logRetentionDays:
+      typeof s.logRetentionDays === 'number'
+        ? s.logRetentionDays
+        : DEFAULT_SETTINGS.logRetentionDays,
+    notifyOnClassification:
+      typeof s.notifyOnClassification === 'boolean'
+        ? s.notifyOnClassification
+        : DEFAULT_SETTINGS.notifyOnClassification,
+    notifyOnAutoResponse:
+      typeof s.notifyOnAutoResponse === 'boolean'
+        ? s.notifyOnAutoResponse
+        : DEFAULT_SETTINGS.notifyOnAutoResponse,
+    aiProvider: AI_PROVIDERS.has(s.aiProvider as string)
+      ? (s.aiProvider as Settings['aiProvider'])
+      : DEFAULT_SETTINGS.aiProvider,
+    openaiApiKey:
+      typeof s.openaiApiKey === 'string' ? s.openaiApiKey : DEFAULT_SETTINGS.openaiApiKey,
     openaiModel: typeof s.openaiModel === 'string' ? s.openaiModel : DEFAULT_SETTINGS.openaiModel,
-    customBaseUrl: typeof s.customBaseUrl === 'string' ? s.customBaseUrl : DEFAULT_SETTINGS.customBaseUrl,
-    aiConsentAccepted: typeof s.aiConsentAccepted === 'boolean' ? s.aiConsentAccepted : DEFAULT_SETTINGS.aiConsentAccepted,
+    customBaseUrl:
+      typeof s.customBaseUrl === 'string' ? s.customBaseUrl : DEFAULT_SETTINGS.customBaseUrl,
+    aiConsentAccepted:
+      typeof s.aiConsentAccepted === 'boolean'
+        ? s.aiConsentAccepted
+        : DEFAULT_SETTINGS.aiConsentAccepted,
   };
 }
 
@@ -168,8 +231,12 @@ function repairActivityEntry(e: Record<string, unknown>): ActivityEntry {
     messageId: typeof e.messageId === 'number' ? e.messageId : 0,
     subject: typeof e.subject === 'string' ? e.subject : '',
     from: typeof e.from === 'string' ? e.from : '',
-    actions: Array.isArray(e.actions) ? (e.actions as unknown[]).filter((a): a is string => typeof a === 'string') : [],
-    type: ACTIVITY_TYPES.has(e.type as ActivityEntry['type']) ? (e.type as ActivityEntry['type']) : 'error',
+    actions: Array.isArray(e.actions)
+      ? (e.actions as unknown[]).filter((a): a is string => typeof a === 'string')
+      : [],
+    type: ACTIVITY_TYPES.has(e.type as ActivityEntry['type'])
+      ? (e.type as ActivityEntry['type'])
+      : 'error',
   };
   if (typeof e.details === 'string') entry.details = e.details;
   if (typeof e.accountId === 'string') entry.accountId = e.accountId;

@@ -49,7 +49,8 @@ export const es: Translations = {
   dashboard_30days: '30 días',
   dashboard_all: 'Todo',
   dashboard_process_existing: 'Procesar correos existentes',
-  dashboard_process_existing_desc: 'Ejecuta las reglas activas sobre los últimos 100 correos de la bandeja de entrada.',
+  dashboard_process_existing_desc:
+    'Ejecuta las reglas activas sobre los últimos 100 correos de la bandeja de entrada.',
   dashboard_processing: 'Procesando...',
   dashboard_run_rules: 'Ejecutar reglas',
   dashboard_analyzing: 'Analizando correos y ejecutando reglas...',
@@ -59,14 +60,16 @@ export const es: Translations = {
   dashboard_errors: 'Errores',
   dashboard_classified_emails: 'Correos clasificados:',
   dashboard_rules_applied: 'Reglas aplicadas',
-  dashboard_no_matches_desc: 'Ningún correo coincidió con las reglas configuradas. Revisa las condiciones de tus reglas.',
+  dashboard_no_matches_desc:
+    'Ningún correo coincidió con las reglas configuradas. Revisa las condiciones de tus reglas.',
   dashboard_manage_folders: 'Gestionar carpetas',
   dashboard_loading_folders: 'Cargando carpetas...',
   dashboard_folder_renamed: 'Carpeta renombrada a "{name}"',
   dashboard_folder_deleted: 'Carpeta "{name}" eliminada',
   dashboard_rename_error: 'Error al renombrar',
   dashboard_delete_error: 'Error al eliminar',
-  dashboard_confirm_delete_folder: '¿Eliminar la carpeta "{name}"? Los correos dentro se moverán a la papelera.',
+  dashboard_confirm_delete_folder:
+    '¿Eliminar la carpeta "{name}"? Los correos dentro se moverán a la papelera.',
   dashboard_recent_activity: 'Actividad reciente',
   dashboard_no_recent_activity: 'Sin actividad reciente.',
   dashboard_date: 'Fecha',
@@ -196,12 +199,14 @@ export const es: Translations = {
   ai_success_rule_undo: 'Regla "{name}" eliminada (deshacer).',
   ai_success_accepted: 'Regla "{name}" guardada correctamente.',
   ai_quick_analyze_title: 'Analizar correos recientes',
-  ai_quick_analyze_desc: 'Analiza tus últimos correos para detectar patrones y sugerir reglas automáticamente.',
+  ai_quick_analyze_desc:
+    'Analiza tus últimos correos para detectar patrones y sugerir reglas automáticamente.',
   ai_quick_analyze_btn: 'Analizar mis correos recientes',
   ai_quick_analyzing: 'Analizando...',
   ai_quick_describe_title: 'Describir regla en lenguaje natural',
   ai_quick_describe_desc: 'Describe lo que quieres que haga la regla y la IA la generará por ti.',
-  ai_quick_describe_placeholder: 'Ej: Mover los correos de newsletters a la carpeta Promos y marcarlos como leídos',
+  ai_quick_describe_placeholder:
+    'Ej: Mover los correos de newsletters a la carpeta Promos y marcarlos como leídos',
   ai_quick_generate_btn: 'Generar regla',
   ai_quick_generating: 'Generando...',
   ai_quick_consulting: 'Consultando IA...',
@@ -214,14 +219,17 @@ export const es: Translations = {
   ai_actions_label: 'Acciones:',
   ai_undo_label: 'Deshacer',
   ai_batch_title: 'Analizar todos los correos',
-  ai_batch_desc: 'Analiza todos los correos de tu buzón en lotes de 64 para detectar patrones y generar reglas de forma exhaustiva.',
+  ai_batch_desc:
+    'Analiza todos los correos de tu buzón en lotes de 64 para detectar patrones y generar reglas de forma exhaustiva.',
   ai_batch_btn: 'Analizar todos mis correos',
   ai_batch_fetching: 'Obteniendo correos...',
   ai_batch_progress: 'Lote {current} de {total} ({processed} correos procesados)',
-  ai_batch_complete: 'Análisis completo: {total} correos procesados en {batches} lotes, {rules} reglas sugeridas.',
+  ai_batch_complete:
+    'Análisis completo: {total} correos procesados en {batches} lotes, {rules} reglas sugeridas.',
   ai_batch_no_emails: 'No se encontraron correos para analizar.',
   ai_batch_cancel: 'Cancelar',
-  ai_batch_cancelled: 'Análisis cancelado. {rules} reglas sugeridas de {processed} correos procesados.',
+  ai_batch_cancelled:
+    'Análisis cancelado. {rules} reglas sugeridas de {processed} correos procesados.',
   ai_batch_account: 'Cuenta:',
   ai_batch_limit: 'Correos a analizar:',
   ai_batch_limit_hint: 'Los más recientes primero',
@@ -229,16 +237,20 @@ export const es: Translations = {
   ai_batch_skip_analyzed_hint: 'Quita la marca desde Thunderbird: clic derecho > Etiquetas',
   ai_batch_skipped_count: '{count} correos omitidos (ya analizados)',
   ai_batch_marking: 'Marcando correos como analizados...',
-  ai_batch_chat_user: 'Analiza mis {count} correos más recientes y sugiere reglas de clasificación.',
-  ai_batch_chat_result: 'He analizado **{total} correos** en {batches} lotes y he detectado **{rules} patrones** de clasificación. Aquí tienes las reglas sugeridas:',
-  ai_batch_chat_no_results: 'He analizado **{total} correos** pero no he encontrado patrones claros de clasificación. Puedes intentar con más correos o describir manualmente las reglas que necesitas.',
+  ai_batch_chat_user:
+    'Analiza mis {count} correos más recientes y sugiere reglas de clasificación.',
+  ai_batch_chat_result:
+    'He analizado **{total} correos** en {batches} lotes y he detectado **{rules} patrones** de clasificación. Aquí tienes las reglas sugeridas:',
+  ai_batch_chat_no_results:
+    'He analizado **{total} correos** pero no he encontrado patrones claros de clasificación. Puedes intentar con más correos o describir manualmente las reglas que necesitas.',
   ai_folder_context: 'Carpeta seleccionada',
   ai_folder_context_label: 'Contexto:',
   ai_folder_context_clear: 'Quitar filtro',
 
   // Chat welcome
   chat_welcome_title: 'Consultor de organización de correo',
-  chat_welcome_desc: 'Soy tu asistente de organización. Puedo analizar tus correos, proponerte nuevas estructuras de carpetas, crear reglas de clasificación y reorganizar tu buzón completo.',
+  chat_welcome_desc:
+    'Soy tu asistente de organización. Puedo analizar tus correos, proponerte nuevas estructuras de carpetas, crear reglas de clasificación y reorganizar tu buzón completo.',
   chat_welcome_action_analyze: 'Analizar y reorganizar',
   chat_welcome_action_analyze_desc: 'Analizo tus correos y propongo una estructura completa',
   chat_welcome_action_folders: 'Proponer estructura de carpetas',
@@ -325,7 +337,8 @@ export const es: Translations = {
   conflict_merge_all: 'Fusionar duplicados',
   conflict_merged: 'Fusionada',
   conflict_resolve_ai: 'Resolver con IA',
-  conflict_ai_prompt: 'Tengo {n} conflictos entre reglas que necesito resolver. Analiza cada conflicto y propón consolidaciones o cambios para eliminarlos:\n\n{conflicts}\n\nPropón reglas consolidadas que resuelvan estos conflictos.',
+  conflict_ai_prompt:
+    'Tengo {n} conflictos entre reglas que necesito resolver. Analiza cada conflicto y propón consolidaciones o cambios para eliminarlos:\n\n{conflicts}\n\nPropón reglas consolidadas que resuelvan estos conflictos.',
 
   // Template editor
   tmpl_edit_title: 'Editar plantilla',
@@ -380,7 +393,8 @@ export const es: Translations = {
   folder_tree_create_subfolder: 'Crear subcarpeta',
   folder_tree_rename: 'Renombrar',
   folder_tree_delete: 'Eliminar',
-  folder_tree_confirm_delete: '¿Eliminar la carpeta "{name}"? Los correos dentro se moverán a la papelera.',
+  folder_tree_confirm_delete:
+    '¿Eliminar la carpeta "{name}"? Los correos dentro se moverán a la papelera.',
   folder_tree_deleted: '"{name}" eliminada',
   folder_tree_created: '"{name}" creada',
   folder_tree_renamed: 'Renombrada a "{name}"',
@@ -417,7 +431,8 @@ export const es: Translations = {
   options_limits: 'Límites',
   options_max_responses: 'Máximo de respuestas automáticas por hora',
   options_log_retention: 'Días de retención del registro',
-  options_log_retention_hint: 'Las entradas del log más antiguas que este número de días se eliminan automáticamente.',
+  options_log_retention_hint:
+    'Las entradas del log más antiguas que este número de días se eliminan automáticamente.',
   options_notifications: 'Notificaciones',
   options_notify_classification: 'Notificar al clasificar correos',
   options_notify_auto_response: 'Notificar al enviar respuestas automáticas',
@@ -471,7 +486,8 @@ export const es: Translations = {
   action_autorespond: 'Auto-responder',
   logic_and: ' Y ',
   logic_or: ' O ',
-  rules_test_note: 'Nota: esta prueba NO ejecuta las acciones. Solo verifica qué correos coincidirían.',
+  rules_test_note:
+    'Nota: esta prueba NO ejecuta las acciones. Solo verifica qué correos coincidirían.',
   rules_broken_folder: 'Carpeta no encontrada: {id}',
   rules_broken_tag: 'Etiqueta no encontrada: {key}',
   rules_broken_template: 'Plantilla no encontrada',
@@ -516,17 +532,20 @@ export const es: Translations = {
 
   // Empty states
   empty_rules_title: 'Sin reglas de clasificación',
-  empty_rules_desc: 'Las reglas organizan tu correo automáticamente. Crea tu primera regla o explora la galería de presets.',
+  empty_rules_desc:
+    'Las reglas organizan tu correo automáticamente. Crea tu primera regla o explora la galería de presets.',
   empty_rules_cta: 'Crear primera regla',
   empty_templates_title: 'Sin plantillas de respuesta',
-  empty_templates_desc: 'Las plantillas generan respuestas automáticas a correos entrantes. Crea tu primera plantilla.',
+  empty_templates_desc:
+    'Las plantillas generan respuestas automáticas a correos entrantes. Crea tu primera plantilla.',
   empty_templates_cta: 'Crear primera plantilla',
   empty_log_title: 'Sin actividad registrada',
   empty_log_desc: 'Las clasificaciones y respuestas automáticas aparecerán aquí.',
 
   // Template AI suggestion
   templates_suggest_ai: 'Sugerir con IA',
-  templates_ai_prompt: 'Analiza mis correos recientes y propón plantillas de respuesta automática útiles. Tengo {n} regla{s} configurada{s} y {t} plantilla{s} existente{s}. Sugiere plantillas que complementen mi configuración actual, como acuses de recibo, respuestas a consultas frecuentes o mensajes de ausencia.',
+  templates_ai_prompt:
+    'Analiza mis correos recientes y propón plantillas de respuesta automática útiles. Tengo {n} regla{s} configurada{s} y {t} plantilla{s} existente{s}. Sugiere plantillas que complementen mi configuración actual, como acuses de recibo, respuestas a consultas frecuentes o mensajes de ausencia.',
 
   // Popup enhancements
   popup_total_rules: 'Reglas',
@@ -574,11 +593,14 @@ export const es: Translations = {
 
   // Confirm dialog
   confirm_delete_rule_title: 'Eliminar regla',
-  confirm_delete_rule_msg: '¿Estás seguro de que deseas eliminar la regla "{name}"? Esta acción no se puede deshacer.',
+  confirm_delete_rule_msg:
+    '¿Estás seguro de que deseas eliminar la regla "{name}"? Esta acción no se puede deshacer.',
   confirm_clear_log_title: 'Limpiar registro',
-  confirm_clear_log_msg: '¿Estás seguro de que deseas eliminar todo el historial de actividad? Esta acción no se puede deshacer.',
+  confirm_clear_log_msg:
+    '¿Estás seguro de que deseas eliminar todo el historial de actividad? Esta acción no se puede deshacer.',
   confirm_delete_conversation_title_dialog: 'Eliminar conversación',
-  confirm_delete_conversation_msg: '¿Estás seguro de que deseas eliminar esta conversación? Se perderán todos los mensajes.',
+  confirm_delete_conversation_msg:
+    '¿Estás seguro de que deseas eliminar esta conversación? Se perderán todos los mensajes.',
 
   // Hardcoded string fixes
   rules_imported_suffix: '(importada)',
@@ -600,9 +622,12 @@ export const es: Translations = {
   folder_tree_title_unread: 'No leídos',
 
   // ChatWelcome quick-action prompts
-  chat_welcome_prompt_analyze: 'Analiza mis correos recientes y proponme una estructura de carpetas y reglas para organizar todo de forma optima. Se agresivo con las propuestas.',
-  chat_welcome_prompt_folders: 'Que estructura de carpetas me recomiendas para organizar mejor mi correo profesional?',
-  chat_welcome_prompt_audit: 'Revisa mis reglas actuales y dime si se pueden mejorar o si faltan reglas importantes.',
+  chat_welcome_prompt_analyze:
+    'Analiza mis correos recientes y proponme una estructura de carpetas y reglas para organizar todo de forma optima. Se agresivo con las propuestas.',
+  chat_welcome_prompt_folders:
+    'Que estructura de carpetas me recomiendas para organizar mejor mi correo profesional?',
+  chat_welcome_prompt_audit:
+    'Revisa mis reglas actuales y dime si se pueden mejorar o si faltan reglas importantes.',
 
   // TemplateEditor defaults
   tmpl_default_subject: 'Re: {{originalSubject}}',
@@ -620,17 +645,21 @@ export const es: Translations = {
 
   // AI consent
   ai_consent_title: 'Aviso de privacidad — Funciones de IA',
-  ai_consent_message: 'Las funciones de IA envían datos de tus correos electrónicos (remitente, asunto, fragmentos del cuerpo) a servicios externos de inteligencia artificial ({provider}). Estos datos se transmiten únicamente al proveedor que configures y solo bajo tu demanda. Al continuar, aceptas esta transmisión de datos.',
+  ai_consent_message:
+    'Las funciones de IA envían datos de tus correos electrónicos (remitente, asunto, fragmentos del cuerpo) a servicios externos de inteligencia artificial ({provider}). Estos datos se transmiten únicamente al proveedor que configures y solo bajo tu demanda. Al continuar, aceptas esta transmisión de datos.',
   ai_consent_accept: 'Entendido, continuar',
   ai_consent_decline: 'Cancelar',
 
   // API key notice
-  options_api_key_notice: 'Las claves API se almacenan localmente en el perfil de Thunderbird. No se comparten con terceros.',
+  options_api_key_notice:
+    'Las claves API se almacenan localmente en el perfil de Thunderbird. No se comparten con terceros.',
 
   // AI prompt language
   ai_lang_name: 'español',
-  ai_prompt_analyze_emails: 'Analiza estos correos recientes y sugiere reglas de clasificación basándote en patrones que detectes (remitentes frecuentes, temas comunes, newsletters, etc.).\n\nCORREOS:\n{emailList}\n\nGenera entre 1 y 5 reglas útiles. Prioriza patrones claros y frecuentes. No repitas reglas que ya existan.',
-  ai_prompt_generate_from_desc: 'El usuario quiere esta regla de correo: "{description}"\n\nGenera 1 o 2 reglas que cumplan exactamente lo que el usuario pide. Si la descripción es ambigua, genera la interpretación más probable. Ten en cuenta las reglas existentes para no duplicar.',
+  ai_prompt_analyze_emails:
+    'Analiza estos correos recientes y sugiere reglas de clasificación basándote en patrones que detectes (remitentes frecuentes, temas comunes, newsletters, etc.).\n\nCORREOS:\n{emailList}\n\nGenera entre 1 y 5 reglas útiles. Prioriza patrones claros y frecuentes. No repitas reglas que ya existan.',
+  ai_prompt_generate_from_desc:
+    'El usuario quiere esta regla de correo: "{description}"\n\nGenera 1 o 2 reglas que cumplan exactamente lo que el usuario pide. Si la descripción es ambigua, genera la interpretación más probable. Ten en cuenta las reglas existentes para no duplicar.',
   ai_prompt_respond_ok: 'Responde solo "ok"',
 
   // AI error messages (background)

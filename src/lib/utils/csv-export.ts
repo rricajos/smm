@@ -10,15 +10,19 @@ export function activityToCSV(
   headers: string[] = ['Date', 'Type', 'Rule', 'Subject', 'From', 'Actions', 'Details'],
 ): string {
   const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
-  const rows = entries.map(e => [
-    new Date(e.timestamp).toISOString(),
-    e.type,
-    e.ruleName,
-    e.subject,
-    e.from,
-    e.actions.join('; '),
-    e.details || '',
-  ].map(escape).join(','));
+  const rows = entries.map((e) =>
+    [
+      new Date(e.timestamp).toISOString(),
+      e.type,
+      e.ruleName,
+      e.subject,
+      e.from,
+      e.actions.join('; '),
+      e.details || '',
+    ]
+      .map(escape)
+      .join(','),
+  );
   return [headers.join(','), ...rows].join('\n');
 }
 

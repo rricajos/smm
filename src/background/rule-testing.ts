@@ -33,7 +33,9 @@ export async function testRule(messageId: number, ruleId: string): Promise<TestR
   let fullMessage = null;
   try {
     fullMessage = await messenger.messages.getFull(messageId);
-  } catch (err) { logger.warn('Could not fetch full message for test', err); }
+  } catch (err) {
+    logger.warn('Could not fetch full message for test', err);
+  }
   const results = await classifyMessage(header, fullMessage);
   return {
     matched: results.some((r) => r.rule.id === ruleId),
@@ -46,7 +48,7 @@ export async function processExisting(limit: number = 50): Promise<ProcessExisti
     const accounts = await messenger.accounts.list();
     if (accounts.length === 0) return { processed: 0, matched: 0, errors: 0 };
 
-    const settings = await getSettings();
+    const _settings = await getSettings();
     let processed = 0;
     let matched = 0;
     let errors = 0;
@@ -97,7 +99,10 @@ export async function processExisting(limit: number = 50): Promise<ProcessExisti
   }
 }
 
-export async function testSingleRule(rule: Rule, limit: number = 50): Promise<TestSingleRuleResult> {
+export async function testSingleRule(
+  rule: Rule,
+  limit: number = 50,
+): Promise<TestSingleRuleResult> {
   try {
     const accounts = await messenger.accounts.list();
     if (accounts.length === 0) return { processed: 0, matched: 0, details: [] };
@@ -131,7 +136,9 @@ export async function testSingleRule(rule: Rule, limit: number = 50): Promise<Te
                   from: msg.author || '',
                 });
               }
-            } catch { /* skip */ }
+            } catch {
+              /* skip */
+            }
           }
           if (page.id && processed < limit) {
             page = await messenger.messages.continueList(page.id);

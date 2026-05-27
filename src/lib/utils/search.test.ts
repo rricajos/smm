@@ -60,11 +60,15 @@ describe('searchRules', () => {
   });
 
   it('finds rules by condition value', () => {
-    const rules = [makeRule({
-      id: 'r1',
-      name: 'My Rule',
-      conditions: [{ field: 'from', operator: 'contains', value: 'github.com', caseSensitive: false }],
-    })];
+    const rules = [
+      makeRule({
+        id: 'r1',
+        name: 'My Rule',
+        conditions: [
+          { field: 'from', operator: 'contains', value: 'github.com', caseSensitive: false },
+        ],
+      }),
+    ];
     const result = searchRules('github', rules, labels);
     expect(result).toHaveLength(1);
   });

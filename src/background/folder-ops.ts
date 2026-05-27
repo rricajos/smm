@@ -28,7 +28,10 @@ export interface AccountTree {
   folders: FolderTreeNode[];
 }
 
-export async function createFolder(parentFolderId: string, folderName: string): Promise<FolderResult> {
+export async function createFolder(
+  parentFolderId: string,
+  folderName: string,
+): Promise<FolderResult> {
   try {
     const created = await messenger.folders.create(parentFolderId, folderName);
     return {
@@ -42,11 +45,16 @@ export async function createFolder(parentFolderId: string, folderName: string): 
   } catch (err: unknown) {
     logger.error('Error creating folder', err);
     const loc = await getLocaleFromStorage();
-    return { success: false, error: getErrorMessage(err) || translate(loc, 'bg_error_create_folder') };
+    return {
+      success: false,
+      error: getErrorMessage(err) || translate(loc, 'bg_error_create_folder'),
+    };
   }
 }
 
-export async function deleteFolder(folderId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteFolder(
+  folderId: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     // @ts-expect-error 'delete' is a reserved word in TS but valid Thunderbird API
     await messenger.folders.delete(folderId);
@@ -54,7 +62,10 @@ export async function deleteFolder(folderId: string): Promise<{ success: boolean
   } catch (err: unknown) {
     logger.error('Error deleting folder', err);
     const loc = await getLocaleFromStorage();
-    return { success: false, error: getErrorMessage(err) || translate(loc, 'bg_error_delete_folder') };
+    return {
+      success: false,
+      error: getErrorMessage(err) || translate(loc, 'bg_error_delete_folder'),
+    };
   }
 }
 
@@ -72,7 +83,10 @@ export async function renameFolder(folderId: string, newName: string): Promise<F
   } catch (err: unknown) {
     logger.error('Error renaming folder', err);
     const loc = await getLocaleFromStorage();
-    return { success: false, error: getErrorMessage(err) || translate(loc, 'bg_error_rename_folder') };
+    return {
+      success: false,
+      error: getErrorMessage(err) || translate(loc, 'bg_error_rename_folder'),
+    };
   }
 }
 

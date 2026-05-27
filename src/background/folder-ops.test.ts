@@ -1,7 +1,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createFolder, deleteFolder, renameFolder, moveFolderContents, getFolderTree } from './folder-ops';
+import {
+  createFolder,
+  deleteFolder,
+  renameFolder,
+  moveFolderContents,
+  getFolderTree,
+} from './folder-ops';
 
 vi.mock('../lib/i18n', () => ({
   getLocaleFromStorage: vi.fn().mockResolvedValue('en'),
@@ -39,7 +45,10 @@ beforeEach(() => {
 describe('createFolder', () => {
   it('creates a folder and returns success', async () => {
     mockMessenger.folders.create.mockResolvedValue({
-      id: 'folder-1', accountId: 'acc1', name: 'NewFolder', path: 'NewFolder',
+      id: 'folder-1',
+      accountId: 'acc1',
+      name: 'NewFolder',
+      path: 'NewFolder',
     });
     const result = await createFolder('parent-id', 'NewFolder');
     expect(result.success).toBe(true);
@@ -49,7 +58,10 @@ describe('createFolder', () => {
 
   it('falls back to composite id when id is empty', async () => {
     mockMessenger.folders.create.mockResolvedValue({
-      id: '', accountId: 'acc1', name: 'Test', path: 'Inbox/Test',
+      id: '',
+      accountId: 'acc1',
+      name: 'Test',
+      path: 'Inbox/Test',
     });
     const result = await createFolder('parent', 'Test');
     expect(result.folder!.id).toBe('acc1:/Inbox/Test');
@@ -82,7 +94,10 @@ describe('deleteFolder', () => {
 describe('renameFolder', () => {
   it('renames a folder and returns updated info', async () => {
     mockMessenger.folders.rename.mockResolvedValue({
-      id: 'folder-1', accountId: 'acc1', name: 'Renamed', path: 'Renamed',
+      id: 'folder-1',
+      accountId: 'acc1',
+      name: 'Renamed',
+      path: 'Renamed',
     });
     const result = await renameFolder('folder-1', 'Renamed');
     expect(result.success).toBe(true);
@@ -153,7 +168,9 @@ describe('getFolderTree', () => {
       { id: 'acc1', name: 'Main', rootFolder: { id: 'root1' } },
     ]);
     mockMessenger.folders.getSubFolders
-      .mockResolvedValueOnce([{ id: 'inbox', accountId: 'acc1', name: 'Inbox', path: 'Inbox', type: 'inbox' }])
+      .mockResolvedValueOnce([
+        { id: 'inbox', accountId: 'acc1', name: 'Inbox', path: 'Inbox', type: 'inbox' },
+      ])
       .mockResolvedValueOnce([{ id: 'sub1', accountId: 'acc1', name: 'Work', path: 'Inbox/Work' }])
       .mockResolvedValue([]);
     mockMessenger.folders.getFolderInfo
@@ -179,7 +196,16 @@ describe('getFolderTree', () => {
       { id: 'acc1', name: 'Main', rootFolder: { id: 'root1' } },
     ]);
     mockMessenger.folders.getSubFolders
-      .mockResolvedValueOnce([{ id: 'f1', accountId: 'acc1', name: 'Inbox', path: 'Inbox', totalMessageCount: 7, unreadMessageCount: 2 }])
+      .mockResolvedValueOnce([
+        {
+          id: 'f1',
+          accountId: 'acc1',
+          name: 'Inbox',
+          path: 'Inbox',
+          totalMessageCount: 7,
+          unreadMessageCount: 2,
+        },
+      ])
       .mockResolvedValue([]);
     mockMessenger.folders.getFolderInfo.mockRejectedValue(new Error('Not supported'));
 

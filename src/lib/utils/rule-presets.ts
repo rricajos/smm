@@ -15,7 +15,13 @@ export interface RulePreset {
   requiresTagSelection: boolean;
 }
 
-export type PresetCategory = 'newsletters' | 'social' | 'finance' | 'shopping' | 'work' | 'notifications';
+export type PresetCategory =
+  | 'newsletters'
+  | 'social'
+  | 'finance'
+  | 'shopping'
+  | 'work'
+  | 'notifications';
 
 export const PRESET_CATEGORIES: { key: PresetCategory; label: string }[] = [
   { key: 'newsletters', label: 'Newsletters' },
@@ -34,13 +40,15 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'newsletters',
     icon: '\u2709',
     conditions: [
-      { field: 'from', operator: 'matches', value: 'newsletter|noreply|no-reply|mailer|digest|bolet[ií]n', caseSensitive: false },
+      {
+        field: 'from',
+        operator: 'matches',
+        value: 'newsletter|noreply|no-reply|mailer|digest|bolet[ií]n',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
-    actions: [
-      { type: 'moveToFolder', folderId: '' },
-      { type: 'markRead' },
-    ],
+    actions: [{ type: 'moveToFolder', folderId: '' }, { type: 'markRead' }],
     requiresFolderSelection: true,
     requiresTagSelection: false,
   },
@@ -51,12 +59,15 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'social',
     icon: '\uD83D\uDC65',
     conditions: [
-      { field: 'from', operator: 'matches', value: 'facebookmail|twitter\\.com|x\\.com|linkedin|instagram', caseSensitive: false },
+      {
+        field: 'from',
+        operator: 'matches',
+        value: 'facebookmail|twitter\\.com|x\\.com|linkedin|instagram',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
-    actions: [
-      { type: 'moveToFolder', folderId: '' },
-    ],
+    actions: [{ type: 'moveToFolder', folderId: '' }],
     requiresFolderSelection: true,
     requiresTagSelection: false,
   },
@@ -67,7 +78,12 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'finance',
     icon: '\uD83C\uDFE6',
     conditions: [
-      { field: 'from', operator: 'matches', value: 'banco|bank|bbva|santander|caixabank|paypal|stripe', caseSensitive: false },
+      {
+        field: 'from',
+        operator: 'matches',
+        value: 'banco|bank|bbva|santander|caixabank|paypal|stripe',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
     actions: [
@@ -84,12 +100,15 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'shopping',
     icon: '\uD83D\uDED2',
     conditions: [
-      { field: 'from', operator: 'matches', value: 'amazon|aliexpress|ebay|order|pedido|envio|shipping', caseSensitive: false },
+      {
+        field: 'from',
+        operator: 'matches',
+        value: 'amazon|aliexpress|ebay|order|pedido|envio|shipping',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
-    actions: [
-      { type: 'moveToFolder', folderId: '' },
-    ],
+    actions: [{ type: 'moveToFolder', folderId: '' }],
     requiresFolderSelection: true,
     requiresTagSelection: false,
   },
@@ -100,12 +119,15 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'work',
     icon: '\uD83D\uDCBB',
     conditions: [
-      { field: 'from', operator: 'matches', value: 'github\\.com|gitlab\\.com|bitbucket', caseSensitive: false },
+      {
+        field: 'from',
+        operator: 'matches',
+        value: 'github\\.com|gitlab\\.com|bitbucket',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
-    actions: [
-      { type: 'moveToFolder', folderId: '' },
-    ],
+    actions: [{ type: 'moveToFolder', folderId: '' }],
     requiresFolderSelection: true,
     requiresTagSelection: false,
   },
@@ -116,12 +138,15 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'notifications',
     icon: '\uD83D\uDCC5',
     conditions: [
-      { field: 'subject', operator: 'matches', value: 'invitaci[oó]n|invitation|calendar|evento|meeting|reuni[oó]n', caseSensitive: false },
+      {
+        field: 'subject',
+        operator: 'matches',
+        value: 'invitaci[oó]n|invitation|calendar|evento|meeting|reuni[oó]n',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
-    actions: [
-      { type: 'addTag', tagKey: '' },
-    ],
+    actions: [{ type: 'addTag', tagKey: '' }],
     requiresFolderSelection: false,
     requiresTagSelection: true,
   },
@@ -132,13 +157,15 @@ export const RULE_PRESETS: RulePreset[] = [
     category: 'newsletters',
     icon: '\uD83C\uDFF7',
     conditions: [
-      { field: 'subject', operator: 'matches', value: 'oferta|descuento|promo|sale|%\\s*off|cup[oó]n|gratis|free', caseSensitive: false },
+      {
+        field: 'subject',
+        operator: 'matches',
+        value: 'oferta|descuento|promo|sale|%\\s*off|cup[oó]n|gratis|free',
+        caseSensitive: false,
+      },
     ],
     conditionLogic: 'any',
-    actions: [
-      { type: 'moveToFolder', folderId: '' },
-      { type: 'markRead' },
-    ],
+    actions: [{ type: 'moveToFolder', folderId: '' }, { type: 'markRead' }],
     requiresFolderSelection: true,
     requiresTagSelection: false,
   },
