@@ -1,14 +1,36 @@
 import { defineConfig } from 'vitest/config';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
+  plugins: [svelte()],
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    setupFiles: ['src/lib/test-setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.d.ts',
+        'src/**/main.ts',
+        'src/lib/test-setup.ts',
+        'src/lib/test-utils.ts',
+      ],
+      thresholds: {
+        statements: 70,
+        branches: 60,
+        functions: 70,
+        lines: 70,
+      },
+    },
   },
   resolve: {
+    conditions: ['browser'],
     alias: {
-      '$lib': '/src/lib',
-      '$types': '/src/types',
+      $lib: '/src/lib',
+      $types: '/src/types',
     },
   },
 });
