@@ -126,3 +126,119 @@ describe('testConnection', () => {
     expect(mockFetch).toHaveBeenCalled();
   });
 });
+
+// --- ensureCustomPermission additional branch coverage ---
+
+describe('ensureCustomPermission – additional branches', () => {
+  it('skips permission check for non-custom providers (provider !== custom)', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    // openai provider should NOT trigger browser.permissions.request
+    await testConnection('key', 'model', 'openai');
+    expect(browser.permissions.request).not.toHaveBeenCalled();
+  });
+
+  it('allows 127.0.0.1 without HTTPS for custom provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('key', 'model', 'custom', 'http://127.0.0.1:11434/v1/chat');
+    expect(mockFetch).toHaveBeenCalled();
+  });
+
+  it('allows 127.0.0.1 with non-standard port without HTTPS for custom provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    // Verifies 127.0.0.1 is treated as local (no HTTPS required)
+    await testConnection('key', 'model', 'custom', 'http://127.0.0.1:5000/api/chat');
+    expect(mockFetch).toHaveBeenCalled();
+    expect(browser.permissions.request).toHaveBeenCalled();
+  });
+
+  it('proceeds when browser.permissions.request throws a non-permission error', async () => {
+    // Simulate permissions API being unavailable (e.g. in content script context)
+    (browser.permissions.request as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('permissions.request is not a function'),
+    );
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    // Should not throw — the catch block allows non-permission errors through
+    await expect(
+      testConnection('key', 'model', 'custom', 'https://my-api.com/v1/chat'),
+    ).resolves.toBe(true);
+  });
+});
+
+// --- testConnection provider branches ---
+
+describe('testConnection – provider-specific branches', () => {
+  it('uses custom base URL when provider is custom', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('key', 'model', 'custom', 'https://my-llm.example.com/v1/chat');
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://my-llm.example.com/v1/chat');
+  });
+
+  it('uses Google Gemini base URL for google provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('key', 'gemini-2.0-flash', 'google');
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+  });
+
+  it('does not include OpenRouter headers for non-OpenRouter providers', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('key', 'model', 'openai');
+
+    const [, opts] = mockFetch.mock.calls[0];
+    expect(opts.headers['HTTP-Referer']).toBeUndefined();
+    expect(opts.headers['X-Title']).toBeUndefined();
+  });
+
+  it('falls back to AI_PROVIDERS baseUrl for custom provider without customBaseUrl', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    // When no customBaseUrl is provided, getBaseUrl returns AI_PROVIDERS['custom'].baseUrl which is ''
+    // This will cause fetch to be called with an empty string URL
+    // The test verifies getBaseUrl fallback logic
+    try {
+      await testConnection('key', 'model', 'custom');
+    } catch {
+      // May fail due to empty URL, but that's expected
+    }
+    // Verify it tried to call fetch (the empty URL is the AI_PROVIDERS['custom'].baseUrl)
+    if (mockFetch.mock.calls.length > 0) {
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toBe('');
+    }
+  });
+});

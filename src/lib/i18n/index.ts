@@ -5,6 +5,7 @@ import type { Translations } from './types';
 import { es } from './locales/es';
 import { en } from './locales/en';
 import { STORAGE_KEYS } from '../utils/constants';
+import { logger } from '../utils/logger';
 
 /// <reference path="../utils/messenger.d.ts" />
 
@@ -22,8 +23,8 @@ try {
       locale.set(stored);
     }
   });
-} catch {
-  // Not in extension context (e.g. background)
+} catch (e) {
+  logger.debug('i18n: could not load persisted locale', e);
 }
 
 // Sync across contexts via storage.onChanged
@@ -38,16 +39,16 @@ try {
       }
     },
   );
-} catch {
-  // Not in extension context
+} catch (e) {
+  logger.debug('i18n: could not register onChanged listener', e);
 }
 
 export async function setLocale(loc: SupportedLocale): Promise<void> {
   locale.set(loc);
   try {
     await browser.storage.local.set({ [STORAGE_KEYS.LOCALE]: loc });
-  } catch {
-    // ignore
+  } catch (e) {
+    logger.warn('i18n: could not persist locale', e);
   }
 }
 
@@ -72,8 +73,8 @@ export async function getLocaleFromStorage(): Promise<SupportedLocale> {
     const result = await browser.storage.local.get(STORAGE_KEYS.LOCALE);
     const stored = result[STORAGE_KEYS.LOCALE];
     if (stored === 'es' || stored === 'en') return stored;
-  } catch {
-    /* ignore */
+  } catch (e) {
+    logger.debug('i18n: could not read locale from storage', e);
   }
   return 'es';
 }

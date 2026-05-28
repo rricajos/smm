@@ -20,6 +20,7 @@
   import RuleEditor from '../components/RuleEditor.svelte';
   import PresetGallery from '../components/PresetGallery.svelte';
   import { t } from '../../lib/i18n';
+  import type { Translations } from '../../lib/i18n/types';
   import type { FolderInfo, TagInfo } from '../../lib/services/openai';
 
   /// <reference path="../../lib/utils/messenger.d.ts" />
@@ -366,7 +367,7 @@
   }
 
   // --- Conflict resolution ---
-  const conflictI18nKey: Record<string, string> = {
+  const conflictI18nKey: Record<string, keyof Translations> = {
     contradictory_move: 'conflict_move_different',
     contradictory_priority: 'conflict_priority_different',
     redundant: 'conflict_redundant',
@@ -374,7 +375,7 @@
 
   function conflictDesc(conflict: RuleConflict): string {
     const key = conflictI18nKey[conflict.type];
-    return key ? $t(key as any, conflict.params) : conflict.description;
+    return key ? $t(key, conflict.params) : conflict.description;
   }
 
   let mergedConflicts = new SvelteSet<number>();
@@ -425,16 +426,16 @@
       .map((c, i) => {
         const type =
           c.type === 'redundant'
-            ? $t('conflict_redundant' as any)
+            ? $t('conflict_redundant')
             : c.type === 'contradictory_move'
-              ? $t('conflict_move_different' as any)
+              ? $t('conflict_move_different')
               : c.type === 'contradictory_priority'
-                ? $t('conflict_priority_different' as any)
+                ? $t('conflict_priority_different')
                 : c.description;
         return `${i + 1}. "${c.ruleA.name}" + "${c.ruleB.name}": ${type}`;
       })
       .join('\n');
-    const prompt = $t('conflict_ai_prompt' as any, {
+    const prompt = $t('conflict_ai_prompt', {
       n: ruleConflicts.length,
       conflicts: conflictLines,
     });

@@ -151,7 +151,8 @@ export async function getFolderTree(): Promise<AccountTree[]> {
           const info = await messenger.folders.getFolderInfo(f.id);
           totalMessages = info.totalMessageCount || 0;
           unreadMessages = info.unreadMessageCount || 0;
-        } catch {
+        } catch (e) {
+          logger.debug('Could not get folder info via API', f.id, e);
           totalMessages = f.totalMessageCount || 0;
           unreadMessages = f.unreadMessageCount || 0;
         }

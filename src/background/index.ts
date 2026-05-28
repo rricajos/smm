@@ -226,8 +226,8 @@ messenger.runtime.onMessage.addListener(async (msg: unknown, _sender: unknown) =
       let tags: messenger.messages.MessageTag[] = [];
       try {
         tags = await messenger.messages.tags.list();
-      } catch {
-        /* fallback to empty */
+      } catch (e) {
+        logger.debug('Could not list tags', e);
       }
       return { folders: folderInfos, tags };
     }
@@ -241,7 +241,8 @@ messenger.runtime.onMessage.addListener(async (msg: unknown, _sender: unknown) =
           email: account.identities?.[0]?.email || '',
           accountId: account.id,
         }));
-      } catch {
+      } catch (e) {
+        logger.warn('Could not fetch account info', e);
         return [];
       }
     }
@@ -285,7 +286,8 @@ messenger.runtime.onMessage.addListener(async (msg: unknown, _sender: unknown) =
       try {
         await messenger.spacesToolbar.clickButton('smartMailManager');
         return { success: true };
-      } catch {
+      } catch (e) {
+        logger.debug('Could not click space button', e);
         return { success: false };
       }
     }

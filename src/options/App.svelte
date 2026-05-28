@@ -251,7 +251,7 @@
         <option value="custom">{$t('options_provider_custom')}</option>
       </select>
     </div>
-    <p class="info">{$t(AI_PROVIDERS[currentSettings.aiProvider]?.keyHintKey as any)}</p>
+    <p class="info">{$t(AI_PROVIDERS[currentSettings.aiProvider].keyHintKey)}</p>
 
     {#if currentSettings.aiProvider === 'custom'}
       <div class="field">

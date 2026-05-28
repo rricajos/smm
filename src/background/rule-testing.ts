@@ -78,7 +78,8 @@ export async function processExisting(limit: number = 50): Promise<ProcessExisti
                 rules: results.map((r) => r.rule.name),
               });
             }
-          } catch {
+          } catch (e) {
+            logger.debug('classifyMessage failed for message', msg.id, e);
             errors++;
           }
         }
@@ -136,8 +137,8 @@ export async function testSingleRule(
                   from: msg.author || '',
                 });
               }
-            } catch {
-              /* skip */
+            } catch (e) {
+              logger.debug('classifyMessage failed for test message', msg.id, e);
             }
           }
           if (page.id && processed < limit) {

@@ -152,3 +152,157 @@ describe('searchActivity', () => {
     expect(searchActivity('', [makeEntry()], labels)).toEqual([]);
   });
 });
+
+// --- Branch coverage: additional uncovered paths ---
+
+describe('searchRules – branch coverage', () => {
+  it('matches rule via condition with empty/undefined c.value (c.value || "" fallback)', () => {
+    // When c.value is undefined, the fallback '' should be used and not crash
+    const rules = [
+      makeRule({
+        id: 'r1',
+        name: 'No Match Name',
+        conditions: [
+          {
+            field: 'from',
+            operator: 'contains',
+            value: undefined as unknown as string,
+            caseSensitive: false,
+          },
+        ],
+      }),
+    ];
+    // Searching for the rule name should still find it
+    const result = searchRules('no match', rules, labels);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('r1');
+  });
+
+  it('handles condition with empty string value', () => {
+    const rules = [
+      makeRule({
+        id: 'r1',
+        name: 'Some Rule',
+        conditions: [{ field: 'from', operator: 'contains', value: '', caseSensitive: false }],
+      }),
+    ];
+    // Search by name, not by condition value
+    const result = searchRules('some', rules, labels);
+    expect(result).toHaveLength(1);
+  });
+
+  it('uses default max parameter (5) when not provided', () => {
+    const rules = Array.from({ length: 10 }, (_, i) =>
+      makeRule({ id: `r${i}`, name: `Rule ${i}` }),
+    );
+    // Do not pass max parameter – should default to 5
+    const result = searchRules('rule', rules, labels);
+    expect(result).toHaveLength(5);
+  });
+
+  it('shows inactive subtitle for disabled rules', () => {
+    const rules = [makeRule({ id: 'r1', name: 'Disabled Rule', enabled: false })];
+    const result = searchRules('disabled', rules, labels);
+    expect(result).toHaveLength(1);
+    expect(result[0].subtitle).toBe('Inactive');
+  });
+
+  it('does not match when neither name nor condition values match', () => {
+    const rules = [
+      makeRule({
+        id: 'r1',
+        name: 'Newsletter',
+        conditions: [
+          { field: 'from', operator: 'contains', value: 'news@company.com', caseSensitive: false },
+        ],
+      }),
+    ];
+    const result = searchRules('zzzznotfound', rules, labels);
+    expect(result).toEqual([]);
+  });
+});
+
+describe('searchActivity – branch coverage', () => {
+  it('handles entries with undefined subject', () => {
+    const entries = [
+      makeEntry({
+        subject: undefined as unknown as string,
+        from: 'alice@test.com',
+        ruleName: 'Rule 1',
+      }),
+    ];
+    // Search by from field
+    const result = searchActivity('alice', entries, labels);
+    expect(result).toHaveLength(1);
+    // Title should be noSubject label since subject is falsy
+    expect(result[0].title).toBe('(No subject)');
+  });
+
+  it('handles entries with undefined from', () => {
+    const entries = [
+      makeEntry({
+        subject: 'Test Subject',
+        from: undefined as unknown as string,
+        ruleName: 'Rule 1',
+      }),
+    ];
+    // Search by subject
+    const result = searchActivity('test subject', entries, labels);
+    expect(result).toHaveLength(1);
+    expect(result[0].subtitle).toContain('Rule 1');
+  });
+
+  it('handles entries with undefined ruleName', () => {
+    const entries = [
+      makeEntry({
+        subject: 'Test Subject',
+        from: 'alice@test.com',
+        ruleName: undefined as unknown as string,
+      }),
+    ];
+    // Search by subject
+    const result = searchActivity('test', entries, labels);
+    expect(result).toHaveLength(1);
+    expect(result[0].subtitle).toContain('alice@test.com');
+  });
+
+  it('handles entries where all searchable fields are undefined', () => {
+    const entries = [
+      makeEntry({
+        subject: undefined as unknown as string,
+        from: undefined as unknown as string,
+        ruleName: undefined as unknown as string,
+      }),
+    ];
+    // Search for something that won't match empty strings
+    const result = searchActivity('something', entries, labels);
+    expect(result).toEqual([]);
+  });
+
+  it('matches entry by ruleName field', () => {
+    const entries = [
+      makeEntry({ subject: 'Unrelated', from: 'nobody@t.com', ruleName: 'Special Filter' }),
+    ];
+    const result = searchActivity('special', entries, labels);
+    expect(result).toHaveLength(1);
+    expect(result[0].subtitle).toContain('Special Filter');
+  });
+
+  it('uses default max parameter (5) when not provided', () => {
+    const entries = Array.from({ length: 10 }, (_, i) =>
+      makeEntry({ timestamp: Date.now() + i, subject: `Entry ${i}` }),
+    );
+    const result = searchActivity('entry', entries, labels);
+    expect(result).toHaveLength(5);
+  });
+});
+
+describe('searchTemplates – branch coverage', () => {
+  it('uses default max parameter (5) when not provided', () => {
+    const templates = Array.from({ length: 10 }, (_, i) =>
+      makeTemplate({ id: `t${i}`, name: `Template ${i}` }),
+    );
+    const result = searchTemplates('template', templates);
+    expect(result).toHaveLength(5);
+  });
+});

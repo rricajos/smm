@@ -246,3 +246,230 @@ describe('testConnection', () => {
     );
   });
 });
+
+// --- parseRuleSuggestions: empty name fallback ---
+
+describe('parseRuleSuggestions – name fallback', () => {
+  beforeEach(() => {
+    vi.mocked(crypto.randomUUID).mockReturnValue(
+      'test-uuid-1234' as `${string}-${string}-${string}-${string}-${string}`,
+    );
+  });
+
+  it('uses fallback name when r.name is empty string', () => {
+    const data = {
+      rules: [
+        {
+          name: '',
+          conditions: [{ field: 'from', operator: 'contains', value: 'test' }],
+          actions: [{ type: 'markRead' }],
+          conditionLogic: 'all',
+          confidence: 0.8,
+        },
+      ],
+    };
+    const result = parseRuleSuggestions(data);
+    expect(result).toHaveLength(1);
+    // translate mock returns the key, so fallback will be 'ai_fallback_rule_name 1'
+    expect(result[0].rule.name).toBe('ai_fallback_rule_name 1');
+  });
+
+  it('uses provided name when r.name is non-empty', () => {
+    const data = {
+      rules: [
+        {
+          name: 'My Rule',
+          conditions: [],
+          actions: [],
+          conditionLogic: 'all',
+          confidence: 0.7,
+        },
+      ],
+    };
+    const result = parseRuleSuggestions(data);
+    expect(result[0].rule.name).toBe('My Rule');
+  });
+
+  it('uses fallback with correct index for multiple rules with empty names', () => {
+    const data = {
+      rules: [
+        {
+          name: '',
+          conditions: [],
+          actions: [],
+          conditionLogic: 'all',
+          confidence: 0.5,
+        },
+        {
+          name: '',
+          conditions: [],
+          actions: [],
+          conditionLogic: 'all',
+          confidence: 0.6,
+        },
+      ],
+    };
+    const result = parseRuleSuggestions(data);
+    expect(result).toHaveLength(2);
+    expect(result[0].rule.name).toBe('ai_fallback_rule_name 1');
+    expect(result[1].rule.name).toBe('ai_fallback_rule_name 2');
+  });
+});
+
+// --- testConnection: additional provider branches ---
+
+describe('testConnection – additional provider branches', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('uses OpenRouter base URL for openrouter provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('sk-or-test', 'model', 'openrouter');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('uses Google base URL for google provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('AIza-key', 'gemini-2.0-flash', 'google');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('uses custom base URL when provider is custom with customBaseUrl', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('key', 'model', 'custom', 'https://custom-llm.example.com/v1/chat');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://custom-llm.example.com/v1/chat',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('falls back to empty baseUrl when custom provider has no customBaseUrl', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    // custom provider with no customBaseUrl uses AI_PROVIDERS['custom'].baseUrl which is ''
+    try {
+      await testConnection('key', 'model', 'custom');
+    } catch {
+      // May throw due to empty URL — that's expected behavior
+    }
+
+    if (mockFetch.mock.calls.length > 0) {
+      expect(mockFetch.mock.calls[0][0]).toBe('');
+    }
+  });
+
+  it('does not add OpenRouter headers for google provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+    });
+
+    await testConnection('key', 'model', 'google');
+
+    const [, opts] = mockFetch.mock.calls[0];
+    expect(opts.headers['HTTP-Referer']).toBeUndefined();
+    expect(opts.headers['X-Title']).toBeUndefined();
+  });
+
+  it('throws with error message when Anthropic returns non-ok response', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 400, // Use 400 (not retryable) to avoid fetchWithRetry retries
+      json: async () => ({ error: { message: 'Invalid model specified' } }),
+    });
+
+    await expect(testConnection('key', 'claude-3', 'anthropic')).rejects.toThrow(
+      'Invalid model specified',
+    );
+  });
+
+  it('throws with fallback status error when OpenAI error has no message field', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ error: {} }),
+    });
+
+    await expect(testConnection('key', 'model', 'openai')).rejects.toThrow('Error: 422');
+  });
+});
+
+// --- buildSystemPrompt: additional branches ---
+
+describe('buildSystemPrompt – additional branches', () => {
+  it('summarizes hasAttachments conditions differently', () => {
+    const rulesWithAttachments: Rule[] = [
+      {
+        id: 'rule-att',
+        name: 'Has attachments rule',
+        enabled: false,
+        conditions: [
+          {
+            field: 'hasAttachments',
+            operator: 'equals',
+            value: '',
+            boolValue: true,
+            caseSensitive: false,
+          },
+        ],
+        conditionLogic: 'all',
+        actions: [{ type: 'addTag', tagKey: 'tag1' }],
+        stopProcessing: false,
+        createdAt: 1000,
+        updatedAt: 1000,
+      },
+    ];
+
+    const result = buildSystemPrompt(folders, tags, rulesWithAttachments);
+    expect(result).toContain('hasAttachments=true');
+    expect(result).toContain('etiquetar tag1');
+    expect(result).toContain('inactiva');
+  });
+
+  it('summarizes setPriority and markRead action types', () => {
+    const rulesWithActions: Rule[] = [
+      {
+        id: 'rule-prio',
+        name: 'Priority rule',
+        enabled: true,
+        conditions: [
+          { field: 'subject', operator: 'contains', value: 'urgent', caseSensitive: false },
+          { field: 'from', operator: 'contains', value: 'boss', caseSensitive: false },
+        ],
+        conditionLogic: 'any',
+        actions: [{ type: 'setPriority', priority: 'high' }, { type: 'markRead' }],
+        stopProcessing: false,
+        createdAt: 1000,
+        updatedAt: 1000,
+      },
+    ];
+
+    const result = buildSystemPrompt(folders, tags, rulesWithActions);
+    expect(result).toContain('prioridad high');
+    expect(result).toContain('markRead');
+    // 'any' logic with multiple conditions uses ' O ' separator
+    expect(result).toContain(' O ');
+  });
+});

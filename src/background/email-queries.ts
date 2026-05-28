@@ -57,8 +57,8 @@ export async function getRecentEmails(maxCount: number = 50): Promise<RecentEmai
             const full = await messenger.messages.getFull(msg.id);
             const bodyText = extractBodyText(full);
             snippet = bodyText.substring(0, MAX_EMAIL_SNIPPET_LENGTH);
-          } catch {
-            /* continue without snippet */
+          } catch (e) {
+            logger.debug('Could not extract snippet for message', msg.id, e);
           }
           emails.push({
             from: msg.author || '',

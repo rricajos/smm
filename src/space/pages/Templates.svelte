@@ -87,7 +87,7 @@
 
   function suggestWithAI() {
     if (!onrequestai) return;
-    const prompt = $t('templates_ai_prompt' as any, {
+    const prompt = $t('templates_ai_prompt', {
       n: $rules.length,
       s: $rules.length !== 1 ? 's' : '',
       t: $templates.length,

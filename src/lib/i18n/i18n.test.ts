@@ -159,3 +159,127 @@ describe('t store', () => {
     expect(result).toBe('nonexistent_key_abc');
   });
 });
+
+describe('onChanged listener branches', () => {
+  let freshLocale: typeof locale;
+  let freshListeners: typeof mockOnChangedListeners;
+
+  beforeEach(async () => {
+    freshListeners = [];
+    (globalThis as Record<string, unknown>).browser = {
+      storage: {
+        local: { get: mockGet, set: mockSet },
+        onChanged: {
+          addListener: vi.fn(
+            (
+              cb: (
+                changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+                area: string,
+              ) => void,
+            ) => {
+              freshListeners.push(cb);
+            },
+          ),
+        },
+      },
+    };
+    vi.resetModules();
+    const mod = await import('./index');
+    freshLocale = mod.locale;
+    freshLocale.set('es');
+  });
+
+  it('updates locale when storage.onChanged fires with valid locale', () => {
+    freshListeners[0]({ smm_locale: { newValue: 'en' } }, 'local');
+    expect(get(freshLocale)).toBe('en');
+    freshLocale.set('es');
+  });
+
+  it('ignores onChanged for non-local area', () => {
+    freshLocale.set('es');
+    freshListeners[0]({ smm_locale: { newValue: 'en' } }, 'sync');
+    expect(get(freshLocale)).toBe('es');
+  });
+
+  it('ignores onChanged when key is not locale key', () => {
+    freshLocale.set('es');
+    freshListeners[0]({ other_key: { newValue: 'en' } }, 'local');
+    expect(get(freshLocale)).toBe('es');
+  });
+
+  it('ignores onChanged when newValue is invalid locale', () => {
+    freshLocale.set('es');
+    freshListeners[0]({ smm_locale: { newValue: 'fr' } }, 'local');
+    expect(get(freshLocale)).toBe('es');
+  });
+});
+
+describe('translate edge cases', () => {
+  it('translate with no params does not modify string', () => {
+    const result = translate('es', 'common_save');
+    expect(result).toBe(es.common_save);
+  });
+
+  it('translate with multiple params replaces all', () => {
+    const result = translate('es', 'editor_regex_invalid', { n: 3, value: 'abc(' });
+    expect(result).not.toContain('{n}');
+    expect(result).not.toContain('{value}');
+    expect(result).toContain('3');
+    expect(result).toContain('abc(');
+  });
+});
+
+describe('t store reactivity', () => {
+  it('t store updates when locale changes', () => {
+    locale.set('en');
+    const enFn = get(t);
+    expect(enFn('common_save')).toBe(en.common_save);
+
+    locale.set('es');
+    const esFn = get(t);
+    expect(esFn('common_save')).toBe(es.common_save);
+  });
+});
+
+describe('module-level initialization', () => {
+  it('registers an onChanged listener on import', async () => {
+    const listeners: typeof mockOnChangedListeners = [];
+    (globalThis as Record<string, unknown>).browser = {
+      storage: {
+        local: { get: mockGet, set: mockSet },
+        onChanged: {
+          addListener: vi.fn(
+            (
+              cb: (
+                changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+                area: string,
+              ) => void,
+            ) => {
+              listeners.push(cb);
+            },
+          ),
+        },
+      },
+    };
+    vi.resetModules();
+    await import('./index');
+    expect(listeners.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('loads locale from storage on import', async () => {
+    const localMockGet = vi.fn(async (key: string) =>
+      key in mockStorageData ? { [key]: mockStorageData[key] } : {},
+    );
+    (globalThis as Record<string, unknown>).browser = {
+      storage: {
+        local: { get: localMockGet, set: mockSet },
+        onChanged: {
+          addListener: vi.fn(),
+        },
+      },
+    };
+    vi.resetModules();
+    await import('./index');
+    expect(localMockGet).toHaveBeenCalled();
+  });
+});

@@ -496,3 +496,122 @@ describe('executeActions branch coverage', () => {
     expect(mockAppendActivityLog).toHaveBeenCalled();
   });
 });
+
+// --- Branch coverage: additional uncovered paths ---
+
+describe('getFullMessage cache behavior', () => {
+  it('returns cached result on second call with same messageId (cache hit)', async () => {
+    const fullMessage = { headers: {}, parts: [{ body: 'Cached body' }] };
+    mockMessagesGetFull.mockResolvedValue(fullMessage);
+    mockExtractBodyText.mockReturnValue('Cached body');
+
+    const rule = makeRule({
+      conditions: [{ field: 'body', operator: 'contains', value: 'Cached', caseSensitive: false }],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+    const header = makeHeader({ id: 100 });
+
+    // First call – triggers getFull and caches the result
+    const results1 = await classifyMessage(header);
+    expect(results1).toHaveLength(1);
+    expect(mockMessagesGetFull).toHaveBeenCalledTimes(1);
+
+    // Clear rules mock and set up again for second call
+    mockGetRules.mockResolvedValue([rule]);
+
+    // Second call with same messageId – should use cache
+    const results2 = await classifyMessage(header);
+    expect(results2).toHaveLength(1);
+    // getFull should NOT have been called again (cache hit)
+    expect(mockMessagesGetFull).toHaveBeenCalledTimes(1);
+  });
+
+  it('evicts oldest cache entry when exceeding MAX_CACHE_SIZE', async () => {
+    // We need to fill the cache with 200 entries, then add one more.
+    // The cache is module-level, and clearMessageCache() is called in beforeEach.
+    // We'll classify 201 unique messages with body conditions to fill and exceed the cache.
+    const fullMessage = { headers: {}, parts: [{ body: 'test body' }] };
+    mockMessagesGetFull.mockResolvedValue(fullMessage);
+    mockExtractBodyText.mockReturnValue('test body');
+
+    const rule = makeRule({
+      conditions: [{ field: 'body', operator: 'contains', value: 'test', caseSensitive: false }],
+    });
+
+    // Classify 201 unique messages to exceed MAX_CACHE_SIZE of 200
+    for (let i = 1; i <= 201; i++) {
+      mockGetRules.mockResolvedValue([rule]);
+      const header = makeHeader({ id: i });
+      await classifyMessage(header);
+    }
+
+    // All 201 calls should have gone through getFull (no cache hits since all unique)
+    expect(mockMessagesGetFull).toHaveBeenCalledTimes(201);
+
+    // Now call again with messageId=1 (should have been evicted from cache)
+    mockGetRules.mockResolvedValue([rule]);
+    const header1 = makeHeader({ id: 1 });
+    await classifyMessage(header1);
+
+    // Should require a new getFull call since id=1 was evicted
+    expect(mockMessagesGetFull).toHaveBeenCalledTimes(202);
+  });
+});
+
+describe('evaluateConditions – body field when getFullMessage returns null', () => {
+  it('returns false for body condition when getFull returns null', async () => {
+    // When getFullMessage returns null, evaluateSingleCondition returns false immediately
+    mockMessagesGetFull.mockRejectedValue(new Error('message not found'));
+
+    const rule = makeRule({
+      conditions: [
+        { field: 'body', operator: 'contains', value: 'anything', caseSensitive: false },
+      ],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+    const header = makeHeader({ id: 999 });
+
+    const results = await classifyMessage(header);
+    // Should not match because getFullMessage returned null (error path)
+    expect(results).toEqual([]);
+  });
+});
+
+describe('executeActions – autoRespond action', () => {
+  it('autoRespond action is a no-op and does not call messenger APIs', async () => {
+    const rule = makeRule({
+      actions: [{ type: 'autoRespond', templateId: 'template-abc' }],
+    });
+    const header = makeHeader();
+    const results = [{ rule, messageId: header.id }];
+
+    await executeActions(header, results);
+
+    // No messenger calls for autoRespond
+    expect(mockMessagesMove).not.toHaveBeenCalled();
+    expect(mockMessagesUpdate).not.toHaveBeenCalled();
+
+    // But activity log is still recorded
+    expect(mockAppendActivityLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actions: ['autoRespond'],
+        type: 'classification',
+      }),
+    );
+  });
+
+  it('autoRespond combined with other actions only executes the other actions', async () => {
+    const rule = makeRule({
+      actions: [{ type: 'autoRespond', templateId: 'tpl-1' }, { type: 'markRead' }],
+    });
+    const header = makeHeader();
+    const results = [{ rule, messageId: header.id }];
+
+    await executeActions(header, results);
+
+    // markRead should still be executed
+    expect(mockMessagesUpdate).toHaveBeenCalledWith(header.id, { read: true });
+    // move should not be called (no moveToFolder action)
+    expect(mockMessagesMove).not.toHaveBeenCalled();
+  });
+});

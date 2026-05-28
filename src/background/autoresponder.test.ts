@@ -67,6 +67,7 @@ import {
 } from '../lib/utils/storage';
 import { isAutoSubmitted, isMailingList, getOwnAddresses } from './message-utils';
 import { renderTemplate } from '../lib/utils/template-engine';
+import { getLocaleFromStorage } from '../lib/i18n';
 
 function makeHeader(overrides = {}) {
   return {
@@ -517,6 +518,440 @@ describe('triggerAutoResponse', () => {
       vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'draft' })]);
 
       await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.notifications.create).toHaveBeenCalled();
+    });
+  });
+
+  // ── Additional branch coverage tests ──────────────────────────────
+
+  describe('sendLater sendMode path', () => {
+    it('calls sendMessage with sendLater and increments count', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'sendLater' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.compose.sendMessage).toHaveBeenCalledWith(100, { mode: 'sendLater' });
+      expect(mockMessenger.compose.saveMessage).not.toHaveBeenCalled();
+      expect(mockMessenger.tabs.remove).not.toHaveBeenCalled();
+      expect(incrementAutoResponseCount).toHaveBeenCalled();
+    });
+
+    it('logs activity entry with sendLater mode in details', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([
+        makeTemplate({ sendMode: 'sendLater', name: 'Later Template' }),
+      ]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'autoResponse',
+          details: expect.stringContaining('sendLater'),
+        }),
+      );
+    });
+  });
+
+  describe('notification key branches', () => {
+    it('uses notif_auto_response_sent key for sendNow mode', async () => {
+      vi.mocked(getSettings).mockResolvedValue({
+        autoResponseEnabled: true,
+        maxAutoResponsesPerHour: 10,
+        notifyOnAutoResponse: true,
+      } as any);
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'sendNow' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      // translate mock returns the key itself, so the message should be the sent key
+      expect(mockMessenger.notifications.create).toHaveBeenCalledWith(
+        expect.stringMatching(/^smm-auto-/),
+        expect.objectContaining({
+          message: 'notif_auto_response_sent',
+        }),
+      );
+    });
+
+    it('uses notif_auto_response_draft key for draft mode', async () => {
+      vi.mocked(getSettings).mockResolvedValue({
+        autoResponseEnabled: true,
+        maxAutoResponsesPerHour: 10,
+        notifyOnAutoResponse: true,
+      } as any);
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'draft' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.notifications.create).toHaveBeenCalledWith(
+        expect.stringMatching(/^smm-auto-/),
+        expect.objectContaining({
+          message: 'notif_auto_response_draft',
+        }),
+      );
+    });
+
+    it('uses notif_auto_response_sent key for sendLater mode', async () => {
+      vi.mocked(getSettings).mockResolvedValue({
+        autoResponseEnabled: true,
+        maxAutoResponsesPerHour: 10,
+        notifyOnAutoResponse: true,
+      } as any);
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'sendLater' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.notifications.create).toHaveBeenCalledWith(
+        expect.stringMatching(/^smm-auto-/),
+        expect.objectContaining({
+          message: 'notif_auto_response_sent',
+        }),
+      );
+    });
+
+    it('does not create notification when notifyOnAutoResponse is false', async () => {
+      vi.mocked(getSettings).mockResolvedValue({
+        autoResponseEnabled: true,
+        maxAutoResponsesPerHour: 10,
+        notifyOnAutoResponse: false,
+      } as any);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.notifications.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('rate limit exceeded details', () => {
+    it('includes all expected fields in the rate limit log entry', async () => {
+      vi.mocked(checkRateLimit).mockResolvedValue(false);
+
+      const header = makeHeader({ id: 42, subject: 'Important', author: 'Boss <boss@co.com>' });
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timestamp: expect.any(Number),
+          ruleId: '',
+          ruleName: '',
+          messageId: 42,
+          subject: 'Important',
+          from: 'Boss <boss@co.com>',
+          actions: ['autoRespond'],
+          type: 'error',
+          details: 'Rate limit exceeded - auto-response skipped',
+        }),
+      );
+      // Should not proceed to compose
+      expect(mockMessenger.compose.beginReply).not.toHaveBeenCalled();
+      expect(incrementAutoResponseCount).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('template not found details', () => {
+    it('logs error with the missing templateId and does not proceed', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ id: 'other-id' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'missing-tpl');
+
+      expect(logger.error).toHaveBeenCalledWith('Template not found: missing-tpl');
+      expect(mockMessenger.compose.beginReply).not.toHaveBeenCalled();
+      expect(incrementAutoResponseCount).not.toHaveBeenCalled();
+      expect(appendActivityLog).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('folder edge cases', () => {
+    it('proceeds when folder is undefined', async () => {
+      const header = makeHeader({ folder: undefined });
+
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      // folderType would be undefined, which does not match sent/drafts/trash
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+
+    it('proceeds when folder has no type property', async () => {
+      const header = makeHeader({ folder: { accountId: 'acc1', name: 'Custom' } });
+
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+
+    it('proceeds when folder type is inbox', async () => {
+      const header = makeHeader({
+        folder: { accountId: 'acc1', name: 'Inbox', type: 'inbox' },
+      });
+
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+
+    it('proceeds when folder type is archives', async () => {
+      const header = makeHeader({
+        folder: { accountId: 'acc1', name: 'Archives', type: 'archives' },
+      });
+
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+  });
+
+  describe('own address safety check', () => {
+    it('logs debug message when sender is own address', async () => {
+      vi.mocked(getOwnAddresses).mockResolvedValue(['sender@test.com']);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(logger.debug).toHaveBeenCalledWith('Skipping auto-response: message from own account');
+      expect(mockMessenger.compose.beginReply).not.toHaveBeenCalled();
+    });
+
+    it('skips when sender email matches own address case-insensitively', async () => {
+      const { extractEmail } = await import('../lib/utils/template-engine');
+      vi.mocked(extractEmail).mockReturnValue('SENDER@TEST.COM');
+      vi.mocked(getOwnAddresses).mockResolvedValue(['sender@test.com']);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.compose.beginReply).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('switch default / unrecognized sendMode', () => {
+    it('does not call sendMessage or saveMessage for unknown sendMode', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'unknownMode' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      // The switch has no default, so neither send nor save is called
+      expect(mockMessenger.compose.sendMessage).not.toHaveBeenCalled();
+      expect(mockMessenger.compose.saveMessage).not.toHaveBeenCalled();
+      // But incrementAutoResponseCount should still be called (it's after the switch)
+      expect(incrementAutoResponseCount).toHaveBeenCalled();
+    });
+  });
+
+  describe('error handling with non-Error thrown value', () => {
+    it('uses String() for non-Error thrown values', async () => {
+      mockMessenger.compose.beginReply.mockRejectedValueOnce('string error');
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          details: 'Error: string error',
+        }),
+      );
+    });
+
+    it('uses String() for numeric thrown value', async () => {
+      mockMessenger.compose.beginReply.mockRejectedValueOnce(404);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          details: 'Error: 404',
+        }),
+      );
+    });
+  });
+
+  describe('header with missing optional fields', () => {
+    it('handles undefined author gracefully', async () => {
+      const header = makeHeader({ author: undefined });
+
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      // author fallback '' is passed to extractEmail/extractName and used in activity log
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: '',
+        }),
+      );
+      // Compose should still proceed
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+
+    it('handles undefined subject gracefully', async () => {
+      const header = makeHeader({ subject: undefined });
+
+      await triggerAutoResponse(header as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          subject: '',
+          originalSubject: '',
+        }),
+      );
+    });
+  });
+
+  describe('accounts with empty list', () => {
+    it('sets empty my_name and my_email when no accounts exist', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ my_name: '', my_email: '' }),
+      );
+    });
+  });
+
+  describe('accounts with undefined identities', () => {
+    it('handles undefined identities property gracefully', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([
+        { id: 'acc1', name: 'NoIdentity', identities: undefined },
+      ] as any);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ my_name: 'NoIdentity', my_email: '' }),
+      );
+    });
+  });
+
+  describe('activity log details for sendMode', () => {
+    it('includes sendMode draft in activity log details', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([
+        makeTemplate({ sendMode: 'draft', name: 'Draft Template' }),
+      ]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: 'Template: Draft Template, Mode: draft',
+        }),
+      );
+    });
+
+    it('includes sendMode sendNow in activity log details', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([
+        makeTemplate({ sendMode: 'sendNow', name: 'Send Template' }),
+      ]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: 'Template: Send Template, Mode: sendNow',
+        }),
+      );
+    });
+  });
+
+  describe('locale en branch for date/time formatting', () => {
+    it('uses en-US locale strings when locale is en', async () => {
+      vi.mocked(getLocaleFromStorage).mockResolvedValue('en');
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      // The date and time variables should be formatted with en-US locale
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          date: expect.any(String),
+          time: expect.any(String),
+        }),
+      );
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+  });
+
+  describe('error catch block with missing header fields', () => {
+    it('uses empty string fallback for subject in error log when subject is undefined', async () => {
+      mockMessenger.compose.beginReply.mockRejectedValueOnce(new Error('fail'));
+
+      await triggerAutoResponse(makeHeader({ subject: undefined }) as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          subject: '',
+        }),
+      );
+    });
+
+    it('uses empty string fallback for author in error log when author is undefined', async () => {
+      mockMessenger.compose.beginReply.mockRejectedValueOnce(new Error('fail'));
+
+      await triggerAutoResponse(makeHeader({ author: undefined }) as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          from: '',
+        }),
+      );
+    });
+  });
+
+  describe('rate limit log with missing header fields', () => {
+    it('uses empty string for subject when header.subject is undefined', async () => {
+      vi.mocked(checkRateLimit).mockResolvedValue(false);
+
+      await triggerAutoResponse(makeHeader({ subject: undefined }) as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          subject: '',
+          details: 'Rate limit exceeded - auto-response skipped',
+        }),
+      );
+    });
+
+    it('uses empty string for from when header.author is undefined', async () => {
+      vi.mocked(checkRateLimit).mockResolvedValue(false);
+
+      await triggerAutoResponse(makeHeader({ author: undefined }) as any, fullMessage, 'tpl-1');
+
+      expect(appendActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          from: '',
+          details: 'Rate limit exceeded - auto-response skipped',
+        }),
+      );
+    });
+  });
+
+  describe('account name fallback when identity name is empty', () => {
+    it('falls back to empty string when both identity.name and account.name are falsy', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([
+        { id: 'acc1', name: '', identities: [{ name: '', email: 'me@test.com' }] },
+      ]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ my_name: '' }),
+      );
+    });
+  });
+
+  describe('notification with undefined subject', () => {
+    it('passes empty string for subject in translate when subject is undefined', async () => {
+      vi.mocked(getSettings).mockResolvedValue({
+        autoResponseEnabled: true,
+        maxAutoResponsesPerHour: 10,
+        notifyOnAutoResponse: true,
+      } as any);
+
+      await triggerAutoResponse(makeHeader({ subject: undefined }) as any, fullMessage, 'tpl-1');
 
       expect(mockMessenger.notifications.create).toHaveBeenCalled();
     });

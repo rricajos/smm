@@ -100,3 +100,52 @@ describe('sanitizeEmailContent', () => {
     expect(sanitizeEmailContent('')).toBe('');
   });
 });
+
+// --- Additional extractJSON branch coverage ---
+
+describe('extractJSON – additional branches', () => {
+  it('extracts JSON from code block without json prefix (plain ```)', () => {
+    const text = 'Some preamble:\n```\n{"data": 123}\n```\nTrailing text.';
+    const result = extractJSON(text);
+    expect(result).toEqual({ data: 123 });
+  });
+
+  it('throws when code block contains malformed JSON and no valid braces outside', () => {
+    // Code block is matched but JSON.parse fails; no valid braces to fall back on
+    const text = '```\n{invalid json content}\n```';
+    expect(() => extractJSON(text)).toThrow();
+  });
+
+  it('throws when text has braces but contained JSON is malformed', () => {
+    const text = 'Here is {not: valid, json:} and nothing else';
+    expect(() => extractJSON(text)).toThrow();
+  });
+
+  it('falls through code block to brace matching when code block JSON is invalid', () => {
+    // Code block has malformed JSON but text after code block has a valid JSON brace block
+    // The regex matches code block, parse fails, then brace matching finds the outer JSON
+    const text = '```\nnot json\n```\n{"recovered": true}';
+    const result = extractJSON(text);
+    expect(result).toEqual({ recovered: true });
+  });
+
+  it('throws when only opening brace exists without closing brace', () => {
+    const text = 'This has { but no closing brace';
+    expect(() => extractJSON(text)).toThrow();
+  });
+
+  it('throws when closing brace comes before opening brace', () => {
+    const text = 'This has } before { which is wrong';
+    expect(() => extractJSON(text)).toThrow();
+  });
+
+  it('extracts JSON from text with no code blocks using brace matching', () => {
+    const text = 'The AI said: {"rules": [{"name": "test"}]} - end of response';
+    const result = extractJSON(text);
+    expect(result).toEqual({ rules: [{ name: 'test' }] });
+  });
+
+  it('passes locale parameter for error message on failure', () => {
+    expect(() => extractJSON('no json here', 'en')).toThrow();
+  });
+});

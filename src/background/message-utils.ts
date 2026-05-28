@@ -2,6 +2,8 @@
 
 /// <reference path="../lib/utils/messenger.d.ts" />
 
+import { logger } from '../lib/utils/logger';
+
 export interface FolderWithAccount extends messenger.folders.MailFolder {
   accountName: string;
 }
@@ -41,7 +43,8 @@ export async function hasAttachments(messageId: number): Promise<boolean> {
   try {
     const attachments = await messenger.messages.listAttachments(messageId);
     return attachments.length > 0;
-  } catch {
+  } catch (e) {
+    logger.debug('Could not check attachments for message', messageId, e);
     return false;
   }
 }
@@ -85,7 +88,8 @@ export async function getOwnAddresses(): Promise<string[]> {
       }
     }
     return addresses;
-  } catch {
+  } catch (e) {
+    logger.warn('Could not fetch own addresses', e);
     return [];
   }
 }

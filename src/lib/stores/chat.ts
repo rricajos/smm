@@ -10,6 +10,7 @@ import type {
   ChatMessage,
 } from '../services/openai';
 import { STORAGE_KEYS } from '../utils/constants';
+import { logger } from '../utils/logger';
 
 /// <reference path="../utils/messenger.d.ts" />
 
@@ -42,6 +43,13 @@ export interface ChatConversation {
 interface ChatStoreState {
   conversations: ChatConversation[];
   activeId: string;
+}
+
+interface PersistedChatData {
+  conversations?: ChatConversation[];
+  activeId?: string;
+  displayMessages?: StoredDisplayMessage[];
+  apiHistory?: ChatMessage[];
 }
 
 function generateId(): string {
@@ -77,14 +85,14 @@ function createChatStore() {
       browser.storage.local
         .get(STORAGE_KEYS.CHAT_HISTORY)
         .then((result: Record<string, unknown>) => {
-          const saved = result[STORAGE_KEYS.CHAT_HISTORY] as any;
+          const saved = result[STORAGE_KEYS.CHAT_HISTORY] as PersistedChatData | undefined;
           if (saved) {
             if (saved.conversations && saved.activeId) {
               // Ensure createdFolderMap exists on each conversation
               for (const conv of saved.conversations) {
                 if (!conv.createdFolderMap) conv.createdFolderMap = {};
               }
-              set(saved);
+              set({ conversations: saved.conversations, activeId: saved.activeId });
             } else if (saved.displayMessages || saved.apiHistory) {
               // Old single-conversation format — migrate
               const migrated = createEmptyConversation();
@@ -118,8 +126,8 @@ function createChatStore() {
       browser.storage.local.set({
         [STORAGE_KEYS.CHAT_HISTORY]: JSON.parse(JSON.stringify(state)),
       });
-    } catch {
-      /* ignore */
+    } catch (e) {
+      logger.debug('Could not persist chat state', e);
     }
   }
 

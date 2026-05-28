@@ -77,7 +77,8 @@ async function getFullMessage(messageId: number): Promise<messenger.messages.Mes
     }
     fullMessageCache.set(messageId, full);
     return full;
-  } catch {
+  } catch (e) {
+    logger.debug('Could not fetch full message', messageId, e);
     return null;
   }
 }
