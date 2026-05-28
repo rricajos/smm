@@ -6,14 +6,15 @@
   import { t } from '../../lib/i18n';
   import type { Translations } from '../../lib/i18n/types';
   import Button from '../../lib/components/Button.svelte';
-  import Modal from '../../lib/components/Modal.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
   import { getErrorMessage } from '../../lib/utils/error';
+  import { SvelteMap } from 'svelte/reactivity';
   import type { FolderInfo } from '../../lib/services/openai';
 
   /// <reference path="../../lib/utils/messenger.d.ts" />
 
   let activeRules = $derived($rules.filter((r) => r.enabled).length);
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- ephemeral Date used only for numeric computation
   let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
   let todayClassifications = $derived(
     $activity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
@@ -36,10 +37,11 @@
       'day_abbr_sat',
     ];
     for (let i = 6; i >= 0; i--) {
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity -- ephemeral Dates for computation only
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const start = new Date(d).setHours(0, 0, 0, 0);
-      const end = new Date(d).setHours(23, 59, 59, 999);
+      const start = new Date(d).setHours(0, 0, 0, 0); // eslint-disable-line svelte/prefer-svelte-reactivity
+      const end = new Date(d).setHours(23, 59, 59, 999); // eslint-disable-line svelte/prefer-svelte-reactivity
       days.push({
         label: $t(dayKeys[d.getDay()]),
         classifications: $activity.filter(
@@ -71,7 +73,7 @@
 
   // Per-rule stats
   let ruleStats = $derived(() => {
-    const stats = new Map<string, { name: string; count: number }>();
+    const stats = new SvelteMap<string, { name: string; count: number }>();
     for (const entry of filteredForStats) {
       if (entry.ruleId) {
         const existing = stats.get(entry.ruleId);
@@ -90,7 +92,7 @@
 
   // Top senders from activity
   let topSenders = $derived(() => {
-    const senders = new Map<string, number>();
+    const senders = new SvelteMap<string, number>();
     for (const entry of filteredForStats) {
       if (entry.from) {
         senders.set(entry.from, (senders.get(entry.from) || 0) + 1);
@@ -132,7 +134,7 @@
         limit: 100,
       });
       processResult = result;
-    } catch (err: unknown) {
+    } catch {
       processResult = { processed: 0, matched: 0, errors: 1, details: [] };
     } finally {
       processing = false;
@@ -340,7 +342,7 @@
     <div class="weekly-chart">
       <h3>{$t('dashboard_weekly_activity')}</h3>
       <div class="chart-bars">
-        {#each weeklyData() as day}
+        {#each weeklyData() as day (day.label)}
           <div class="chart-col">
             <div class="chart-bar-wrapper">
               {#if day.responses > 0}
@@ -392,7 +394,7 @@
         </select>
       </div>
       <div class="stats-list">
-        {#each ruleStats() as stat, i}
+        {#each ruleStats() as stat, i (stat.id)}
           <div class="stat-row">
             <span class="stat-rank">#{i + 1}</span>
             <span class="stat-name" title={stat.name}>{stat.name}</span>
@@ -416,7 +418,7 @@
         <h3>{$t('dashboard_top_senders')}</h3>
       </div>
       <div class="stats-list">
-        {#each topSenders() as sender, i}
+        {#each topSenders() as sender, i (sender.from)}
           <div class="stat-row">
             <span class="stat-rank">#{i + 1}</span>
             <span class="stat-name" title={sender.from}>{sender.from}</span>
@@ -491,12 +493,12 @@
                 </tr>
               </thead>
               <tbody>
-                {#each processResult.details as d}
+                {#each processResult.details as d, i (i)}
                   <tr>
                     <td class="truncate" title={d.subject}>{d.subject}</td>
                     <td class="truncate" title={d.from}>{d.from}</td>
                     <td>
-                      {#each d.rules as r}
+                      {#each d.rules as r (r)}
                         <span class="rule-badge">{r}</span>
                       {/each}
                     </td>
@@ -529,7 +531,7 @@
         <p class="empty">{$t('dashboard_loading_folders')}</p>
       {:else}
         <div class="folder-list">
-          {#each allFolders as folder}
+          {#each allFolders as folder (folder.id)}
             <div class="folder-item">
               {#if renamingId === folder.id}
                 <!-- svelte-ignore a11y_autofocus -->
@@ -580,7 +582,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each recentActivity as entry}
+          {#each recentActivity as entry (entry.timestamp)}
             <tr class="type-{entry.type}">
               <td>{formatTime(entry.timestamp)}</td>
               <td>

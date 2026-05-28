@@ -56,6 +56,7 @@ vi.mock('./rule-testing', () => ({
 
 // Stub messenger global
 let onMessageCallback: (msg: unknown, sender: unknown) => Promise<unknown>;
+let onNewMailCallback: (folder: unknown, messageList: unknown) => Promise<void>;
 
 vi.stubGlobal('messenger', {
   spacesToolbar: {
@@ -64,12 +65,15 @@ vi.stubGlobal('messenger', {
   },
   messages: {
     get: vi.fn().mockResolvedValue({ id: 1, subject: 'Test', author: 'a@b.com' }),
+    getFull: vi.fn().mockResolvedValue({ contentType: 'text/plain', body: 'body' }),
     tags: {
       list: vi.fn().mockResolvedValue([]),
       create: vi.fn().mockResolvedValue(undefined),
     },
     onNewMailReceived: {
-      addListener: vi.fn(),
+      addListener: vi.fn((cb: (folder: unknown, messageList: unknown) => Promise<void>) => {
+        onNewMailCallback = cb;
+      }),
     },
   },
   runtime: {
@@ -282,5 +286,263 @@ describe('background message handler', () => {
   it('unknown message type returns error', async () => {
     const result = await onMessageCallback({ type: 'UNKNOWN_TYPE' }, {});
     expect(result).toEqual({ error: 'Unknown message type' });
+  });
+
+  // --- Error paths ---
+
+  it('GET_TAGS returns [] when tags.list throws', async () => {
+    (messenger.messages.tags.list as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('fail'),
+    );
+    const result = await onMessageCallback({ type: 'GET_TAGS' }, {});
+    expect(result).toEqual([]);
+  });
+
+  it('GET_DISPLAYED_MESSAGE returns null when tabs.query throws', async () => {
+    (messenger.tabs.query as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
+    const result = await onMessageCallback({ type: 'GET_DISPLAYED_MESSAGE' }, {});
+    expect(result).toBeNull();
+  });
+
+  it('GET_ACCOUNT_INFO returns [] when accounts.list throws', async () => {
+    (messenger.accounts.list as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
+    const result = await onMessageCallback({ type: 'GET_ACCOUNT_INFO' }, {});
+    expect(result).toEqual([]);
+  });
+
+  it('OPEN_SPACE returns success:false when clickButton fails', async () => {
+    (messenger.spacesToolbar.clickButton as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('fail'),
+    );
+    const result = await onMessageCallback({ type: 'OPEN_SPACE' }, {});
+    expect(result).toEqual({ success: false });
+  });
+});
+
+describe('onNewMailReceived', () => {
+  it('processes messages when classificationEnabled is true', async () => {
+    const { classifyMessage } = await import('./classifier');
+
+    await onNewMailCallback(
+      { accountId: 'a1', name: 'Inbox' },
+      {
+        messages: [
+          { id: 1, subject: 'Test1' },
+          { id: 2, subject: 'Test2' },
+        ],
+      },
+    );
+
+    expect(classifyMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips processing when classificationEnabled is false', async () => {
+    const { getSettings } = await import('../lib/utils/storage');
+    vi.mocked(getSettings).mockResolvedValueOnce({
+      classificationEnabled: false,
+      autoResponseEnabled: true,
+      logRetentionDays: 30,
+      notifyOnClassification: false,
+      notifyOnAutoResponse: false,
+      processExistingOnStartup: false,
+      maxAutoResponsesPerHour: 10,
+      aiProvider: 'openrouter',
+      openaiApiKey: '',
+      openaiModel: '',
+      customBaseUrl: '',
+      aiConsentAccepted: false,
+    });
+    const { classifyMessage } = await import('./classifier');
+
+    await onNewMailCallback(
+      { accountId: 'a1', name: 'Inbox' },
+      { messages: [{ id: 1, subject: 'Test' }] },
+    );
+
+    expect(classifyMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('processMessage internals', () => {
+  it('increments badge counter when classification matches', async () => {
+    const { classifyMessage, executeActions } = await import('./classifier');
+    vi.mocked(classifyMessage).mockResolvedValueOnce([
+      {
+        rule: {
+          id: 'r1',
+          name: 'R',
+          actions: [],
+          conditions: [],
+          conditionLogic: 'all' as const,
+          enabled: true,
+          stopProcessing: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        messageId: 1,
+      },
+    ]);
+    vi.mocked(executeActions).mockResolvedValueOnce(undefined);
+
+    await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(messenger.storage.local.get).toHaveBeenCalledWith('smm_unread_classifications');
+    expect(messenger.storage.local.set).toHaveBeenCalledWith({ smm_unread_classifications: 1 });
+  });
+
+  it('handles badge counter storage error gracefully', async () => {
+    const { classifyMessage, executeActions } = await import('./classifier');
+    const { logger } = await import('../lib/utils/logger');
+    vi.mocked(classifyMessage).mockResolvedValueOnce([
+      {
+        rule: {
+          id: 'r1',
+          name: 'R',
+          actions: [],
+          conditions: [],
+          conditionLogic: 'all' as const,
+          enabled: true,
+          stopProcessing: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        messageId: 1,
+      },
+    ]);
+    vi.mocked(executeActions).mockResolvedValueOnce(undefined);
+    (messenger.storage.local.get as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('storage fail'),
+    );
+
+    const result = await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(result).toEqual({ success: true });
+    expect(logger.error).toHaveBeenCalledWith('Badge counter update failed', expect.any(Error));
+  });
+
+  it('triggers autoResponse for autoRespond actions', async () => {
+    const { classifyMessage, executeActions } = await import('./classifier');
+    const { triggerAutoResponse } = await import('./autoresponder');
+    vi.mocked(classifyMessage).mockResolvedValueOnce([
+      {
+        rule: {
+          id: 'r1',
+          name: 'R',
+          conditions: [],
+          conditionLogic: 'all' as const,
+          actions: [{ type: 'autoRespond', templateId: 't1' }],
+          enabled: true,
+          stopProcessing: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        messageId: 1,
+      },
+    ]);
+    vi.mocked(executeActions).mockResolvedValueOnce(undefined);
+
+    await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(messenger.messages.getFull).toHaveBeenCalledWith(1);
+    expect(triggerAutoResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1 }),
+      expect.anything(),
+      't1',
+    );
+  });
+
+  it('handles getFull failure gracefully during autoRespond', async () => {
+    const { classifyMessage, executeActions } = await import('./classifier');
+    const { triggerAutoResponse } = await import('./autoresponder');
+    const { logger } = await import('../lib/utils/logger');
+    vi.mocked(classifyMessage).mockResolvedValueOnce([
+      {
+        rule: {
+          id: 'r1',
+          name: 'R',
+          conditions: [],
+          conditionLogic: 'all' as const,
+          actions: [{ type: 'autoRespond', templateId: 't1' }],
+          enabled: true,
+          stopProcessing: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        messageId: 1,
+      },
+    ]);
+    vi.mocked(executeActions).mockResolvedValueOnce(undefined);
+    (messenger.messages.getFull as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('getFull fail'),
+    );
+
+    await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Could not fetch full message for auto-respond',
+      expect.any(Error),
+    );
+    expect(triggerAutoResponse).toHaveBeenCalledWith(expect.anything(), null, 't1');
+  });
+
+  it('creates notification when notifyOnClassification is true', async () => {
+    const { classifyMessage, executeActions } = await import('./classifier');
+    const { getSettings } = await import('../lib/utils/storage');
+    vi.mocked(classifyMessage).mockResolvedValueOnce([
+      {
+        rule: {
+          id: 'r1',
+          name: 'R',
+          actions: [],
+          conditions: [],
+          conditionLogic: 'all' as const,
+          enabled: true,
+          stopProcessing: false,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        messageId: 1,
+      },
+    ]);
+    vi.mocked(executeActions).mockResolvedValueOnce(undefined);
+    vi.mocked(getSettings).mockResolvedValueOnce({
+      classificationEnabled: true,
+      autoResponseEnabled: true,
+      logRetentionDays: 30,
+      notifyOnClassification: true,
+      notifyOnAutoResponse: false,
+      processExistingOnStartup: false,
+      maxAutoResponsesPerHour: 10,
+      aiProvider: 'openrouter',
+      openaiApiKey: '',
+      openaiModel: '',
+      customBaseUrl: '',
+      aiConsentAccepted: false,
+    });
+
+    await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(messenger.notifications.create).toHaveBeenCalledWith(
+      expect.stringContaining('smm-classify-'),
+      expect.objectContaining({ type: 'basic', title: 'Smart Mail Manager' }),
+    );
+  });
+
+  it('does not create notification when no matches', async () => {
+    // Default mock returns [] for classifyMessage
+    await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(messenger.notifications.create).not.toHaveBeenCalled();
+  });
+
+  it('catches processMessage errors and logs them', async () => {
+    const { classifyMessage } = await import('./classifier');
+    const { logger } = await import('../lib/utils/logger');
+    vi.mocked(classifyMessage).mockRejectedValueOnce(new Error('classify fail'));
+
+    const result = await onMessageCallback({ type: 'CLASSIFY_MESSAGE', messageId: 1 }, {});
+
+    expect(result).toEqual({ success: true });
+    expect(logger.error).toHaveBeenCalledWith('Error processing message', expect.any(Error));
   });
 });

@@ -209,4 +209,91 @@ describe('testSingleRule', () => {
     expect(result.processed).toBe(0);
     expect(result.matched).toBe(0);
   });
+
+  it('skips accounts without inbox folder', async () => {
+    mockMessenger.accounts.list.mockResolvedValue([
+      { id: 'acc1', name: 'NoInbox', rootFolder: { id: 'root1' } },
+    ]);
+    mockMessenger.folders.getSubFolders.mockResolvedValue([
+      { id: 'sent', type: 'sent', name: 'Sent' },
+    ]);
+
+    const result = await testSingleRule(fakeRule, 50);
+    expect(result.processed).toBe(0);
+    expect(mockMessenger.messages.list).not.toHaveBeenCalled();
+  });
+
+  it('paginates when page has continuation id', async () => {
+    setupInbox([]);
+    // Override list to return paginated results
+    mockMessenger.messages.list.mockResolvedValue({
+      id: 'page1',
+      messages: [{ id: 1, author: 'test@t.com', subject: 'S1' }],
+    });
+    mockMessenger.messages.continueList.mockResolvedValue({
+      messages: [{ id: 2, author: 'test@t.com', subject: 'S2' }],
+    });
+    vi.mocked(classifyMessage)
+      .mockResolvedValueOnce([{ rule: fakeRule as any, messageId: 1 }])
+      .mockResolvedValueOnce([]);
+
+    const result = await testSingleRule(fakeRule, 50);
+    expect(result.processed).toBe(2);
+    expect(result.matched).toBe(1);
+    expect(mockMessenger.messages.continueList).toHaveBeenCalledWith('page1');
+  });
+
+  it('silently handles classifyMessage errors', async () => {
+    setupInbox([{ id: 1, author: 'test@t.com', subject: 'S1' }]);
+    vi.mocked(classifyMessage).mockRejectedValueOnce(new Error('classify fail'));
+
+    const result = await testSingleRule(fakeRule, 50);
+    expect(result.processed).toBe(1);
+    expect(result.matched).toBe(0);
+    // No error count like processExisting - just silently skips
+  });
+});
+
+describe('processExisting branch coverage', () => {
+  it('skips accounts without inbox folder', async () => {
+    mockMessenger.accounts.list.mockResolvedValue([
+      { id: 'acc1', name: 'NoInbox', rootFolder: { id: 'root1' } },
+    ]);
+    mockMessenger.folders.getSubFolders.mockResolvedValue([
+      { id: 'drafts', type: 'drafts', name: 'Drafts' },
+    ]);
+
+    const result = await processExisting(50);
+    expect(result.processed).toBe(0);
+    expect(mockMessenger.messages.list).not.toHaveBeenCalled();
+  });
+
+  it('paginates when page has continuation id', async () => {
+    mockMessenger.accounts.list.mockResolvedValue([
+      { id: 'acc1', name: 'Work', rootFolder: { id: 'root1' } },
+    ]);
+    mockMessenger.folders.getSubFolders.mockResolvedValue([
+      { id: 'inbox1', type: 'inbox', name: 'Inbox' },
+    ]);
+    mockMessenger.messages.list.mockResolvedValue({
+      id: 'page1',
+      messages: [{ id: 1, author: 'a@t.com', subject: 'S1' }],
+    });
+    mockMessenger.messages.continueList.mockResolvedValue({
+      messages: [{ id: 2, author: 'b@t.com', subject: 'S2' }],
+    });
+
+    const result = await processExisting(50);
+    expect(result.processed).toBe(2);
+    expect(mockMessenger.messages.continueList).toHaveBeenCalledWith('page1');
+  });
+
+  it('returns error on top-level failure', async () => {
+    mockMessenger.accounts.list.mockRejectedValue(new Error('network error'));
+
+    const result = await processExisting(50);
+    expect(result.processed).toBe(0);
+    expect(result.error).toBe('network error');
+    expect(clearMessageCache).toHaveBeenCalled();
+  });
 });

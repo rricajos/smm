@@ -213,4 +213,94 @@ describe('getFolderTree', () => {
     expect(result[0].folders[0].totalMessages).toBe(7);
     expect(result[0].folders[0].unreadMessages).toBe(2);
   });
+
+  it('returns empty array on top-level error', async () => {
+    mockMessenger.accounts.list.mockRejectedValue(new Error('crash'));
+    const result = await getFolderTree();
+    expect(result).toEqual([]);
+  });
+
+  it('uses composite ID when folder.id is empty', async () => {
+    mockMessenger.accounts.list.mockResolvedValue([
+      { id: 'acc1', name: 'Main', rootFolder: { id: 'root1' } },
+    ]);
+    mockMessenger.folders.getSubFolders
+      .mockResolvedValueOnce([
+        { id: '', accountId: 'acc1', name: 'Inbox', path: 'Inbox', type: 'inbox' },
+      ])
+      .mockResolvedValue([]);
+    mockMessenger.folders.getFolderInfo.mockResolvedValue({
+      totalMessageCount: 5,
+      unreadMessageCount: 1,
+    });
+
+    const result = await getFolderTree();
+    expect(result[0].folders[0].id).toBe('acc1:/Inbox');
+  });
+
+  it('defaults type to normal when undefined', async () => {
+    mockMessenger.accounts.list.mockResolvedValue([
+      { id: 'acc1', name: 'Main', rootFolder: { id: 'root1' } },
+    ]);
+    mockMessenger.folders.getSubFolders
+      .mockResolvedValueOnce([{ id: 'f1', accountId: 'acc1', name: 'Custom', path: 'Custom' }])
+      .mockResolvedValue([]);
+    mockMessenger.folders.getFolderInfo.mockResolvedValue({
+      totalMessageCount: 0,
+      unreadMessageCount: 0,
+    });
+
+    const result = await getFolderTree();
+    expect(result[0].folders[0].type).toBe('normal');
+  });
+});
+
+describe('renameFolder branch coverage', () => {
+  it('uses composite ID when renamed folder has empty id', async () => {
+    mockMessenger.folders.rename.mockResolvedValue({
+      id: '',
+      accountId: 'acc1',
+      name: 'Renamed',
+      path: 'Inbox/Renamed',
+    });
+    const result = await renameFolder('folder-1', 'Renamed');
+    expect(result.success).toBe(true);
+    expect(result.folder!.id).toBe('acc1:/Inbox/Renamed');
+  });
+});
+
+describe('moveFolderContents branch coverage', () => {
+  it('returns error for missing destFolderId', async () => {
+    const result = await moveFolderContents('src', '', false);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('required');
+  });
+
+  it('handles delete source error gracefully', async () => {
+    mockMessenger.messages.list.mockResolvedValue({ messages: [] });
+    mockMessenger.folders.delete.mockRejectedValue(new Error('cannot delete'));
+
+    const result = await moveFolderContents('src', 'dest', true);
+    // Still returns success despite delete failure
+    expect(result.success).toBe(true);
+    expect(result.movedCount).toBe(0);
+  });
+
+  it('returns error on top-level failure', async () => {
+    mockMessenger.messages.list.mockRejectedValue(new Error('list failed'));
+
+    const result = await moveFolderContents('src', 'dest', false);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('list failed');
+  });
+});
+
+describe('createFolder branch coverage', () => {
+  it('uses translate fallback when error message is empty', async () => {
+    mockMessenger.folders.create.mockRejectedValue(new Error(''));
+    const result = await createFolder('parent', 'Folder');
+    expect(result.success).toBe(false);
+    // getErrorMessage returns '' for empty message, so fallback translation is used
+    expect(result.error).toBe('bg_error_create_folder');
+  });
 });

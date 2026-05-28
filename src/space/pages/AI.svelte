@@ -1,7 +1,6 @@
 <script lang="ts">
   /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Rule } from '../../types/rules';
-  import type { ResponseTemplate } from '../../types/templates';
   import { rules } from '../../lib/stores/rules';
   import { templates } from '../../lib/stores/templates';
   import { settings } from '../../lib/stores/settings';
@@ -30,12 +29,11 @@
     AI_PROVIDERS,
   } from '../../lib/utils/constants';
   import type { AiProvider } from '../../types/settings';
-  import { t, locale } from '../../lib/i18n';
+  import { t } from '../../lib/i18n';
   import {
     chatStore,
     activeConversation,
     allConversations,
-    storeReady,
     type ChatConversation,
   } from '../../lib/stores/chat';
   import Toast from '../../lib/components/Toast.svelte';
@@ -774,9 +772,9 @@
             onchange={(e) =>
               settings.update({ openaiModel: (e.target as HTMLSelectElement).value })}
           >
-            {#each openrouterProviders as provider}
+            {#each openrouterProviders as provider (provider)}
               <optgroup label={provider}>
-                {#each OPENAI_MODELS.filter((m) => m.provider === provider) as model}
+                {#each OPENAI_MODELS.filter((m) => m.provider === provider) as model (model.id)}
                   <option value={model.id}>{model.label}</option>
                 {/each}
               </optgroup>
@@ -798,7 +796,7 @@
             onchange={(e) =>
               settings.update({ openaiModel: (e.target as HTMLSelectElement).value })}
           >
-            {#each getDirectModels($settings.aiProvider) as model}
+            {#each getDirectModels($settings.aiProvider) as model (model.id)}
               <option value={model.id}>{model.label}</option>
             {/each}
           </select>

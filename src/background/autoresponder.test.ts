@@ -388,4 +388,137 @@ describe('triggerAutoResponse', () => {
       );
     });
   });
+
+  // ── Branch coverage: uncovered paths ────────────────────────────────
+
+  describe('fullMessage null paths', () => {
+    it('skips safety checks when fullMessage is null', async () => {
+      await triggerAutoResponse(makeHeader() as any, null, 'tpl-1');
+
+      // Safety checks should not be called
+      expect(isAutoSubmitted).not.toHaveBeenCalled();
+      expect(isMailingList).not.toHaveBeenCalled();
+      // But compose should still proceed
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalled();
+    });
+
+    it('uses empty bodyText when fullMessage is null', async () => {
+      await triggerAutoResponse(makeHeader() as any, null, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          original_body: '',
+          original_body_snippet: '',
+        }),
+      );
+    });
+  });
+
+  describe('account fallback paths', () => {
+    it('falls back to accounts[0] when folder.accountId does not match', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([
+        {
+          id: 'other-acc',
+          name: 'Other',
+          identities: [{ name: 'Other Me', email: 'other@test.com' }],
+        },
+      ]);
+
+      await triggerAutoResponse(
+        makeHeader({ folder: { accountId: 'non-existent', name: 'Inbox', type: 'inbox' } }) as any,
+        fullMessage,
+        'tpl-1',
+      );
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ my_name: 'Other Me', my_email: 'other@test.com' }),
+      );
+    });
+
+    it('handles empty identities gracefully', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([
+        { id: 'acc1', name: 'AccountName', identities: [] },
+      ]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ my_name: 'AccountName', my_email: '' }),
+      );
+    });
+
+    it('handles accounts.list error gracefully', async () => {
+      mockMessenger.accounts.list.mockRejectedValue(new Error('accounts fail'));
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      // Should still proceed with empty name/email
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ my_name: '', my_email: '' }),
+      );
+    });
+
+    it('uses myEmail when recipients is empty', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([
+        { id: 'acc1', name: 'Main', identities: [{ name: 'Me', email: 'me@test.com' }] },
+      ]);
+
+      await triggerAutoResponse(makeHeader({ recipients: [] }) as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ to: 'me@test.com' }),
+      );
+    });
+
+    it('uses myEmail when recipients is undefined', async () => {
+      mockMessenger.accounts.list.mockResolvedValue([
+        { id: 'acc1', name: 'Main', identities: [{ name: 'Me', email: 'me@test.com' }] },
+      ]);
+
+      await triggerAutoResponse(makeHeader({ recipients: undefined }) as any, fullMessage, 'tpl-1');
+
+      expect(renderTemplate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ to: 'me@test.com' }),
+      );
+    });
+  });
+
+  describe('template format', () => {
+    it('uses body property for HTML template (isPlainText: false)', async () => {
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ isPlainText: false })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.compose.beginReply).toHaveBeenCalledWith(
+        1,
+        'replyToSender',
+        expect.objectContaining({ isPlainText: false }),
+      );
+      // body (not plainTextBody) should be set
+      const callArgs = mockMessenger.compose.beginReply.mock.calls[0] as any[];
+      expect(callArgs[2]?.body).toBeDefined();
+      expect(callArgs[2]?.plainTextBody).toBeUndefined();
+    });
+  });
+
+  describe('notification', () => {
+    it('uses draft notification key for draft sendMode', async () => {
+      vi.mocked(getSettings).mockResolvedValue({
+        autoResponseEnabled: true,
+        maxAutoResponsesPerHour: 10,
+        notifyOnAutoResponse: true,
+      } as any);
+      vi.mocked(getTemplates).mockResolvedValue([makeTemplate({ sendMode: 'draft' })]);
+
+      await triggerAutoResponse(makeHeader() as any, fullMessage, 'tpl-1');
+
+      expect(mockMessenger.notifications.create).toHaveBeenCalled();
+    });
+  });
 });

@@ -8,7 +8,7 @@
     TemplateProposal,
     RuleConsolidationProposal,
   } from '../../lib/services/openai';
-  import type { ChatConversation, StoredDisplayMessage } from '../../lib/stores/chat';
+  import type { ChatConversation } from '../../lib/stores/chat';
   import { renderMarkdown } from '../../lib/utils/markdown';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
@@ -146,7 +146,7 @@
   </div>
   {#if showConversationList}
     <div class="conversation-list">
-      {#each conversations as conv}
+      {#each conversations as conv (conv.id)}
         <div class="conv-item" class:active={conv.id === currentConversation.id}>
           <button class="conv-item-btn" onclick={() => handleSwitchConversation(conv.id)}>
             <span class="conv-item-title">{conv.title}</span>
@@ -174,7 +174,7 @@
       <ChatWelcome onaction={(text) => onsend(text)} />
     {:else}
       <div class="chat-messages" bind:this={chatContainerEl} role="log" aria-live="polite">
-        {#each chatMessages as msg, msgIdx}
+        {#each chatMessages as msg, msgIdx (msgIdx)}
           <div class="chat-bubble {msg.role}">
             <div class="bubble-label">
               {msg.role === 'assistant' ? $t('ai_bubble_assistant') : $t('ai_bubble_user')}

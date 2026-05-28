@@ -87,7 +87,7 @@
           <p class="conflict-desc">{$t('import_conflicts_desc')}</p>
 
           {#if validation.conflicts.rules.length > 0 && importRules}
-            {#each validation.conflicts.rules as conflict}
+            {#each validation.conflicts.rules as conflict (conflict.imported.id)}
               <div class="conflict-item">
                 <span class="conflict-name"
                   >{$t('import_conflict_rule', { name: conflict.imported.name })}</span
@@ -102,7 +102,7 @@
           {/if}
 
           {#if validation.conflicts.templates.length > 0 && importTemplates}
-            {#each validation.conflicts.templates as conflict}
+            {#each validation.conflicts.templates as conflict (conflict.imported.id)}
               <div class="conflict-item">
                 <span class="conflict-name"
                   >{$t('import_conflict_template', { name: conflict.imported.name })}</span

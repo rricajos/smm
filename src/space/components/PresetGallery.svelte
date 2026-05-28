@@ -113,7 +113,7 @@
         >
           {$t('preset_all')}
         </button>
-        {#each PRESET_CATEGORIES as cat}
+        {#each PRESET_CATEGORIES as cat (cat.key)}
           <button
             class="cat-tab"
             class:active={selectedCategory === cat.key}
@@ -125,7 +125,7 @@
       </div>
 
       <div class="preset-grid">
-        {#each filteredPresets as preset}
+        {#each filteredPresets as preset (preset.name)}
           <button class="preset-card" onclick={() => selectPreset(preset)}>
             <span class="preset-icon">{preset.icon}</span>
             <span class="preset-name">{preset.name}</span>
@@ -140,7 +140,7 @@
 
       <div class="preset-conditions">
         <h4>{$t('preset_conditions')}</h4>
-        {#each selectedPreset.conditions as cond}
+        {#each selectedPreset.conditions as cond, i (i)}
           <div class="cond-preview">
             <span class="cond-field">{cond.field}</span>
             <span class="cond-op">{cond.operator}</span>
@@ -157,7 +157,7 @@
       <div class="preset-actions-preview">
         <h4>{$t('preset_actions')}</h4>
         <ul>
-          {#each selectedPreset.actions as action}
+          {#each selectedPreset.actions as action, i (i)}
             <li>
               {#if action.type === 'moveToFolder'}{$t('preset_move_to_folder')}{/if}
               {#if action.type === 'addTag'}{$t('preset_add_tag')}{/if}
@@ -176,7 +176,7 @@
           <label for="preset-folder">{$t('preset_select_folder')}</label>
           <select id="preset-folder" bind:value={configFolderId}>
             <option value="">{$t('preset_select_folder_option')}</option>
-            {#each folders as f}
+            {#each folders as f (f.id)}
               <option value={f.id}>{f.path || f.name}</option>
             {/each}
           </select>
@@ -188,7 +188,7 @@
           <label for="preset-tag">{$t('preset_select_tag')}</label>
           <select id="preset-tag" bind:value={configTagKey}>
             <option value="">{$t('preset_select_tag_option')}</option>
-            {#each tags as t}
+            {#each tags as t (t.key)}
               <option value={t.key}>{t.tag}</option>
             {/each}
           </select>

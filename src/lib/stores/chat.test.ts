@@ -275,3 +275,84 @@ describe('derived stores', () => {
     }
   });
 });
+
+// --- Storage migration ---
+
+describe('storage migration', () => {
+  it('loads multi-conversation format from storage', async () => {
+    const conv = {
+      id: 'saved-conv',
+      title: 'Saved',
+      createdAt: 1000,
+      displayMessages: [{ role: 'user', content: 'hello' }],
+      apiHistory: [{ role: 'user', content: 'hello' }],
+      createdFolderMap: {},
+    };
+    mockStorage['smm_chat_history'] = { conversations: [conv], activeId: 'saved-conv' };
+
+    // Re-import to trigger load from storage
+    vi.resetModules();
+    const { chatStore: freshStore, storeReady: freshReady } = await import('./chat');
+    await vi.waitFor(() => expect(get(freshReady)).toBe(true));
+
+    const state = get(freshStore);
+    expect(state.conversations.some((c) => c.id === 'saved-conv')).toBe(true);
+    expect(state.activeId).toBe('saved-conv');
+  });
+
+  it('migrates old single-conversation format', async () => {
+    mockStorage['smm_chat_history'] = {
+      displayMessages: [
+        { role: 'user', content: 'Old message from before migration' },
+        { role: 'assistant', content: 'Response' },
+      ],
+      apiHistory: [
+        { role: 'user', content: 'Old message from before migration' },
+        { role: 'assistant', content: 'Response' },
+      ],
+    };
+
+    vi.resetModules();
+    const { chatStore: freshStore, storeReady: freshReady } = await import('./chat');
+    await vi.waitFor(() => expect(get(freshReady)).toBe(true));
+
+    const state = get(freshStore);
+    expect(state.conversations).toHaveLength(1);
+    expect(state.conversations[0].displayMessages).toHaveLength(2);
+    // Title should be derived from first user message, truncated to 50 chars
+    expect(state.conversations[0].title).toBe('Old message from before migration');
+  });
+
+  it('initializes createdFolderMap on conversations missing it', async () => {
+    const conv = {
+      id: 'no-map',
+      title: 'No Map',
+      createdAt: 1000,
+      displayMessages: [],
+      apiHistory: [],
+      // no createdFolderMap property
+    };
+    mockStorage['smm_chat_history'] = { conversations: [conv], activeId: 'no-map' };
+
+    vi.resetModules();
+    const { chatStore: freshStore, storeReady: freshReady } = await import('./chat');
+    await vi.waitFor(() => expect(get(freshReady)).toBe(true));
+
+    const state = get(freshStore);
+    expect(state.conversations[0].createdFolderMap).toEqual({});
+  });
+});
+
+// --- Pruning ---
+
+describe('pruning', () => {
+  it('prunes oldest conversations when exceeding MAX_CONVERSATIONS (50)', () => {
+    // Create 50 additional conversations (already have 1)
+    for (let i = 0; i < 51; i++) {
+      chatStore.newConversation();
+    }
+    const state = getState();
+    // Should be capped at 50
+    expect(state.conversations.length).toBeLessThanOrEqual(50);
+  });
+});

@@ -1,6 +1,7 @@
 <script lang="ts">
   /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import { t } from '../../lib/i18n';
+  import { SvelteSet } from 'svelte/reactivity';
   import Button from '../../lib/components/Button.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
   import { getErrorMessage } from '../../lib/utils/error';
@@ -35,7 +36,7 @@
   let trees = $state<AccountTree[]>([]);
   let loading = $state(false);
   let error = $state('');
-  let expandedIds = $state<Set<string>>(new Set());
+  let expandedIds: Set<string> = new SvelteSet();
   let hasLoaded = $state(false);
 
   // Context menu state
@@ -70,7 +71,7 @@
     error = '';
     try {
       trees = await browser.runtime.sendMessage({ type: 'GET_FOLDER_TREE' });
-      const newExpanded = new Set(expandedIds);
+      const newExpanded = new SvelteSet(expandedIds);
       for (const account of trees) {
         for (const f of account.folders) {
           if (f.children.length > 0) {
@@ -88,7 +89,7 @@
   }
 
   function toggleExpand(id: string) {
-    const next = new Set(expandedIds);
+    const next = new SvelteSet(expandedIds);
     if (next.has(id)) {
       next.delete(id);
     } else {
@@ -113,11 +114,11 @@
     for (const account of trees) {
       allIds.push(...getAllIds(account.folders));
     }
-    expandedIds = new Set(allIds);
+    expandedIds = new SvelteSet(allIds);
   }
 
   function collapseAll() {
-    expandedIds = new Set();
+    expandedIds = new SvelteSet();
   }
 
   function folderIcon(type: string): string {
@@ -193,7 +194,7 @@
     if (!contextMenu.node) return;
     const parentId = contextMenu.node.id;
     // Expand the parent so the input is visible
-    const next = new Set(expandedIds);
+    const next = new SvelteSet(expandedIds);
     next.add(parentId);
     expandedIds = next;
     creatingIn = { parentId, name: '' };
@@ -334,10 +335,10 @@
   {:else if !hasLoaded}
     <div class="tree-loading tree-empty">{$t('folder_tree_click_refresh')}</div>
   {:else}
-    {#each trees as account}
+    {#each trees as account (account.accountId)}
       <div class="account-section">
         <div class="account-name">{account.accountName}</div>
-        {#each account.folders as folder}
+        {#each account.folders as folder (folder.id)}
           {@render folderRow(folder, 0, account.accountId)}
         {/each}
       </div>
@@ -346,7 +347,6 @@
 </div>
 
 {#if contextMenu.show && contextMenu.node}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
     class="context-menu"
     role="menu"
@@ -376,7 +376,6 @@
   {@const childTotal = hasChildren ? subtreeTotal(node) : node.totalMessages}
   {@const childUnread = hasChildren ? subtreeUnread(node) : node.unreadMessages}
   {@const isEmpty = childTotal === 0}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="folder-row"
     class:folder-empty={isEmpty}
@@ -460,7 +459,7 @@
         <Button size="xs" onclick={() => (creatingIn = null)}>X</Button>
       </div>
     {/if}
-    {#each node.children as child}
+    {#each node.children as child (child.id)}
       {@render folderRow(child, depth + 1, accountId)}
     {/each}
   {/if}

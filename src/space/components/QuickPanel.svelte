@@ -83,7 +83,7 @@
       <div class="batch-account-selector">
         <label for="batch-account-select">{$t('ai_batch_account')}</label>
         <select id="batch-account-select" bind:value={selectedAccountId} disabled={batchLoading}>
-          {#each accountList as acc}
+          {#each accountList as acc (acc.id)}
             <option value={acc.id}>{acc.name || acc.email}</option>
           {/each}
         </select>
@@ -176,7 +176,7 @@
   <section class="section suggestions-section">
     <h4>{$t('ai_suggestions_title')} ({suggestions.length})</h4>
     <div class="suggestion-list">
-      {#each suggestions as suggestion}
+      {#each suggestions as suggestion (suggestion.rule.name)}
         <div class="suggestion-card">
           <div class="suggestion-header">
             <span class="suggestion-name">{suggestion.rule.name}</span>
@@ -190,7 +190,7 @@
           <p class="suggestion-explanation">{suggestion.explanation}</p>
           <div class="suggestion-details">
             <span class="detail-label">{$t('ai_conditions_label')}</span>
-            {#each suggestion.rule.conditions as cond}
+            {#each suggestion.rule.conditions as cond, i (i)}
               <span class="detail-chip"
                 >{cond.field}
                 {cond.operator} "{cond.value ||
@@ -200,7 +200,7 @@
           </div>
           <div class="suggestion-details">
             <span class="detail-label">{$t('ai_actions_label')}</span>
-            {#each suggestion.rule.actions as act}
+            {#each suggestion.rule.actions as act, i (i)}
               <span class="detail-chip"
                 >{act.type}{act.folderId ? ` -> ${act.folderId}` : ''}{act.tagKey
                   ? ` -> ${act.tagKey}`

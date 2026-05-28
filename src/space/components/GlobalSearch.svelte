@@ -140,7 +140,7 @@
 
   {#if showResults && results.length > 0}
     <div class="search-results" role="listbox" id="global-search-listbox">
-      {#each results as result, i}
+      {#each results as result, i (result.id)}
         <button
           class="search-result"
           class:selected={i === selectedIndex}

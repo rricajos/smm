@@ -21,6 +21,7 @@
 
   /// <reference path="../lib/utils/messenger.d.ts" />
 
+  // eslint-disable-next-line svelte/prefer-writable-derived -- currentSettings is mutated by form bindings
   let currentSettings = $state<Settings>({
     classificationEnabled: true,
     autoResponseEnabled: true,
@@ -286,9 +287,9 @@
       <label for="ai-model">{$t('options_model')}</label>
       {#if currentSettings.aiProvider === 'openrouter'}
         <select id="ai-model" bind:value={currentSettings.openaiModel}>
-          {#each openrouterProviders as provider}
+          {#each openrouterProviders as provider (provider)}
             <optgroup label={provider}>
-              {#each OPENAI_MODELS.filter((m) => m.provider === provider) as model}
+              {#each OPENAI_MODELS.filter((m) => m.provider === provider) as model (model.id)}
                 <option value={model.id}>{model.label}</option>
               {/each}
             </optgroup>
@@ -304,7 +305,7 @@
         />
       {:else}
         <select id="ai-model" bind:value={currentSettings.openaiModel}>
-          {#each getModelsForProvider(currentSettings.aiProvider) as model}
+          {#each getModelsForProvider(currentSettings.aiProvider) as model (model.id)}
             <option value={model.id}>{model.label}</option>
           {/each}
         </select>

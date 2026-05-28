@@ -287,7 +287,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each paginated as entry, i}
+        {#each paginated as entry, i (entry.timestamp)}
           <tr
             class="clickable-row"
             class:expanded-row={expandedRow === i}

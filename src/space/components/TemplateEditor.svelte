@@ -149,7 +149,7 @@
       <label for="tmpl-subject">{$t('tmpl_subject_label')}</label>
       <input id="tmpl-subject" type="text" bind:value={subject} bind:this={subjectEl} />
       <div class="var-buttons">
-        {#each variables as v}
+        {#each variables as v (v.key)}
           <button class="var-btn" onclick={() => insertVariable(v.key, 'subject')}>
             {v.label}
           </button>
@@ -161,7 +161,7 @@
       <label for="tmpl-body">{$t('tmpl_body_label')}</label>
       <textarea id="tmpl-body" bind:value={body} bind:this={bodyEl} rows="8"></textarea>
       <div class="var-buttons">
-        {#each variables as v}
+        {#each variables as v (v.key)}
           <button class="var-btn" onclick={() => insertVariable(v.key, 'body')}>
             {v.label}
           </button>
@@ -210,7 +210,7 @@
           {previewSubject}
         </div>
         <div class="preview-body">
-          {#each previewBody.split('\n') as line}<p class="preview-line">{line}</p>{/each}
+          {#each previewBody.split('\n') as line, i (i)}<p class="preview-line">{line}</p>{/each}
         </div>
       </div>
     {/if}

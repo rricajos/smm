@@ -11,6 +11,7 @@
   let classifyStatus = $state('');
 
   let activeRules = $derived($rules.filter((r) => r.enabled).length);
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- ephemeral Date used only for numeric computation
   let todayStart = $derived(new Date().setHours(0, 0, 0, 0));
   let todayClassifications = $derived(
     $activity.filter((a) => a.type === 'classification' && a.timestamp >= todayStart).length,
@@ -36,7 +37,7 @@
       }
       await browser.runtime.sendMessage({ type: 'CLASSIFY_MESSAGE', messageId: msg.id });
       classifyStatus = $t('popup_classified_ok');
-    } catch (err) {
+    } catch {
       classifyStatus = $t('popup_classify_error');
     }
     setTimeout(() => (classifyStatus = ''), 3000);
@@ -110,7 +111,7 @@
     {#if recentActivity.length === 0}
       <p class="empty">{$t('popup_no_activity')}</p>
     {:else}
-      {#each recentActivity as entry}
+      {#each recentActivity as entry (entry.timestamp)}
         <div class="entry">
           <span class="time">{formatTime(entry.timestamp)}</span>
           <span class="text">{entry.subject}</span>

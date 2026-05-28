@@ -54,7 +54,7 @@
 
 <div class="action-row">
   <select value={action.type} onchange={(e) => updateType((e.target as HTMLSelectElement).value)}>
-    {#each actionTypes as at}
+    {#each actionTypes as at (at.value)}
       <option value={at.value}>{at.label}</option>
     {/each}
   </select>
@@ -64,7 +64,7 @@
       value={action.folderId || ''}
       onchange={(e) => onchange({ ...action, folderId: (e.target as HTMLSelectElement).value })}
     >
-      {#each folders as folder}
+      {#each folders as folder (folder.id)}
         <option value={folder.id}>{folder.accountName} / {folder.path}</option>
       {/each}
       {#if folders.length === 0}
@@ -76,7 +76,7 @@
       value={action.tagKey || ''}
       onchange={(e) => onchange({ ...action, tagKey: (e.target as HTMLSelectElement).value })}
     >
-      {#each tags as tag}
+      {#each tags as tag (tag.key)}
         <option value={tag.key}>{tag.tag}</option>
       {/each}
     </select>
@@ -89,7 +89,7 @@
           priority: (e.target as HTMLSelectElement).value as Action['priority'],
         })}
     >
-      {#each priorities as p}
+      {#each priorities as p (p.value)}
         <option value={p.value}>{p.label}</option>
       {/each}
     </select>
@@ -98,7 +98,7 @@
       value={action.templateId || ''}
       onchange={(e) => onchange({ ...action, templateId: (e.target as HTMLSelectElement).value })}
     >
-      {#each templates as tmpl}
+      {#each templates as tmpl (tmpl.id)}
         <option value={tmpl.id}>{tmpl.name}</option>
       {/each}
       {#if templates.length === 0}

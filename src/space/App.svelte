@@ -108,7 +108,7 @@
       onnavigate={handleSearchNavigate}
     />
     <div class="tab-buttons" role="tablist">
-      {#each tabs as tab}
+      {#each tabs as tab (tab.id)}
         <button
           class="tab-btn"
           class:active={activeTab === tab.id}

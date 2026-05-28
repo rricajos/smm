@@ -88,7 +88,7 @@
     </div>
 
     {#if type === 'folders' && folderProposals}
-      {#each folderProposals as fp, idx}
+      {#each folderProposals as fp, idx (idx)}
         <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
           <div class="proposal-info">
             <span class="proposal-icon">&#128193;</span>
@@ -109,7 +109,7 @@
     {/if}
 
     {#if type === 'moves' && moveProposals}
-      {#each moveProposals as mp, idx}
+      {#each moveProposals as mp, idx (idx)}
         <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
           <div class="proposal-info">
             <span class="proposal-icon">&#8618;</span>
@@ -134,7 +134,7 @@
     {/if}
 
     {#if type === 'rules' && ruleProposals}
-      {#each ruleProposals as rp, idx}
+      {#each ruleProposals as rp, idx (idx)}
         <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
           <div class="proposal-info">
             <span class="proposal-icon">&#9881;</span>
@@ -142,7 +142,7 @@
               <strong>{rp.rule.name}</strong>
               <small>{rp.description}</small>
               <div class="rule-summary">
-                {#each rp.rule.conditions as cond}
+                {#each rp.rule.conditions as cond, i (i)}
                   <span class="detail-chip"
                     >{cond.field}
                     {cond.operator} "{cond.value ||
@@ -150,7 +150,7 @@
                   >
                 {/each}
                 <span class="arrow-chip">&rarr;</span>
-                {#each rp.rule.actions as act}
+                {#each rp.rule.actions as act, i (i)}
                   <span class="detail-chip action-chip"
                     >{act.type}{act.folderId ? ` ${act.folderId}` : ''}{act.tagKey
                       ? ` ${act.tagKey}`
@@ -179,7 +179,7 @@
     {/if}
 
     {#if type === 'templates' && templateProposals}
-      {#each templateProposals as tp, idx}
+      {#each templateProposals as tp, idx (idx)}
         <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
           <div class="proposal-info">
             <span class="proposal-icon">&#9993;</span>
@@ -217,7 +217,7 @@
     {/if}
 
     {#if type === 'consolidateRules' && ruleConsolidationProposals}
-      {#each ruleConsolidationProposals as rc, idx}
+      {#each ruleConsolidationProposals as rc, idx (idx)}
         <div class="proposal-item" class:accepted={acceptedSet.has(idx)}>
           <div class="proposal-info">
             <span class="proposal-icon">&#128256;</span>
@@ -225,7 +225,7 @@
               <strong>{rc.sourceRuleNames.join(' + ')} &rarr; {rc.mergedRule.name}</strong>
               <small>{rc.description}</small>
               <div class="rule-summary">
-                {#each rc.mergedRule.conditions as cond}
+                {#each rc.mergedRule.conditions as cond, i (i)}
                   <span class="detail-chip"
                     >{cond.field}
                     {cond.operator} "{cond.value ||
@@ -233,7 +233,7 @@
                   >
                 {/each}
                 <span class="arrow-chip">&rarr;</span>
-                {#each rc.mergedRule.actions as act}
+                {#each rc.mergedRule.actions as act, i (i)}
                   <span class="detail-chip action-chip"
                     >{act.type}{act.folderId ? ` ${act.folderId}` : ''}{act.tagKey
                       ? ` ${act.tagKey}`

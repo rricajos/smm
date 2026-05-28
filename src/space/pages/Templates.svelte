@@ -183,7 +183,7 @@
     </div>
   {:else}
     <div class="template-list">
-      {#each filteredTemplates as tmpl}
+      {#each filteredTemplates as tmpl (tmpl.id)}
         <div class="template-item">
           <div class="template-info">
             <div class="template-name">{tmpl.name}</div>

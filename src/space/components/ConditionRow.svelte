@@ -50,7 +50,7 @@
     value={condition.field}
     onchange={(e) => updateField((e.target as HTMLSelectElement).value)}
   >
-    {#each fieldOptions as opt}
+    {#each fieldOptions as opt (opt.value)}
       <option value={opt.value}>{opt.label}</option>
     {/each}
   </select>
@@ -73,7 +73,7 @@
           operator: (e.target as HTMLSelectElement).value as Condition['operator'],
         })}
     >
-      {#each textOperators as op}
+      {#each textOperators as op (op.value)}
         <option value={op.value}>{op.label}</option>
       {/each}
     </select>

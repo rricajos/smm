@@ -361,3 +361,138 @@ describe('executeActions (integration)', () => {
     );
   });
 });
+
+// --- Branch coverage: uncovered paths ---
+
+describe('evaluateSingleCondition branches', () => {
+  it('hasAttachments with boolValue=false matches when no attachments', async () => {
+    mockHasAttachments.mockResolvedValue(false);
+
+    const rule = makeRule({
+      conditions: [
+        {
+          field: 'hasAttachments',
+          operator: 'is',
+          value: '',
+          boolValue: false,
+          caseSensitive: false,
+        },
+      ],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+    const header = makeHeader();
+
+    const results = await classifyMessage(header);
+    expect(results).toHaveLength(1);
+  });
+
+  it('hasAttachments with boolValue=false does NOT match when has attachments', async () => {
+    mockHasAttachments.mockResolvedValue(true);
+
+    const rule = makeRule({
+      conditions: [
+        {
+          field: 'hasAttachments',
+          operator: 'is',
+          value: '',
+          boolValue: false,
+          caseSensitive: false,
+        },
+      ],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+
+    const results = await classifyMessage(makeHeader());
+    expect(results).toEqual([]);
+  });
+
+  it('to field joins recipients array', async () => {
+    const rule = makeRule({
+      conditions: [{ field: 'to', operator: 'contains', value: 'alice', caseSensitive: false }],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+    const header = makeHeader({ recipients: ['alice@t.com', 'bob@t.com'] });
+
+    const results = await classifyMessage(header);
+    expect(results).toHaveLength(1);
+  });
+
+  it('to field with undefined recipients uses empty string', async () => {
+    const rule = makeRule({
+      conditions: [{ field: 'to', operator: 'contains', value: 'someone', caseSensitive: false }],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+    const header = makeHeader({ recipients: undefined });
+
+    const results = await classifyMessage(header);
+    expect(results).toEqual([]);
+  });
+
+  it('unknown field returns false', async () => {
+    const rule = makeRule({
+      conditions: [
+        { field: 'unknown' as any, operator: 'contains', value: 'x', caseSensitive: false },
+      ],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+
+    const results = await classifyMessage(makeHeader());
+    expect(results).toEqual([]);
+  });
+
+  it('body field returns false when getFull fails', async () => {
+    mockMessagesGetFull.mockRejectedValue(new Error('fail'));
+    const rule = makeRule({
+      conditions: [{ field: 'body', operator: 'contains', value: 'text', caseSensitive: false }],
+    });
+    mockGetRules.mockResolvedValue([rule]);
+
+    const results = await classifyMessage(makeHeader());
+    expect(results).toEqual([]);
+  });
+});
+
+describe('executeActions branch coverage', () => {
+  it('logs empty accountId when header.folder is undefined', async () => {
+    const rule = makeRule({ actions: [{ type: 'markRead' }] });
+    const header = makeHeader({ folder: undefined });
+    const results = [{ rule, messageId: header.id }];
+
+    await executeActions(header, results);
+
+    expect(mockAppendActivityLog).toHaveBeenCalledWith(expect.objectContaining({ accountId: '' }));
+  });
+
+  it('logs empty accountId when header.folder.accountId is missing', async () => {
+    const rule = makeRule({ actions: [{ type: 'markRead' }] });
+    const header = makeHeader({ folder: { name: 'Inbox' } });
+    const results = [{ rule, messageId: header.id }];
+
+    await executeActions(header, results);
+
+    expect(mockAppendActivityLog).toHaveBeenCalledWith(expect.objectContaining({ accountId: '' }));
+  });
+
+  it('uses header.tags fallback when tags are undefined', async () => {
+    const rule = makeRule({ actions: [{ type: 'addTag', tagKey: '$label1' }] });
+    const header = makeHeader({ tags: undefined });
+    const results = [{ rule, messageId: header.id }];
+
+    await executeActions(header, results);
+
+    expect(mockMessagesUpdate).toHaveBeenCalledWith(header.id, { tags: ['$label1'] });
+  });
+
+  it('catches action execution errors gracefully', async () => {
+    mockMessagesUpdate.mockRejectedValueOnce(new Error('update fail'));
+    const rule = makeRule({ actions: [{ type: 'markRead' }] });
+    const header = makeHeader();
+    const results = [{ rule, messageId: header.id }];
+
+    // Should not throw
+    await executeActions(header, results);
+
+    // Activity log should still be called
+    expect(mockAppendActivityLog).toHaveBeenCalled();
+  });
+});

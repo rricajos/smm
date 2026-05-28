@@ -203,7 +203,7 @@
         </div>
       </div>
 
-      {#each conditions as condition, i}
+      {#each conditions as condition, i (i)}
         <ConditionRow
           {condition}
           onchange={(c) => updateCondition(i, c)}
@@ -215,7 +215,7 @@
 
     <div class="section">
       <h3>{$t('editor_actions')}</h3>
-      {#each actions as action, i}
+      {#each actions as action, i (i)}
         <ActionRow
           {action}
           {folders}
@@ -262,7 +262,7 @@
             </div>
             {#if testResult.details.length > 0}
               <div class="test-match-list">
-                {#each testResult.details.slice(0, 10) as d}
+                {#each testResult.details.slice(0, 10) as d, i (i)}
                   <div class="test-match-item">
                     <span class="test-match-subject">{d.subject || $t('editor_no_subject')}</span>
                     <span class="test-match-from">{d.from}</span>
@@ -287,7 +287,7 @@
       <div class="editor-conflicts">
         <span class="editor-conflicts-icon">⚠</span>
         <div class="editor-conflicts-list">
-          {#each editorConflicts() as conflict}
+          {#each editorConflicts() as conflict, i (i)}
             <span class="editor-conflict-text">
               Conflicto con "{conflict.ruleA.id === (rule?.id || '__temp__')
                 ? conflict.ruleB.name
@@ -300,7 +300,7 @@
 
     {#if validationErrors.length > 0}
       <div class="validation-errors">
-        {#each validationErrors as err}
+        {#each validationErrors as err, i (i)}
           <p class="validation-error">{err}</p>
         {/each}
       </div>

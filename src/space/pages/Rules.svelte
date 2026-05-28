@@ -1,7 +1,6 @@
 <script lang="ts">
   /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
   import type { Rule, Condition } from '../../types/rules';
-  import type { ResponseTemplate } from '../../types/templates';
   import { rules } from '../../lib/stores/rules';
   import { templates } from '../../lib/stores/templates';
   import { settings } from '../../lib/stores/settings';
@@ -13,6 +12,7 @@
     type ImportOptions,
   } from '../../lib/utils/config-io';
   import { detectRuleConflicts, type RuleConflict } from '../../lib/utils/rule-conflicts';
+  import { SvelteSet } from 'svelte/reactivity';
   import Button from '../../lib/components/Button.svelte';
   import Modal from '../../lib/components/Modal.svelte';
   import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
@@ -193,7 +193,7 @@
         limit: 50,
       });
       testResult = result;
-    } catch (err: unknown) {
+    } catch {
       testResult = { processed: 0, matched: 0, details: [] };
     } finally {
       testingRuleId = null;
@@ -377,7 +377,7 @@
     return key ? $t(key as any, conflict.params) : conflict.description;
   }
 
-  let mergedConflicts = $state(new Set<number>());
+  let mergedConflicts = new SvelteSet<number>();
 
   let hasRedundantConflicts = $derived(ruleConflicts.some((c) => c.type === 'redundant'));
 
@@ -406,11 +406,11 @@
       updatedAt: Date.now(),
     });
     rules.deleteRule(ruleB.id);
-    mergedConflicts = new Set([...mergedConflicts, conflictIdx]);
+    mergedConflicts = new SvelteSet([...mergedConflicts, conflictIdx]);
   }
 
   function mergeAllRedundant() {
-    const deleted = new Set<string>();
+    const deleted = new SvelteSet<string>();
     ruleConflicts.forEach((conflict, idx) => {
       if (conflict.type !== 'redundant') return;
       if (deleted.has(conflict.ruleA.id) || deleted.has(conflict.ruleB.id)) return;
@@ -444,7 +444,7 @@
   // Reset merged set when conflicts change (e.g. after merge the list recomputes)
   $effect(() => {
     ruleConflicts; // track
-    mergedConflicts = new Set();
+    mergedConflicts = new SvelteSet();
   });
 </script>
 
@@ -487,7 +487,7 @@
       </div>
 
       <div class="conflict-list">
-        {#each ruleConflicts as conflict, idx}
+        {#each ruleConflicts as conflict, idx (idx)}
           <div
             class="conflict-item"
             class:conflict-warning={conflict.severity === 'warning'}
@@ -601,7 +601,7 @@
     </div>
   {:else}
     <div class="rule-list" role="list">
-      {#each filteredRules as rule, i}
+      {#each filteredRules as rule, i (rule.id)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
@@ -646,7 +646,7 @@
             </div>
             {#if brokenRefs[rule.id]}
               <div class="broken-ref-warning">
-                {#each brokenRefs[rule.id] as ref}
+                {#each brokenRefs[rule.id] as ref (ref)}
                   <span>{ref}</span>
                 {/each}
               </div>
@@ -710,7 +710,7 @@
                 <tr><th>{$t('common_subject')}</th><th>{$t('common_from')}</th></tr>
               </thead>
               <tbody>
-                {#each testResult.details as d}
+                {#each testResult.details as d, i (i)}
                   <tr>
                     <td class="truncate">{d.subject}</td>
                     <td class="truncate">{d.from}</td>
