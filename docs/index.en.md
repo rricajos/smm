@@ -51,7 +51,7 @@ Extension for **Thunderbird 128+** that automatically classifies emails and gene
 | Svelte | 5.x | UI with runes (`$state`, `$derived`, `$effect`) |
 | TypeScript | 6.x | Strict typing throughout the project |
 | Vite | 8.x | Programmatic build with 4 IIFE entry points |
-| Vitest | 4.x | ~480 unit tests |
+| Vitest | 4.x | 917 tests, 97% coverage |
 | Zod | 4.x | Runtime validation of AI responses |
 | Thunderbird | 128+ | `messenger.*` APIs (Manifest V2) |
 
@@ -60,3 +60,7 @@ Extension for **Thunderbird 128+** that automatically classifies emails and gene
 This project is licensed under the [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/).
 
 Copyright &copy; 2025 Ricard Penin Honrubia
+
+---
+
+:material-github: [View on GitHub](https://github.com/rricajos/smm)

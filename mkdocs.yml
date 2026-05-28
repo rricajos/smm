@@ -55,10 +55,12 @@ nav:
     - Plantillas: guia/plantillas.md
     - Asistente IA: guia/asistente-ia.md
     - Panel de control: guia/panel.md
+    - FAQ: guia/faq.md
   - Desarrollo:
     - Arquitectura: desarrollo/arquitectura.md
     - Build: desarrollo/build.md
     - Testing: desarrollo/testing.md
+    - Contribuir: desarrollo/contribuir.md
   - Referencia:
     - Tipos: referencia/tipos.md
     - Stores: referencia/stores.md

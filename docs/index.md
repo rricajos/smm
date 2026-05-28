@@ -51,7 +51,7 @@ Extensión para **Thunderbird 128+** que clasifica correos automáticamente y ge
 | Svelte | 5.x | UI con runes (`$state`, `$derived`, `$effect`) |
 | TypeScript | 6.x | Tipado estricto en todo el proyecto |
 | Vite | 8.x | Build programático con 4 entry points IIFE |
-| Vitest | 4.x | ~480 tests unitarios |
+| Vitest | 4.x | 917 tests, 97% cobertura |
 | Zod | 4.x | Validación runtime de respuestas AI |
 | Thunderbird | 128+ | APIs `messenger.*` (Manifest V2) |
 
@@ -60,3 +60,7 @@ Extensión para **Thunderbird 128+** que clasifica correos automáticamente y ge
 Este proyecto está licenciado bajo la [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/).
 
 Copyright &copy; 2025 Ricard Penin Honrubia
+
+---
+
+:material-github: [Ver en GitHub](https://github.com/rricajos/smm)
