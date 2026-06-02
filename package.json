@@ -1,8 +1,19 @@
 {
   "name": "thunderbird-mail-manager",
   "private": true,
+  "description": "Thunderbird extension for automatic email classification, AI-powered responses, and rule management",
+  "keywords": ["thunderbird", "mailextension", "email", "ai", "automation", "svelte", "typescript"],
+  "author": "Ricard Penin Honrubia <ricard.penin.honrubia@gmail.com>",
   "license": "MPL-2.0",
   "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rricajos/smm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rricajos/smm/issues"
+  },
+  "homepage": "https://rricajos.github.io/smm/",
   "type": "module",
   "scripts": {
     "build": "node --import=tsx build.ts",

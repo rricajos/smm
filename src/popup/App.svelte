@@ -55,7 +55,7 @@
 </script>
 
 <div class="popup">
-  <h2>Smart Mail Manager</h2>
+  <h2>{$t('app_name')}</h2>
 
   <!-- Quick stats bar -->
   <div class="stats-bar">
@@ -87,12 +87,18 @@
     <button
       class="toggle"
       class:on={$settings.classificationEnabled}
+      aria-pressed={$settings.classificationEnabled}
       onclick={toggleClassification}
     >
       <span class="dot"></span>
       {$t('popup_classification')}
     </button>
-    <button class="toggle" class:on={$settings.autoResponseEnabled} onclick={toggleAutoResponse}>
+    <button
+      class="toggle"
+      class:on={$settings.autoResponseEnabled}
+      aria-pressed={$settings.autoResponseEnabled}
+      onclick={toggleAutoResponse}
+    >
       <span class="dot"></span>
       {$t('popup_auto_response')}
     </button>

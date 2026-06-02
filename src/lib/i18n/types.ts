@@ -1,6 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. */
 
 export interface Translations {
+  // App
+  app_name: string;
+
   // Common
   common_save: string;
   common_cancel: string;
@@ -146,6 +149,7 @@ export interface Translations {
   templates_title: string;
   templates_new: string;
   templates_filter: string;
+  templates_filter_no_results: string;
   templates_no_templates: string;
   templates_no_templates_desc: string;
   templates_draft: string;
@@ -161,6 +165,7 @@ export interface Translations {
   // AI
   ai_title: string;
   ai_model_label: string;
+  ai_custom_model_placeholder: string;
   ai_health_ok: string;
   ai_health_error: string;
   ai_health_checking: string;

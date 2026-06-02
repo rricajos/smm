@@ -42,6 +42,7 @@
   import ChatPanel from '../components/ChatPanel.svelte';
   import QuickPanel from '../components/QuickPanel.svelte';
   import { getErrorMessage } from '../../lib/utils/error';
+  import { logger } from '../../lib/utils/logger';
 
   const openrouterProviders = [...new Set(OPENAI_MODELS.map((m) => m.provider))];
 
@@ -123,8 +124,8 @@
   // --- Metadata & emails ---
   let folderInfos = $state<FolderInfo[]>([]);
   let tagInfos = $state<TagInfo[]>([]);
-  let folders = $state<any[]>([]);
-  let tags = $state<any[]>([]);
+  let folders = $state<FolderInfo[]>([]);
+  let tags = $state<TagInfo[]>([]);
   let cachedEmails = $state<EmailSummary[]>([]);
 
   async function loadMetadata() {
@@ -623,7 +624,7 @@
               allSuggestions.push(s);
           }
         } catch (err: unknown) {
-          console.error(`[SMM] Batch ${i + 1} error:`, err);
+          logger.error(`Batch ${i + 1} error:`, err);
         }
       }
 
@@ -743,6 +744,7 @@
       <div class="consent-card">
         <div class="consent-icon">
           <svg
+            aria-hidden="true"
             width="40"
             height="40"
             viewBox="0 0 24 24"
@@ -786,7 +788,7 @@
             type="text"
             value={$settings.openaiModel || ''}
             onchange={(e) => settings.update({ openaiModel: (e.target as HTMLInputElement).value })}
-            placeholder="llama3, mistral, etc."
+            placeholder={$t('ai_custom_model_placeholder')}
             class="model-input"
           />
         {:else}

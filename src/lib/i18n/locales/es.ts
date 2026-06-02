@@ -3,6 +3,9 @@
 import type { Translations } from '../types';
 
 export const es: Translations = {
+  // App
+  app_name: 'Smart Mail Manager',
+
   // Common
   common_save: 'Guardar',
   common_cancel: 'Cancelar',
@@ -151,6 +154,7 @@ export const es: Translations = {
   templates_title: 'Plantillas de respuesta',
   templates_new: '+ Nueva plantilla',
   templates_filter: 'Filtrar plantillas...',
+  templates_filter_no_results: 'Ninguna plantilla coincide con el filtro.',
   templates_no_templates: 'No hay plantillas definidas.',
   templates_no_templates_desc: 'Crea plantillas para usar en respuestas automáticas.',
   templates_draft: 'Borrador',
@@ -166,6 +170,7 @@ export const es: Translations = {
   // AI
   ai_title: 'Asistente IA',
   ai_model_label: 'Modelo:',
+  ai_custom_model_placeholder: 'ej. llama3, mistral, gemma2',
   ai_health_ok: 'API conectada',
   ai_health_error: 'Error de conexión - clic para reintentar',
   ai_health_checking: 'Verificando...',

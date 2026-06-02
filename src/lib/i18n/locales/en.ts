@@ -3,6 +3,9 @@
 import type { Translations } from '../types';
 
 export const en: Translations = {
+  // App
+  app_name: 'Smart Mail Manager',
+
   // Common
   common_save: 'Save',
   common_cancel: 'Cancel',
@@ -148,6 +151,7 @@ export const en: Translations = {
   templates_title: 'Response templates',
   templates_new: '+ New template',
   templates_filter: 'Filter templates...',
+  templates_filter_no_results: 'No templates match your filter.',
   templates_no_templates: 'No templates defined.',
   templates_no_templates_desc: 'Create templates for use in automated responses.',
   templates_draft: 'Draft',
@@ -163,6 +167,7 @@ export const en: Translations = {
   // AI
   ai_title: 'AI Assistant',
   ai_model_label: 'Model:',
+  ai_custom_model_placeholder: 'e.g. llama3, mistral, gemma2',
   ai_health_ok: 'API connected',
   ai_health_error: 'Connection error - click to retry',
   ai_health_checking: 'Checking...',

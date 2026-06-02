@@ -237,6 +237,7 @@
     <div class="card card-rules">
       <div class="card-icon">
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -258,6 +259,7 @@
     <div class="card card-active">
       <div class="card-icon">
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -279,6 +281,7 @@
     <div class="card card-classified">
       <div class="card-icon">
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -300,6 +303,7 @@
     <div class="card card-responses">
       <div class="card-icon">
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -608,6 +612,7 @@
   <div class="status-footer">
     <div class="status-item">
       <svg
+        aria-hidden="true"
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -627,6 +632,7 @@
     </div>
     <div class="status-item">
       <svg
+        aria-hidden="true"
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -655,6 +661,7 @@
     </div>
     <div class="status-item status-shortcuts">
       <svg
+        aria-hidden="true"
         width="12"
         height="12"
         viewBox="0 0 24 24"
