@@ -77,3 +77,34 @@
 
 ??? question "Can I send HTML responses?"
     Yes. Uncheck the "Plain text" option in the template editor. The body will be interpreted as HTML.
+
+## Privacy and Security
+
+??? question "Does the extension send my emails to external servers?"
+    Only when you explicitly use AI features (chat assistant, email analysis, rule suggestions). In that case, content is limited to 500 characters per email and sent only to the AI provider you configured. Rule-based classification and templates work entirely locally with no external connections.
+
+??? question "Where are API keys stored?"
+    In `browser.storage.local`, the browser's local storage accessible only by the extension. They are never transmitted to third-party servers or appear in any log. If you uninstall the extension, all data is automatically deleted along with the extension profile.
+
+??? question "What data does the activity log record?"
+    The log records local events: applied classifications, sent responses, rule errors, and folder operations. All this information is stored in `browser.storage.local` and never leaves your device. You can export it as CSV or clear it from the panel.
+
+## Performance
+
+??? question "Classification slows down with a large inbox"
+    Rules are evaluated in order for each incoming email. To improve performance:
+
+    - Disable rules you no longer use
+    - Place more specific rules first (they prevent subsequent rules from being evaluated)
+    - Avoid complex regex conditions in high-frequency rules
+
+??? question "The Quick Panel takes a long time to analyze emails"
+    The Quick Panel analyzes emails in batches of 25 with a pause between each batch to avoid overwhelming the API. If the provider imposes rate limits, batches are processed more slowly. You can cancel the analysis at any time and accept the partial proposals that have already appeared.
+
+## Dashboard
+
+??? question "What do the weekly statistics show?"
+    The dashboard displays: classifications per day of the current week, a ranking of the most active rules, and the senders that generate the most activity. Data is calculated from the local activity log, so it only reflects activity recorded since you installed the extension.
+
+??? question "The activity log is empty"
+    The log records events from the first time classification is activated. If you just installed the extension or just enabled classification, the log will be empty until the first email arrives and a rule is applied. Verify that classification is enabled in Options.

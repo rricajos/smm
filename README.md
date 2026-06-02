@@ -91,7 +91,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, testin
 
 [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/) — see [LICENSE](LICENSE) for details.
 
-Copyright (c) 2025 Ricard Penin Honrubia
+Copyright (c) 2026 Ricard Penin Honrubia
 
 ## Privacy
 

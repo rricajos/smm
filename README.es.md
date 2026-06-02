@@ -91,7 +91,7 @@ Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para la configuración del entorno d
 
 [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/) — ver [LICENSE](LICENSE) para más detalles.
 
-Copyright (c) 2025 Ricard Penin Honrubia
+Copyright (c) 2026 Ricard Penin Honrubia
 
 ## Privacidad
 

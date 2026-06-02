@@ -47,7 +47,7 @@ El pipeline de CI rechaza cualquier PR que no cumpla los umbrales mínimos:
 | Functions | 95% | 98.79% |
 | Lines | 94% | 97.95% |
 
-**Total: 917 tests** en 45 archivos de test.
+**Total: 939 tests** en 47 archivos de test.
 
 ## Cobertura por módulo
 

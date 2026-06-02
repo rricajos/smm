@@ -77,3 +77,34 @@
 
 ??? question "¿Puedo enviar respuestas HTML?"
     Sí. Desmarca la opción "Texto plano" en el editor de plantillas. El cuerpo se interpretará como HTML.
+
+## Privacidad y seguridad
+
+??? question "¿La extensión envía mis correos a servidores externos?"
+    Solo si usas funcionalidades de IA de forma explícita (chat con el asistente, análisis de correos, sugerencia de reglas). En ese caso, el contenido se limita a 500 caracteres por correo y se envía únicamente al proveedor de IA que hayas configurado. La clasificación por reglas y las plantillas funcionan completamente en local, sin ninguna conexión externa.
+
+??? question "¿Dónde se guardan las claves API?"
+    En `browser.storage.local`, el almacenamiento local del navegador accesible únicamente por la extensión. Nunca se transmiten a servidores de terceros ni aparecen en ningún log. Si desinstalás la extensión, los datos se eliminan automáticamente junto con el perfil de la extensión.
+
+??? question "¿Qué datos registra el log de actividad?"
+    El log registra eventos locales: clasificaciones aplicadas, respuestas enviadas, errores de reglas y operaciones de carpetas. Toda esta información se almacena en `browser.storage.local` y nunca sale del dispositivo. Podés exportarla a CSV o borrarla desde el panel.
+
+## Rendimiento
+
+??? question "La clasificación se ralentiza con una bandeja de entrada grande"
+    Las reglas se evalúan en orden para cada correo entrante. Para mejorar el rendimiento:
+
+    - Desactiva las reglas que ya no uses
+    - Ordena las reglas más específicas primero (evitan que se evalúen las siguientes)
+    - Evita condiciones con regex complejas en reglas de alta frecuencia
+
+??? question "El Quick Panel tarda mucho en analizar correos"
+    El Quick Panel analiza correos en lotes de 25 con una pausa entre cada uno para no saturar la API. Si el proveedor impone límites de tasa (rate limits), los lotes se procesan más despacio. Podés cancelar el análisis en cualquier momento y aceptar las propuestas parciales que ya aparecieron.
+
+## Dashboard
+
+??? question "¿Qué muestran las estadísticas semanales?"
+    El dashboard muestra: clasificaciones por día de la semana en curso, ranking de reglas más activas, y los remitentes que generan más actividad. Los datos se calculan a partir del log de actividad local, por lo que reflejan solo la actividad registrada desde que instalaste la extensión.
+
+??? question "El log de actividad está vacío"
+    El log registra eventos desde la primera activación de la clasificación. Si acabás de instalar la extensión o de habilitar la clasificación, el log estará vacío hasta que llegue el primer correo y se aplique alguna regla. Verificá que la clasificación esté activada en Opciones.

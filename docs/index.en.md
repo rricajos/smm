@@ -59,7 +59,7 @@ Extension for **Thunderbird 128+** that automatically classifies emails and gene
 
 This project is licensed under the [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/).
 
-Copyright &copy; 2025 Ricard Penin Honrubia
+Copyright &copy; 2026 Ricard Penin Honrubia
 
 ---
 

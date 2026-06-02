@@ -47,7 +47,7 @@ The CI pipeline rejects any PR that does not meet the minimum thresholds:
 | Functions | 95% | 98.79% |
 | Lines | 94% | 97.95% |
 
-**Total: 917 tests** across 45 test files.
+**Total: 939 tests** across 47 test files.
 
 ## Coverage by module
 
