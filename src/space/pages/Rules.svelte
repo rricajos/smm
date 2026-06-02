@@ -407,7 +407,7 @@
       updatedAt: Date.now(),
     });
     rules.deleteRule(ruleB.id);
-    mergedConflicts = new SvelteSet([...mergedConflicts, conflictIdx]);
+    mergedConflicts.add(conflictIdx);
   }
 
   function mergeAllRedundant() {
@@ -445,7 +445,7 @@
   // Reset merged set when conflicts change (e.g. after merge the list recomputes)
   $effect(() => {
     ruleConflicts; // track
-    mergedConflicts = new SvelteSet();
+    mergedConflicts.clear();
   });
 </script>
 

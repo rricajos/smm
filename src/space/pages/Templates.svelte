@@ -130,6 +130,7 @@
       type="text"
       class="filter-input"
       placeholder={$t('templates_filter')}
+      aria-label={$t('templates_filter')}
       bind:value={filterQuery}
     />
   {/if}
@@ -206,6 +207,8 @@
             >
           </div>
         </div>
+      {:else}
+        <p class="filter-empty">{$t('templates_filter_no_results')}</p>
       {/each}
     </div>
   {/if}
@@ -284,6 +287,13 @@
     margin: 0 0 20px 0;
     max-width: 360px;
     line-height: 1.5;
+  }
+  .filter-empty {
+    text-align: center;
+    color: var(--text-secondary, #999);
+    font-size: 13px;
+    padding: 24px 12px;
+    margin: 0;
   }
   .template-list {
     display: flex;

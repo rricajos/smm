@@ -115,7 +115,7 @@ function createChatStore() {
       storeReady.set(true);
     }
   } catch (e) {
-    console.error('[SMM] chat store load error:', e);
+    logger.error('chat store load error:', e);
     loaded = true;
     storeReady.set(true);
   }

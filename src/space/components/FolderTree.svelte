@@ -36,7 +36,7 @@
   let trees = $state<AccountTree[]>([]);
   let loading = $state(false);
   let error = $state('');
-  let expandedIds: Set<string> = new SvelteSet();
+  let expandedIds = new SvelteSet<string>();
   let hasLoaded = $state(false);
 
   // Context menu state
@@ -71,15 +71,13 @@
     error = '';
     try {
       trees = await browser.runtime.sendMessage({ type: 'GET_FOLDER_TREE' });
-      const newExpanded = new SvelteSet(expandedIds);
       for (const account of trees) {
         for (const f of account.folders) {
           if (f.children.length > 0) {
-            newExpanded.add(f.id);
+            expandedIds.add(f.id);
           }
         }
       }
-      expandedIds = newExpanded;
       hasLoaded = true;
     } catch (err: unknown) {
       error = getErrorMessage(err) || $t('folder_tree_load_error');
@@ -89,13 +87,11 @@
   }
 
   function toggleExpand(id: string) {
-    const next = new SvelteSet(expandedIds);
-    if (next.has(id)) {
-      next.delete(id);
+    if (expandedIds.has(id)) {
+      expandedIds.delete(id);
     } else {
-      next.add(id);
+      expandedIds.add(id);
     }
-    expandedIds = next;
   }
 
   function getAllIds(nodes: FolderNode[]): string[] {
@@ -110,15 +106,16 @@
   }
 
   function expandAll() {
-    const allIds: string[] = [];
+    expandedIds.clear();
     for (const account of trees) {
-      allIds.push(...getAllIds(account.folders));
+      for (const id of getAllIds(account.folders)) {
+        expandedIds.add(id);
+      }
     }
-    expandedIds = new SvelteSet(allIds);
   }
 
   function collapseAll() {
-    expandedIds = new SvelteSet();
+    expandedIds.clear();
   }
 
   function folderIcon(type: string): string {
@@ -194,9 +191,7 @@
     if (!contextMenu.node) return;
     const parentId = contextMenu.node.id;
     // Expand the parent so the input is visible
-    const next = new SvelteSet(expandedIds);
-    next.add(parentId);
-    expandedIds = next;
+    expandedIds.add(parentId);
     creatingIn = { parentId, name: '' };
     closeContextMenu();
   }
@@ -353,6 +348,9 @@
     tabindex="-1"
     style="left: {contextMenu.x}px; top: {contextMenu.y}px"
     onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closeContextMenu();
+    }}
   >
     <button onclick={startCreateSubfolder}>{$t('folder_tree_create_subfolder')}</button>
     {#if !SYSTEM_FOLDER_TYPES.includes(contextMenu.node.type)}
