@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 > **Note:** Patch version numbers (e.g. 1.5.103) are auto-incremented on each build. This changelog groups changes by meaningful release milestones.
 
+## [1.5.1] - 2026-06-02
+
+### Added
+
+- Component tests for `GlobalSearch` and `PresetGallery` (22 new tests, total: 939 across 47 files)
+- FAQ sections for Privacy, Performance, and Dashboard in bilingual MkDocs documentation
+- `package.json` metadata: description, keywords, author, repository, bugs, homepage
+
+### Changed
+
+- `SvelteSet` mutations refactored to use in-place `.add()` / `.delete()` / `.clear()` (Svelte 5 reactivity best practice)
+- Hardcoded strings replaced with i18n keys: app name, AI model placeholder, template filter empty state
+- Decorative SVGs marked `aria-hidden="true"` in Dashboard and AI pages
+- `aria-pressed` attributes added to toggle buttons in popup
+- `aria-label` added to template filter input
+- Copyright year updated to 2026 across README and documentation site
+
+### Fixed
+
+- `console.error` in chat store replaced with structured `logger.error`
+- Context menu in FolderTree now closes on `Escape` key
+
 ## [1.5.0] - 2026-05-28
 
 ### Added
@@ -35,7 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **ConfirmDialog component** replacing native `confirm()` calls
 - **Keyboard shortcuts modal** accessible from the panel
 - **MkDocs documentation site** with bilingual content deployed to GitHub Pages
-- **CI pipeline** — ESLint, Prettier, TypeScript check, 917 tests, coverage, build
+- **CI pipeline** — ESLint, Prettier, TypeScript check, 939 tests, coverage, build
 - **Coverage thresholds** enforced at 93% statements, 87% branches, 95% functions, 94% lines
 - **Dependabot** with weekly npm dependency updates
 - **Security policy** (SECURITY.md) with responsible disclosure process
