@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Smart Mail Manager",
   "version": "1.5.108",
-  "description": "Clasificación automática de correos y respuestas automáticas para Thunderbird",
+  "description": "Automatic email classification, AI-powered responses, and rule management for Thunderbird",
   "author": "Ricard Penin Honrubia <ricard.penin.honrubia@gmail.com>",
   "browser_specific_settings": {
     "gecko": {
